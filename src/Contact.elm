@@ -45,7 +45,7 @@ contactCircleCircle center1 circle1 center2 circle2 =
             { world1 = Vec2.add center1 (Vec2.scale r1 normal)
             , world2 = Vec2.add center2 (Vec2.scale -r2 normal)
             , normal = normal
-            , depth = sqrt distanceSquared
+            , depth = sumRadius - sqrt distanceSquared
             }
 
     else

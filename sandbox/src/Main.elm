@@ -34,6 +34,12 @@ type alias Model =
     , config : Config
     , configForm : ConfigForm
     , mouse : Vec2.Vec2
+    , camera : Camera
+    }
+
+
+type alias Camera =
+    { transform : Mat3
     }
 
 
@@ -62,6 +68,10 @@ init elmConfigUiFlags =
       , scale = vec3 1 1 1
       , rotation = vec3 0 0 0
       , mouse = vec2 0 0
+      , camera =
+            { transform =
+                viewProjection { width = width, height = height }
+            }
       }
     , Cmd.none
     )
@@ -139,15 +149,6 @@ viewProjection size =
 view : Model -> Html Msg
 view model =
     let
-        width =
-            1280
-
-        height =
-            toFloat width / aspect
-
-        aspect =
-            16 / 9
-
         transform =
             Mat4.mul
                 (Mat4.translate
@@ -234,75 +235,33 @@ view model =
                 , Svg.stroke "red"
                 ]
                 circle1
-
-             -- , Render.circle [ Svg.fill "blue" ] { position = result.point, radius = 5 }
              , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
              ]
                 ++ (contact
                         |> Maybe.map
-                            (\{ world1, world2, normal } ->
+                            (\{ world1, world2, normal, depth } ->
                                 [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
                                 , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
-                                , Render.vector [] { base = world1, vector = Vec2.scale 50 normal }
+                                , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
                                 ]
                             )
                         |> Maybe.withDefault []
                    )
             )
-            (viewProjection { width = width, height = height })
-
-        --     [ Circle.render
-        --         { color =
-        --             if result.isInside then
-        --                 Vec4.vec4 1 0 0 1
-        --             else
-        --                 Vec4.vec4 0 0 1 1
-        --         , projection = Math.Matrix4.makeOrtho2D -(width / 2) (width / 2) -(height / 2) (height / 2)
-        --         , thickness = 0.1
-        --         }
-        --         c1
-        --         iso1
-        --     , Circle.render
-        --         { color = Vec4.vec4 0.25 1 0 1
-        --         , projection = Math.Matrix4.makeOrtho2D -(width / 2) (width / 2) -(height / 2) (height / 2)
-        --         , thickness = 1
-        --         }
-        --         { radius = 10 }
-        --         { translation = result.point
-        --         , rotation = 0
-        --         }
-        --     , Circle.render
-        --         { color = Vec4.vec4 1 0.2 1 1
-        --         , projection = Math.Matrix4.makeOrtho2D -(width / 2) (width / 2) -(height / 2) (height / 2)
-        --         , thickness = 1
-        --         }
-        --         { radius = 5 }
-        --         { translation = mousePos
-        --         , rotation = 0
-        --         }
-        --     ]
+            model.camera.transform
         ]
 
 
+width : number
+width =
+    1280
 
--- circle :
---     { center : Vec2.Vec2
---     , radius : Float
---     , color : Vec4.Vec4
---     , projection : Math.Matrix4.Mat4
---     , thickness : Float
---     }
---     -> WebGL.Entity
--- circle { center, radius, color, projection, thickness } =
---     let
---         transform =
---             Math.Matrix4.makeTranslate3 (Vec2.getX center) (Vec2.getY center) 0
---                 |> Math.Matrix4.scale3 radius radius radius
---     in
---     Main.Render.circle
---         { model = transform
---         , projection = projection
---         , thickness = 1.0 --thickness
---         , fade = 0.0
---         , color = color
---         }
+
+height : Float
+height =
+    toFloat width / aspect
+
+
+aspect : Float
+aspect =
+    16 / 9

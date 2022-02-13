@@ -1,7 +1,7 @@
 module ContactTests exposing (..)
 
 import Contact
-import Expect
+import Expect exposing (FloatingPointTolerance(..))
 import Test exposing (Test, describe, test)
 import Vec2 exposing (vec2)
 
@@ -21,7 +21,7 @@ suite =
                                             |> Expect.equal Vec2.right
                                     , \_ ->
                                         depth
-                                            |> Expect.greaterThan 0
+                                            |> Expect.within (Absolute 0.00001) 6
                                     ]
                                     ()
                             )

@@ -20,6 +20,7 @@ render attrs children toScreen =
         (List.map (\f -> f toScreen) children)
 
 
+vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Mat3 -> Svg msg
 vector attrs args toScreen =
     let
         start =
@@ -27,14 +28,37 @@ vector attrs args toScreen =
 
         end =
             Mat3.transformPoint toScreen (Vec2.add args.base args.vector)
+
+        dir =
+            Vec2.direction { from = end, to = start }
+                |> Vec2.scale (Vec2.distance start end / 5)
+
+        endCap1 =
+            Vec2.rotate -(pi / 4) dir
+
+        endCap2 =
+            Vec2.rotate (pi / 4) dir
     in
+    Svg.g
+        [ Svg.stroke "red"
+        , Svg.strokeWidth "2"
+        , Svg.strokeLinecap "round"
+        ]
+        [ line attrs { from = start, to = end }
+        , line attrs { from = end, to = Vec2.add endCap1 end }
+        , line attrs { from = end, to = Vec2.add endCap2 end }
+        ]
+
+
+line : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Svg msg
+line attrs { from, to } =
+    -- Takes screen space positions
     Svg.line
         (attrs
-            ++ [ Svg.x1 (String.fromFloat start.x)
-               , Svg.y1 (String.fromFloat start.y)
-               , Svg.x2 (String.fromFloat end.x)
-               , Svg.y2 (String.fromFloat end.y)
-               , Svg.stroke "red"
+            ++ [ Svg.x1 (String.fromFloat from.x)
+               , Svg.y1 (String.fromFloat from.y)
+               , Svg.x2 (String.fromFloat to.x)
+               , Svg.y2 (String.fromFloat to.y)
                ]
         )
         []
