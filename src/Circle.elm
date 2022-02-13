@@ -6,9 +6,7 @@ module Circle exposing
     )
 
 import Isometry exposing (Isometry)
-import Mat4
 import Vec2 exposing (Vec2)
-import Vec4
 
 
 type alias Circle =

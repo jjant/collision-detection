@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Body exposing (Body)
+import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
 import Circle
@@ -169,17 +169,29 @@ view model =
             Vec2.vec2 (model.mouse.x - width / 2)
                 (height / 2 - model.mouse.y)
 
+        mouseBody : Body
+        mouseBody =
+            { transform =
+                { translation = mousePos
+                , rotation = 0
+                }
+            , shape = Circle { radius = 40 }
+            }
+
         circle1 : Body
         circle1 =
             { transform =
                 { translation = Vec2.vec2 model.config.x model.config.y
                 , rotation = 0
                 }
-            , shape = { radius = 100 }
+            , shape = Circle { radius = 100 }
             }
 
         result =
             Body.projectPoint mousePos circle1
+
+        contact =
+            Body.contact circle1 mouseBody
     in
     div
         [ style "display" "flex"
@@ -216,18 +228,27 @@ view model =
             , Html.Attributes.style "margin" "0 auto"
             , Html.Events.on "mousemove" mouseDecoder
             ]
-            [ Render.circle [] { position = mousePos, radius = 5 }
-            , Render.body
-                [ Svg.fill
-                    (if result.isInside then
-                        "red"
-
-                     else
-                        "blue"
-                    )
+            ([ Render.body
+                [ Svg.fill "none"
+                , Svg.strokeWidth "5"
+                , Svg.stroke "red"
                 ]
                 circle1
-            ]
+
+             -- , Render.circle [ Svg.fill "blue" ] { position = result.point, radius = 5 }
+             , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+             ]
+                ++ (contact
+                        |> Maybe.map
+                            (\{ world1, world2, normal } ->
+                                [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
+                                , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
+                                , Render.vector [] { base = world1, vector = Vec2.scale 50 normal }
+                                ]
+                            )
+                        |> Maybe.withDefault []
+                   )
+            )
             (viewProjection { width = width, height = height })
 
         --     [ Circle.render

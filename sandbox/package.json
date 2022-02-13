@@ -2,7 +2,7 @@
   "scripts": {
     "postinstall": "elm-tooling install",
     "dev": "vite",
-    "codegen": "elm make src/ConfigSchema.elm --output=~tmp/tmp.js > /dev/null && node ~tmp/tmp.js > src/Config.elm 2>/dev/null    ",
+    "codegen": "elm make src/ConfigSchema.elm --output=~tmp/tmp.js > /dev/null && node ~tmp/tmp.js > src/Config.elm 2>/dev/null",
     "prebuild": "elm-tooling install",
     "build": "vite build",
     "serve": "vite preview",
