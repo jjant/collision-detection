@@ -2,7 +2,6 @@ module Circle exposing
     ( Circle
     , PointProjection
     , projectLocalPoint
-    , projectPoint
     )
 
 import Isometry exposing (Isometry)
@@ -29,21 +28,4 @@ projectLocalPoint localPoint { radius } =
     in
     { point = Vec2.scale (radius / sqrt dist2) localPoint
     , isInside = dist2 < radius * radius
-    }
-
-
-projectPoint : Vec2 -> Isometry -> Circle -> PointProjection
-projectPoint point iso circle =
-    let
-        localPoint =
-            point
-                |> Isometry.applyInverse iso
-
-        localProjection =
-            projectLocalPoint localPoint circle
-    in
-    { localProjection
-        | point =
-            localProjection.point
-                |> Isometry.apply iso
     }

@@ -20,7 +20,6 @@ import Svg
 import Svg.Attributes as Svg
 import Vec2 exposing (Vec2, vec2)
 import Vec3 exposing (vec3)
-import Vec4
 
 
 type alias Flags =
@@ -33,7 +32,7 @@ type alias Model =
     , rotation : Vec3.Vec3
     , config : Config
     , configForm : ConfigForm
-    , mouse : Vec2.Vec2
+    , mouse : Vec2
     , camera : Camera
     }
 
@@ -167,32 +166,36 @@ view model =
                 )
 
         mousePos =
-            Vec2.vec2 (model.mouse.x - width / 2)
-                (height / 2 - model.mouse.y)
+            vec2 (model.mouse.x - width / 2) (height / 2 - model.mouse.y)
 
         mouseBody : Body
         mouseBody =
             { transform =
                 { translation = mousePos
-                , rotation = 0
+                , rotation = pi / 9
                 }
-            , shape = Circle { radius = 40 }
+
+            -- , shape = Circle { radius = 40 }
+            , shape = Rectangle { halfExtents = vec2 10 10 }
             }
 
         circle1 : Body
         circle1 =
             { transform =
-                { translation = Vec2.vec2 model.config.x model.config.y
+                { translation = vec2 model.config.x model.config.y
                 , rotation = 0
                 }
-            , shape = Circle { radius = 100 }
+
+            -- , shape = Circle { radius = 100 }
+            , shape = Rectangle { halfExtents = vec2 100 50 }
             }
 
-        result =
-            Body.projectPoint mousePos circle1
-
         contact =
-            Body.contact circle1 mouseBody
+            -- Body.contact circle1 mouseBody
+            Nothing
+
+        proj =
+            Body.projectPoint mousePos circle1
     in
     div
         [ style "display" "flex"
@@ -236,6 +239,7 @@ view model =
                 ]
                 circle1
              , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+             , Render.circle [ Svg.fill "blue" ] { position = proj.point, radius = 5 }
              ]
                 ++ (contact
                         |> Maybe.map

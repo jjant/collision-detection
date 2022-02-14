@@ -1,13 +1,13 @@
 module Render exposing
     ( body
     , circle
+    , rectangle
     , render
-    ,  vector
-       -- , rectangle
-
+    , vector
     )
 
 import Body exposing (Body, Shape(..))
+import Isometry exposing (Isometry)
 import Mat3 exposing (Mat3)
 import Svg exposing (Svg)
 import Svg.Attributes as Svg
@@ -65,14 +65,51 @@ line attrs { from, to } =
 
 
 body : List (Svg.Attribute msg) -> Body -> Mat3 -> Svg msg
-body attrs { transform, shape } toScreen =
+body attrs { transform, shape } =
     case shape of
         Circle { radius } ->
             circle attrs
                 { position = transform.translation -- not sure if fine
                 , radius = radius
                 }
-                toScreen
+
+        Rectangle { halfExtents } ->
+            rectangle attrs
+                { transform = transform
+                , halfExtents = halfExtents
+                }
+
+
+
+-- rectangle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg
+
+
+rectangle attrs { transform, halfExtents } toScreen =
+    -- Deal with rotation
+    let
+        localPoints =
+            [ Vec2.scale -1 halfExtents
+            , Vec2.scaleY -1 halfExtents
+            , halfExtents
+            , Vec2.scaleX -1 halfExtents
+            ]
+
+        points =
+            localPoints
+                |> List.map (Isometry.apply transform)
+                |> List.map (Mat3.transformPoint toScreen)
+
+        svgPoints =
+            points
+                |> List.map (\p -> String.fromFloat p.x ++ ", " ++ String.fromFloat p.y)
+                |> String.join " "
+    in
+    Svg.polygon
+        (attrs
+            ++ [ Svg.points svgPoints
+               ]
+        )
+        []
 
 
 circle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg
