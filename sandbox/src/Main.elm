@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
@@ -172,7 +173,7 @@ view model =
         mouseBody =
             { transform =
                 { translation = mousePos
-                , rotation = pi / 9
+                , rotation = 0
                 }
 
             -- , shape = Circle { radius = 40 }
@@ -193,6 +194,11 @@ view model =
         contact =
             -- Body.contact circle1 mouseBody
             Nothing
+
+        box =
+            { min = vec2 100 100
+            , max = vec2 150 200
+            }
 
         proj =
             Body.projectPoint mousePos circle1
@@ -239,7 +245,22 @@ view model =
                 ]
                 circle1
              , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-             , Render.circle [ Svg.fill "blue" ] { position = proj.point, radius = 5 }
+             , Render.circle
+                [ Svg.fill <|
+                    if proj.isInside then
+                        "red"
+
+                    else
+                        "blue"
+                ]
+                { position = proj.point, radius = 5 }
+             , Render.aabb [ Svg.stroke "blue", Svg.strokeWidth "5", Svg.fill "none" ] box
+             , Render.vector []
+                { base = AABB.center box
+                , vector =
+                    Vec2.direction { from = AABB.center box, to = mousePos }
+                        |> Vec2.scale 50
+                }
              ]
                 ++ (contact
                         |> Maybe.map

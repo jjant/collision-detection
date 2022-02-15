@@ -1,7 +1,8 @@
-module Rectangle exposing (Rectangle, projectLocalPoint)
+module Rectangle exposing (Rectangle, localSupportPoint, projectLocalPoint)
 
 import AABB
 import Circle exposing (PointProjection)
+import Util
 import Vec2 exposing (Vec2)
 
 
@@ -16,3 +17,8 @@ projectLocalPoint localPoint { halfExtents } =
     , max = halfExtents
     }
         |> AABB.projectLocalPoint localPoint
+
+
+localSupportPoint : Vec2 -> Rectangle -> Vec2
+localSupportPoint dir { halfExtents } =
+    Util.copySign2 { from = dir, to = halfExtents }

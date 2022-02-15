@@ -1,11 +1,13 @@
 module Render exposing
-    ( body
+    ( aabb
+    , body
     , circle
     , rectangle
     , render
     , vector
     )
 
+import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
 import Isometry exposing (Isometry)
 import Mat3 exposing (Mat3)
@@ -80,10 +82,20 @@ body attrs { transform, shape } =
                 }
 
 
+aabb : List (Svg.Attribute msg) -> AABB -> Mat3 -> Svg msg
+aabb attrs ({ min, max } as aabb_) =
+    rectangle attrs
+        { transform =
+            { translation = AABB.center aabb_
+            , rotation = 0
+            }
+        , halfExtents =
+            Vec2.sub max min
+                |> Vec2.scale 0.5
+        }
 
--- rectangle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg
 
-
+rectangle : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Mat3 -> Svg msg
 rectangle attrs { transform, halfExtents } toScreen =
     -- Deal with rotation
     let
