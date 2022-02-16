@@ -1,4 +1,10 @@
-module Isometry exposing (Isometry, apply, applyInverse)
+module Isometry exposing
+    ( Isometry
+    , apply
+    , applyInverse
+    , vectorApply
+    , vectorApplyInverse
+    )
 
 import Vec2 exposing (Vec2)
 
@@ -20,3 +26,13 @@ applyInverse : Isometry -> Vec2 -> Vec2
 applyInverse { translation, rotation } p =
     Vec2.sub p translation
         |> Vec2.rotate -rotation
+
+
+vectorApply : Isometry -> Vec2 -> Vec2
+vectorApply { rotation } v =
+    Vec2.rotate rotation v
+
+
+vectorApplyInverse : Isometry -> Vec2 -> Vec2
+vectorApplyInverse { rotation } v =
+    Vec2.rotate -rotation v

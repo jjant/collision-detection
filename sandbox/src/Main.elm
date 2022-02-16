@@ -255,10 +255,17 @@ view model =
                 ]
                 { position = proj.point, radius = 5 }
              , Render.aabb [ Svg.stroke "blue", Svg.strokeWidth "5", Svg.fill "none" ] box
+             , Render.circle []
+                { position =
+                    Body.supportPoint
+                        (Vec2.direction { from = circle1.transform.translation, to = mousePos })
+                        circle1
+                , radius = 5
+                }
              , Render.vector []
-                { base = AABB.center box
+                { base = circle1.transform.translation
                 , vector =
-                    Vec2.direction { from = AABB.center box, to = mousePos }
+                    Vec2.direction { from = circle1.transform.translation, to = mousePos }
                         |> Vec2.scale 50
                 }
              ]

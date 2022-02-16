@@ -1,4 +1,4 @@
-module Body exposing (Body, Shape(..), contact, projectPoint)
+module Body exposing (Body, Shape(..), contact, projectPoint, supportPoint)
 
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
@@ -28,6 +28,16 @@ projectLocalPoint point shape =
             Rectangle.projectLocalPoint point rectangle
 
 
+localSupportPoint : Vec2 -> Shape -> Vec2
+localSupportPoint direction shape =
+    case shape of
+        Circle circle ->
+            Circle.localSupportPoint direction circle
+
+        Rectangle rectangle ->
+            Rectangle.localSupportPoint direction rectangle
+
+
 projectPoint : Vec2 -> Body -> PointProjection
 projectPoint point { transform, shape } =
     let
@@ -43,6 +53,15 @@ projectPoint point { transform, shape } =
             localProjection.point
                 |> Isometry.apply transform
     }
+
+
+supportPoint : Vec2 -> Body -> Vec2
+supportPoint dir { transform, shape } =
+    dir
+        |> Vec2.normalize
+        |> Isometry.vectorApplyInverse transform
+        |> (\d -> localSupportPoint d shape)
+        |> Isometry.apply transform
 
 
 contact : Body -> Body -> Maybe Contact

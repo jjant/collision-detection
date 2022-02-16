@@ -1,6 +1,7 @@
 module Circle exposing
     ( Circle
     , PointProjection
+    , localSupportPoint
     , projectLocalPoint
     )
 
@@ -29,3 +30,10 @@ projectLocalPoint localPoint { radius } =
     { point = Vec2.scale (radius / sqrt dist2) localPoint
     , isInside = dist2 < radius * radius
     }
+
+
+localSupportPoint : Vec2 -> Circle -> Vec2
+localSupportPoint dir { radius } =
+    dir
+        |> Vec2.normalize
+        |> Vec2.scale radius
