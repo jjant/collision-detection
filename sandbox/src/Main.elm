@@ -9,6 +9,7 @@ import Circle
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
+import Fps
 import Html as Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
@@ -38,6 +39,7 @@ type alias Model =
     , mouse : Vec2
     , camera : Camera
     , keys : Keys
+    , fps : Fps.Model
     }
 
 
@@ -74,6 +76,7 @@ init elmConfigUiFlags =
                 , viewportSize = vec2 width height
                 }
       , keys = Keys.init
+      , fps = Fps.init 20
       }
     , Cmd.none
     )
@@ -94,6 +97,7 @@ subscriptions _ =
     Sub.batch
         [ Sub.map KeysMsg Keys.subscriptions
         , Browser.Events.onAnimationFrameDelta Tick
+        , Sub.map FpsMsg Fps.subscriptions
         ]
 
 
@@ -134,6 +138,9 @@ update msg model =
 
                 Tick dt ->
                     { model | camera = Camera.tick dt model.keys model.camera }
+
+                FpsMsg fpsMsg ->
+                    { model | fps = Fps.update fpsMsg model.fps }
     in
     ( newModel, Cmd.none )
 
@@ -141,23 +148,6 @@ update msg model =
 view : Model -> Html Msg
 view model =
     let
-        transform =
-            Mat4.mul
-                (Mat4.translate
-                    (vec3
-                        model.config.x
-                        model.config.y
-                        model.config.z
-                    )
-                )
-                (Mat4.scale
-                    (vec3
-                        model.config.sx
-                        model.config.sy
-                        model.config.sz
-                    )
-                )
-
         mousePos =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
 
@@ -207,6 +197,8 @@ view model =
             , Html.Attributes.style "border" "1px solid #444"
             , Html.Attributes.style "height" "calc(100% - 80px)"
             , style "margin-left" "32px"
+            , style "display" "flex"
+            , style "flex-direction" "column"
             ]
             [ ConfigForm.view
                 ConfigForm.viewOptions
@@ -222,6 +214,11 @@ view model =
                     |> Json.Encode.encode 2
                     |> Html.text
                 ]
+            , Html.text <|
+                Debug.toString <|
+                    Maybe.map (\{ average } -> round average) <|
+                        Fps.fps
+                            model.fps
             ]
         , Render.render
             [ Html.Attributes.width (round width)

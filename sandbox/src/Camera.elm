@@ -8,7 +8,7 @@ module Camera exposing
 
 import Keys exposing (Keys)
 import Mat3 exposing (Mat3)
-import Vec2 exposing (Vec2)
+import Vec2 exposing (Vec2, vec2)
 
 
 type alias Camera =
@@ -21,9 +21,19 @@ type alias Camera =
 
 tick : Float -> Keys -> Camera -> Camera
 tick dt keys camera =
+    let
+        { x, y } =
+            speed camera
+
+        v =
+            Keys.toDirection keys
+                |> Vec2.scaleX x
+                |> Vec2.scaleY y
+                |> Vec2.scale 5
+    in
     { camera
         | position =
-            Vec2.add camera.position (Vec2.scale dt (Keys.toDirection keys))
+            Vec2.add camera.position (Vec2.scale dt v)
     }
 
 
@@ -63,3 +73,25 @@ inverseMatrix camera =
 
         Nothing ->
             Debug.todo "Camera.inverseMatrix"
+
+
+
+-- 		float
+
+
+speed : Camera -> Vec2
+speed { viewportSize } =
+    let
+        x =
+            min (viewportSize.x / 1000.0) 2.4
+
+        xFactor =
+            0.0366 * (x * x) - 0.1778 * x + 0.3021
+
+        y =
+            min (viewportSize.y / 1000.0) 2.4
+
+        yFactor =
+            0.0366 * (y * y) - 0.1778 * y + 0.3021
+    in
+    vec2 xFactor yFactor
