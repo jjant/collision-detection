@@ -4,6 +4,7 @@ import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
+import Camera exposing (Camera)
 import Circle
 import Color
 import Config exposing (Config)
@@ -13,6 +14,7 @@ import Html.Attributes exposing (style)
 import Html.Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode
+import Keys exposing (Keys)
 import Mat3 exposing (Mat3)
 import Mat4
 import Msg exposing (Msg(..))
@@ -35,11 +37,7 @@ type alias Model =
     , configForm : ConfigForm
     , mouse : Vec2
     , camera : Camera
-    }
-
-
-type alias Camera =
-    { transform : Mat3
+    , keys : Keys
     }
 
 
@@ -69,9 +67,13 @@ init elmConfigUiFlags =
       , rotation = vec3 0 0 0
       , mouse = vec2 0 0
       , camera =
-            { transform =
-                viewProjection { width = width, height = height }
-            }
+            Camera.new
+                { position = Vec2.zero
+
+                -- , viewportSize = { width = width, height = height }
+                , viewportSize = vec2 width height
+                }
+      , keys = Keys.init
       }
     , Cmd.none
     )
@@ -89,8 +91,10 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    -- Browser.Events.onMouseMove mouseDecoder
-    Sub.none
+    Sub.batch
+        [ Sub.map KeysMsg Keys.subscriptions
+        , Browser.Events.onAnimationFrameDelta Tick
+        ]
 
 
 mouseDecoder : Decoder Msg
@@ -108,12 +112,6 @@ update msg model =
     let
         newModel =
             case msg of
-                Increment ->
-                    model
-
-                Decrement ->
-                    model
-
                 ConfigFormMsg configFormMsg ->
                     let
                         ( newConfig, newConfigForm ) =
@@ -130,20 +128,14 @@ update msg model =
 
                 MouseMove mouse ->
                     { model | mouse = mouse }
+
+                KeysMsg keysMsg ->
+                    { model | keys = Keys.update keysMsg model.keys }
+
+                Tick dt ->
+                    { model | camera = Camera.tick dt model.keys model.camera }
     in
     ( newModel, Cmd.none )
-
-
-viewProjection : { width : Float, height : Float } -> Mat3
-viewProjection size =
-    Mat3.mul (Mat3.viewport size)
-        (Mat3.mul (Mat3.orthographic size)
-            (Mat3.lookAt
-                { centerOfAttention = Vec2.zero
-                , upDirection = Vec2.up
-                }
-            )
-        )
 
 
 view : Model -> Html Msg
@@ -167,7 +159,7 @@ view model =
                 )
 
         mousePos =
-            vec2 (model.mouse.x - width / 2) (height / 2 - model.mouse.y)
+            Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
 
         mouseBody : Body
         mouseBody =
@@ -175,9 +167,9 @@ view model =
                 { translation = mousePos
                 , rotation = 0
                 }
+            , shape = Circle { radius = 10 }
 
-            -- , shape = Circle { radius = 40 }
-            , shape = Rectangle { halfExtents = vec2 10 10 }
+            -- , shape = Rectangle { halfExtents = vec2 10 10 }
             }
 
         circle1 : Body
@@ -280,7 +272,7 @@ view model =
                         |> Maybe.withDefault []
                    )
             )
-            model.camera.transform
+            (Camera.matrix model.camera)
         ]
 
 
