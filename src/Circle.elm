@@ -5,7 +5,6 @@ module Circle exposing
     , projectLocalPoint
     )
 
-import Isometry exposing (Isometry)
 import Vec2 exposing (Vec2)
 
 
