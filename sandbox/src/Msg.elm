@@ -1,5 +1,6 @@
 module Msg exposing (Msg(..))
 
+import Body exposing (Body)
 import Config exposing (Config)
 import ConfigForm
 import Fps
@@ -13,3 +14,4 @@ type Msg
     | KeysMsg Keys.Msg
     | Tick Float
     | FpsMsg Fps.Msg
+    | ChangeBody Body

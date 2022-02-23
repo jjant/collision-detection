@@ -16,6 +16,7 @@
             "j-maas/elm-ordered-containers": "1.0.0",
             "jjant/elm-fps": "1.0.0",
             "jjant/linear-algebra": "1.0.0",
+            "mdgriffith/elm-ui": "1.1.8",
             "mpizenberg/elm-pointer-events": "4.0.2",
             "myrho/elm-round": "1.0.4",
             "simonh1000/elm-colorpicker": "2.0.3"

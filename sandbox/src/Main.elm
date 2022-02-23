@@ -9,7 +9,9 @@ import Circle
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
+import Element exposing (column, fill, paddingXY, row, spaceEvenly, width)
 import Fps
+import Hierarchy
 import Html as Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
@@ -40,6 +42,7 @@ type alias Model =
     , camera : Camera
     , keys : Keys
     , fps : Fps.Model
+    , circle1 : Body
     }
 
 
@@ -77,6 +80,15 @@ init elmConfigUiFlags =
                 }
       , keys = Keys.init
       , fps = Fps.init 20
+      , circle1 =
+            { transform =
+                { translation = vec2 config.x config.y
+                , rotation = 0
+                }
+
+            -- , shape = Circle { radius = 100 }
+            , shape = Rectangle { halfExtents = vec2 100 50 }
+            }
       }
     , Cmd.none
     )
@@ -141,12 +153,15 @@ update msg model =
 
                 FpsMsg fpsMsg ->
                     { model | fps = Fps.update fpsMsg model.fps }
+
+                ChangeBody body ->
+                    { model | circle1 = body }
     in
     ( newModel, Cmd.none )
 
 
 view : Model -> Html Msg
-view model =
+view ({ circle1 } as model) =
     let
         mousePos =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
@@ -162,17 +177,6 @@ view model =
             -- , shape = Rectangle { halfExtents = vec2 10 10 }
             }
 
-        circle1 : Body
-        circle1 =
-            { transform =
-                { translation = vec2 model.config.x model.config.y
-                , rotation = 0
-                }
-
-            -- , shape = Circle { radius = 100 }
-            , shape = Rectangle { halfExtents = vec2 100 50 }
-            }
-
         contact =
             -- Body.contact circle1 mouseBody
             Nothing
@@ -185,92 +189,96 @@ view model =
         proj =
             Body.projectPoint mousePos circle1
     in
-    div
-        [ style "display" "flex"
-        , style "align-items" "center"
-        , style "height" "100%"
-        ]
-        [ div
-            -- some nice styles to render it on the right side of the viewport
-            [ Html.Attributes.style "padding" "12px"
-            , Html.Attributes.style "background" "#eec"
-            , Html.Attributes.style "border" "1px solid #444"
-            , Html.Attributes.style "height" "calc(100% - 80px)"
-            , style "margin-left" "32px"
-            , style "display" "flex"
-            , style "flex-direction" "column"
+    Element.layout [] <|
+        row
+            [ spaceEvenly
+            , Element.width fill
+            , paddingXY 80 80
             ]
-            [ ConfigForm.view
-                ConfigForm.viewOptions
-                Config.logics
-                model.configForm
-                |> Html.map ConfigFormMsg
+            [ Element.html <|
+                div
+                    -- some nice styles to render it on the right side of the viewport
+                    [ Html.Attributes.style "padding" "12px"
+                    , Html.Attributes.style "background" "#eec"
+                    , Html.Attributes.style "border" "1px solid #444"
+                    , Html.Attributes.style "height" "calc(100% - 80px)"
+                    , style "margin-left" "32px"
+                    , style "display" "flex"
+                    , style "flex-direction" "column"
+                    ]
+                    [ ConfigForm.view
+                        ConfigForm.viewOptions
+                        Config.logics
+                        model.configForm
+                        |> Html.map ConfigFormMsg
 
-            -- As a developer, you'll want to save your tweaks to your config.json.
-            -- You can copy/paste the content from this textarea to your config.json.
-            -- Then the next time a new user loads your app, they'll see your updated config.
-            , Html.textarea []
-                [ ConfigForm.encode model.configForm
-                    |> Json.Encode.encode 2
-                    |> Html.text
-                ]
-            , Html.text <|
-                Debug.toString <|
-                    Maybe.map (\{ average } -> round average) <|
-                        Fps.fps
-                            model.fps
-            ]
-        , Render.render
-            [ Html.Attributes.width (round width)
-            , Html.Attributes.height (round height)
-            , Html.Attributes.style "border" "1px solid blue"
-            , Html.Attributes.style "margin" "0 auto"
-            , Html.Events.on "mousemove" mouseDecoder
-            ]
-            ([ Render.body
-                [ Svg.fill "none"
-                , Svg.strokeWidth "5"
-                , Svg.stroke "red"
-                ]
-                circle1
-             , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-             , Render.circle
-                [ Svg.fill <|
-                    if proj.isInside then
-                        "red"
-
-                    else
-                        "blue"
-                ]
-                { position = proj.point, radius = 5 }
-             , Render.aabb [ Svg.stroke "blue", Svg.strokeWidth "5", Svg.fill "none" ] box
-             , Render.circle []
-                { position =
-                    Body.supportPoint
-                        (Vec2.direction { from = circle1.transform.translation, to = mousePos })
+                    -- As a developer, you'll want to save your tweaks to your config.json.
+                    -- You can copy/paste the content from this textarea to your config.json.
+                    -- Then the next time a new user loads your app, they'll see your updated config.
+                    , Html.textarea []
+                        [ ConfigForm.encode model.configForm
+                            |> Json.Encode.encode 2
+                            |> Html.text
+                        ]
+                    , Html.text <|
+                        Debug.toString <|
+                            Maybe.map (\{ average } -> round average) <|
+                                Fps.fps
+                                    model.fps
+                    ]
+            , Element.html <|
+                Render.render
+                    [ Html.Attributes.width (round width)
+                    , Html.Attributes.height (round height)
+                    , Html.Attributes.style "border" "1px solid blue"
+                    , Html.Attributes.style "margin" "0 auto"
+                    , Html.Events.on "mousemove" mouseDecoder
+                    ]
+                    ([ Render.body
+                        [ Svg.fill "none"
+                        , Svg.strokeWidth "5"
+                        , Svg.stroke "red"
+                        ]
                         circle1
-                , radius = 5
-                }
-             , Render.vector []
-                { base = circle1.transform.translation
-                , vector =
-                    Vec2.direction { from = circle1.transform.translation, to = mousePos }
-                        |> Vec2.scale 50
-                }
-             ]
-                ++ (contact
-                        |> Maybe.map
-                            (\{ world1, world2, normal, depth } ->
-                                [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
-                                , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
-                                , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
-                                ]
-                            )
-                        |> Maybe.withDefault []
-                   )
-            )
-            (Camera.matrix model.camera)
-        ]
+                     , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+                     , Render.circle
+                        [ Svg.fill <|
+                            if proj.isInside then
+                                "red"
+
+                            else
+                                "blue"
+                        ]
+                        { position = proj.point, radius = 5 }
+                     , Render.aabb [ Svg.stroke "blue", Svg.strokeWidth "5", Svg.fill "none" ] box
+                     , Render.circle []
+                        { position =
+                            Body.supportPoint
+                                (Vec2.direction { from = circle1.transform.translation, to = mousePos })
+                                circle1
+                        , radius = 5
+                        }
+                     , Render.vector []
+                        { base = circle1.transform.translation
+                        , vector =
+                            Vec2.direction { from = circle1.transform.translation, to = mousePos }
+                                |> Vec2.scale 50
+                        }
+                     ]
+                        ++ (contact
+                                |> Maybe.map
+                                    (\{ world1, world2, normal, depth } ->
+                                        [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
+                                        , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
+                                        , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
+                                        ]
+                                    )
+                                |> Maybe.withDefault []
+                           )
+                    )
+                    (Camera.matrix model.camera)
+            , Hierarchy.view ChangeBody circle1
+            ]
 
 
 width : number
