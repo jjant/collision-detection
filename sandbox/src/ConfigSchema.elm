@@ -9,14 +9,8 @@ myConfigFields =
     [ ( "Translate", SectionKind )
     , ( "Translation X", FloatKind "x" )
     , ( "Translation Y", FloatKind "y" )
-    , ( "Translation Z", FloatKind "z" )
-    , ( "Scale", SectionKind )
-    , ( "Scale X", FloatKind "sx" )
-    , ( "Scale Y", FloatKind "sy" )
-    , ( "Scale Z", FloatKind "sz" )
-    , ( "Render params", SectionKind )
-    , ( "Thickness", FloatKind "thickness" )
-    , ( "Fade", FloatKind "fade" )
+    , ( "Support points", BoolKind "showSupportPoints" )
+    , ( "Point projections", BoolKind "showPointProjections" )
     ]
 
 

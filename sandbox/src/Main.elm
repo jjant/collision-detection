@@ -1,15 +1,13 @@
 module Main exposing (main)
 
-import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
 import Camera exposing (Camera)
-import Circle
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
-import Element exposing (column, fill, paddingXY, row, spaceEvenly, width)
+import Element exposing (Element, fill, paddingXY, row, spaceEvenly, width)
 import Fps
 import Hierarchy
 import Html as Html exposing (Html, div)
@@ -18,8 +16,8 @@ import Html.Events exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode
 import Keys exposing (Keys)
-import Mat3 exposing (Mat3)
-import Mat4
+import Mat3
+import Misc exposing (listIf)
 import Msg exposing (Msg(..))
 import Render
 import Svg
@@ -163,31 +161,19 @@ update msg model =
 view : Model -> Html Msg
 view ({ circle1 } as model) =
     let
-        mousePos =
+        mousePosition =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
 
         mouseBody : Body
         mouseBody =
             { transform =
-                { translation = mousePos
+                { translation = mousePosition
                 , rotation = 0
                 }
             , shape = Circle { radius = 10 }
 
             -- , shape = Rectangle { halfExtents = vec2 10 10 }
             }
-
-        contact =
-            -- Body.contact circle1 mouseBody
-            Nothing
-
-        box =
-            { min = vec2 100 100
-            , max = vec2 150 200
-            }
-
-        proj =
-            Body.projectPoint mousePos circle1
     in
     Element.layout [] <|
         row
@@ -241,40 +227,9 @@ view ({ circle1 } as model) =
                         ]
                         circle1
                      , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                     , Render.circle
-                        [ Svg.fill <|
-                            if proj.isInside then
-                                "red"
-
-                            else
-                                "blue"
-                        ]
-                        { position = proj.point, radius = 5 }
-                     , Render.aabb [ Svg.stroke "blue", Svg.strokeWidth "5", Svg.fill "none" ] box
-                     , Render.circle []
-                        { position =
-                            Body.supportPoint
-                                (Vec2.direction { from = circle1.transform.translation, to = mousePos })
-                                circle1
-                        , radius = 5
-                        }
-                     , Render.vector []
-                        { base = circle1.transform.translation
-                        , vector =
-                            Vec2.direction { from = circle1.transform.translation, to = mousePos }
-                                |> Vec2.scale 50
-                        }
                      ]
-                        ++ (contact
-                                |> Maybe.map
-                                    (\{ world1, world2, normal, depth } ->
-                                        [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
-                                        , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
-                                        , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
-                                        ]
-                                    )
-                                |> Maybe.withDefault []
-                           )
+                        ++ listIf model.config.showSupportPoints (supportPoints mousePosition [ model.circle1 ])
+                        ++ listIf model.config.showPointProjections (pointProjections mousePosition [ model.circle1 ])
                     )
                     (Camera.matrix model.camera)
             , Hierarchy.view ChangeBody circle1
@@ -294,3 +249,61 @@ height =
 aspect : Float
 aspect =
     16 / 9
+
+
+supportPoints : Vec2 -> List Body -> List (Render.Renderable msg)
+supportPoints mousePosition bodies =
+    List.concatMap (supportPoint mousePosition) bodies
+
+
+supportPoint : Vec2 -> Body -> List (Render.Renderable msg)
+supportPoint mousePosition body =
+    [ Render.circle []
+        { position =
+            Body.supportPoint
+                (Vec2.direction { from = body.transform.translation, to = mousePosition })
+                body
+        , radius = 5
+        }
+    , Render.vector
+        []
+        { base = body.transform.translation
+        , vector =
+            Vec2.direction { from = body.transform.translation, to = mousePosition }
+                |> Vec2.scale 50
+        }
+    ]
+
+
+pointProjections mousePosition bodies =
+    List.map (pointProjection mousePosition) bodies
+
+
+pointProjection : Vec2 -> Body -> Render.Renderable msg
+pointProjection mousePosition body =
+    let
+        projection =
+            Body.projectPoint mousePosition body
+    in
+    Render.circle
+        [ Svg.fill <|
+            if projection.isInside then
+                "red"
+
+            else
+                "blue"
+        ]
+        { position = projection.point, radius = 5 }
+
+
+
+-- ++ (contact
+--                                 |> Maybe.map
+--                                     (\{ world1, world2, normal, depth } ->
+--                                         [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
+--                                         , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
+--                                         , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
+--                                         ]
+--                                     )
+--                                 |> Maybe.withDefault []
+--                            )

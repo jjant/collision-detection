@@ -1,5 +1,6 @@
 module Render exposing
-    ( aabb
+    ( Renderable
+    , aabb
     , body
     , circle
     , rectangle
@@ -16,14 +17,23 @@ import Svg.Attributes as Svg
 import Vec2 exposing (Vec2, vec2)
 
 
-render : List (Svg.Attribute msg) -> List (Mat3 -> Svg msg) -> Mat3 -> Svg msg
+type Renderable msg
+    = Renderable (Mat3 -> Svg msg)
+
+
+render : List (Svg.Attribute msg) -> List (Renderable msg) -> Mat3 -> Svg msg
 render attrs children toScreen =
     Svg.svg attrs
-        (List.map (\f -> f toScreen) children)
+        (List.map (\(Renderable f) -> f toScreen) children)
 
 
-vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Mat3 -> Svg msg
-vector attrs args toScreen =
+vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Renderable msg
+vector attrs args =
+    Renderable (vector_ attrs args)
+
+
+vector_ : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Mat3 -> Svg msg
+vector_ attrs args toScreen =
     let
         start =
             Mat3.transformPoint toScreen args.base
@@ -66,7 +76,7 @@ line attrs { from, to } =
         []
 
 
-body : List (Svg.Attribute msg) -> Body -> Mat3 -> Svg msg
+body : List (Svg.Attribute msg) -> Body -> Renderable msg
 body attrs { transform, shape } =
     case shape of
         Circle { radius } ->
@@ -82,7 +92,7 @@ body attrs { transform, shape } =
                 }
 
 
-aabb : List (Svg.Attribute msg) -> AABB -> Mat3 -> Svg msg
+aabb : List (Svg.Attribute msg) -> AABB -> Renderable msg
 aabb attrs ({ min, max } as aabb_) =
     rectangle attrs
         { transform =
@@ -95,8 +105,13 @@ aabb attrs ({ min, max } as aabb_) =
         }
 
 
-rectangle : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Mat3 -> Svg msg
-rectangle attrs { transform, halfExtents } toScreen =
+rectangle : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Renderable msg
+rectangle attrs rect =
+    Renderable (rectangle_ attrs rect)
+
+
+rectangle_ : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Mat3 -> Svg msg
+rectangle_ attrs { transform, halfExtents } toScreen =
     -- Deal with rotation
     let
         localPoints =
@@ -124,8 +139,13 @@ rectangle attrs { transform, halfExtents } toScreen =
         []
 
 
-circle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg
-circle attrs { position, radius } toScreen =
+circle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Renderable msg
+circle attrs circ =
+    Renderable (circle_ attrs circ)
+
+
+circle_ : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg
+circle_ attrs { position, radius } toScreen =
     let
         screenPosition =
             Mat3.transformPoint toScreen position
