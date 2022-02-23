@@ -45,7 +45,6 @@ projectLocalPoint localPoint { min, max } =
         -- else if solid
         -- TODO: Decide if we should handle solids
         -- TODO: Implement the rest of the algorithm (rust code below)
-        --
         { isInside = True
         , point = localPoint
         }
