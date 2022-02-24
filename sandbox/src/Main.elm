@@ -40,7 +40,7 @@ type alias Model =
     , camera : Camera
     , keys : Keys
     , fps : Fps.Model
-    , circle1 : Body
+    , bodies : List Body
     }
 
 
@@ -72,21 +72,24 @@ init elmConfigUiFlags =
       , camera =
             Camera.new
                 { position = Vec2.zero
-
-                -- , viewportSize = { width = width, height = height }
                 , viewportSize = vec2 width height
                 }
       , keys = Keys.init
       , fps = Fps.init 20
-      , circle1 =
-            { transform =
-                { translation = vec2 config.x config.y
-                , rotation = 0
-                }
-
-            -- , shape = Circle { radius = 100 }
-            , shape = Rectangle { halfExtents = vec2 100 50 }
-            }
+      , bodies =
+            [ { transform =
+                    { translation = vec2 config.x config.y
+                    , rotation = 0
+                    }
+              , shape = Rectangle { halfExtents = vec2 100 50 }
+              }
+            , { transform =
+                    { translation = vec2 150 150
+                    , rotation = 0
+                    }
+              , shape = Circle { radius = 50 }
+              }
+            ]
       }
     , Cmd.none
     )
@@ -153,13 +156,14 @@ update msg model =
                     { model | fps = Fps.update fpsMsg model.fps }
 
                 ChangeBody body ->
-                    { model | circle1 = body }
+                    -- { model | circle1 = body }
+                    model
     in
     ( newModel, Cmd.none )
 
 
 view : Model -> Html Msg
-view ({ circle1 } as model) =
+view model =
     let
         mousePosition =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
@@ -220,19 +224,14 @@ view ({ circle1 } as model) =
                     , Html.Attributes.style "margin" "0 auto"
                     , Html.Events.on "mousemove" mouseDecoder
                     ]
-                    ([ Render.body
-                        [ Svg.fill "none"
-                        , Svg.strokeWidth "5"
-                        , Svg.stroke "red"
-                        ]
-                        circle1
-                     , Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                     ]
-                        ++ listIf model.config.showSupportPoints (supportPoints mousePosition [ model.circle1 ])
-                        ++ listIf model.config.showPointProjections (pointProjections mousePosition [ model.circle1 ])
+                    (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+                        :: renderBodies model.bodies
+                        ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                        ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                     )
                     (Camera.matrix model.camera)
-            , Hierarchy.view ChangeBody circle1
+
+            -- , Hierarchy.view ChangeBody circle1
             ]
 
 
@@ -307,3 +306,14 @@ pointProjection mousePosition body =
 --                                     )
 --                                 |> Maybe.withDefault []
 --                            )
+
+
+renderBodies : List Body -> List (Render.Renderable msg)
+renderBodies =
+    List.map
+        (Render.body
+            [ Svg.fill "none"
+            , Svg.strokeWidth "5"
+            , Svg.stroke "red"
+            ]
+        )
