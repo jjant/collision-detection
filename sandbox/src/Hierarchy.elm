@@ -1,8 +1,8 @@
-module Hierarchy exposing (view)
+module Hierarchy exposing (list, view)
 
+import Array exposing (Array)
 import Body exposing (Body, Shape)
 import Element exposing (..)
-import Element.Background as Background
 import Element.Input as Input
 import Vec2 exposing (vec2)
 
@@ -12,22 +12,51 @@ type ShapeKind
     | Rectangle
 
 
-setShape : Shape -> Body -> Body
-setShape shape body =
-    { body | shape = shape }
+setShape : ShapeKind -> Body -> Body
+setShape shapeKind body =
+    case ( shapeKind, body.shape ) of
+        ( Circle, Body.Circle _ ) ->
+            body
+
+        ( Rectangle, Body.Rectangle _ ) ->
+            body
+
+        _ ->
+            { body | shape = defaultShape shapeKind }
 
 
-view : (Body -> msg) -> Body -> Element msg
-view onChange ({ transform, shape } as body) =
+list : (Int -> msg) -> Maybe Int -> Array Body -> Element msg
+list selectBody selectedBody bodies =
+    Input.radio []
+        { onChange = selectBody
+        , options =
+            bodies
+                |> Array.indexedMap
+                    (\idx _ ->
+                        Input.option idx (text <| "Body " ++ String.fromInt idx)
+                    )
+                |> Array.toList
+        , selected = selectedBody
+        , label = Input.labelAbove [] (text "Bodies")
+        }
+
+
+view : (Body -> msg) -> Maybe Body -> Element msg
+view onChange maybeBody =
     column
-        [ Background.color (rgb255 238 238 204)
-        , height fill
-        , width (px 300)
+        [ width fill
+        , height (px 300)
         ]
-        [ text <| Debug.toString transform
-        , shapeRadio (\newShape -> onChange (setShape newShape body)) shape
-        , shapeInput shape
-        ]
+        (maybeBody
+            |> Maybe.map
+                (\body ->
+                    [ text <| Vec2.toString body.transform.translation
+                    , shapeRadio (\newShapeKind -> onChange (setShape newShapeKind body)) body.shape
+                    , shapeInput body.shape
+                    ]
+                )
+            |> Maybe.withDefault []
+        )
 
 
 defaultShape : ShapeKind -> Shape
@@ -60,10 +89,10 @@ shapeInput shape =
             text <| Debug.toString halfExtents
 
 
-shapeRadio : (Shape -> msg) -> Shape -> Element msg
+shapeRadio : (ShapeKind -> msg) -> Shape -> Element msg
 shapeRadio onShapeChange shape =
     Input.radio []
-        { onChange = onShapeChange << defaultShape
+        { onChange = onShapeChange
         , options = options
         , selected = Just <| selectedShape shape
         , label = Input.labelAbove [] (text "Shape")

@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Array exposing (Array)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
@@ -7,7 +8,8 @@ import Camera exposing (Camera)
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
-import Element exposing (Element, fill, paddingXY, row, spaceEvenly, width)
+import Element exposing (column, fill, paddingXY, px, rgb255, row, spaceEvenly, width)
+import Element.Background as Background
 import Fps
 import Hierarchy
 import Html as Html exposing (Html, div)
@@ -36,11 +38,13 @@ type alias Model =
     , rotation : Vec3.Vec3
     , config : Config
     , configForm : ConfigForm
+    , viewportSize : Vec2
     , mouse : Vec2
     , camera : Camera
     , keys : Keys
     , fps : Fps.Model
-    , bodies : List Body
+    , bodies : Array Body
+    , selectedBody : Maybe Int
     }
 
 
@@ -62,6 +66,18 @@ init elmConfigUiFlags =
                         , color = Color.rgba 1 0 1 1 -- hot pink!
                         }
                 }
+
+        width : number
+        width =
+            1280
+
+        height : Float
+        height =
+            toFloat width / aspect
+
+        aspect : Float
+        aspect =
+            16 / 9
     in
     ( { config = config
       , configForm = configForm
@@ -74,22 +90,25 @@ init elmConfigUiFlags =
                 { position = Vec2.zero
                 , viewportSize = vec2 width height
                 }
+      , viewportSize = vec2 width height
       , keys = Keys.init
       , fps = Fps.init 20
       , bodies =
-            [ { transform =
-                    { translation = vec2 config.x config.y
-                    , rotation = 0
-                    }
-              , shape = Rectangle { halfExtents = vec2 100 50 }
-              }
-            , { transform =
-                    { translation = vec2 150 150
-                    , rotation = 0
-                    }
-              , shape = Circle { radius = 50 }
-              }
-            ]
+            Array.fromList
+                [ { transform =
+                        { translation = vec2 config.x config.y
+                        , rotation = 0
+                        }
+                  , shape = Rectangle { halfExtents = vec2 100 50 }
+                  }
+                , { transform =
+                        { translation = vec2 150 150
+                        , rotation = 0
+                        }
+                  , shape = Circle { radius = 50 }
+                  }
+                ]
+      , selectedBody = Just 0
       }
     , Cmd.none
     )
@@ -156,8 +175,15 @@ update msg model =
                     { model | fps = Fps.update fpsMsg model.fps }
 
                 ChangeBody body ->
-                    -- { model | circle1 = body }
-                    model
+                    { model
+                        | bodies =
+                            model.selectedBody
+                                |> Maybe.map (\idx -> Array.set idx body model.bodies)
+                                |> Maybe.withDefault model.bodies
+                    }
+
+                SelectBody selectedBody_ ->
+                    { model | selectedBody = Just selectedBody_ }
     in
     ( newModel, Cmd.none )
 
@@ -183,7 +209,7 @@ view model =
         row
             [ spaceEvenly
             , Element.width fill
-            , paddingXY 80 80
+            , paddingXY 20 80
             ]
             [ Element.html <|
                 div
@@ -218,8 +244,8 @@ view model =
                     ]
             , Element.html <|
                 Render.render
-                    [ Html.Attributes.width (round width)
-                    , Html.Attributes.height (round height)
+                    [ Html.Attributes.width (round model.viewportSize.x)
+                    , Html.Attributes.height (round model.viewportSize.y)
                     , Html.Attributes.style "border" "1px solid blue"
                     , Html.Attributes.style "margin" "0 auto"
                     , Html.Events.on "mousemove" mouseDecoder
@@ -230,29 +256,27 @@ view model =
                         ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                     )
                     (Camera.matrix model.camera)
-
-            -- , Hierarchy.view ChangeBody circle1
+            , column
+                [ Background.color (rgb255 238 238 204)
+                , width (px 400)
+                ]
+                [ Hierarchy.list SelectBody model.selectedBody model.bodies
+                , Hierarchy.view ChangeBody (selectedBody model)
+                ]
             ]
 
 
-width : number
-width =
-    1280
+selectedBody : Model -> Maybe Body
+selectedBody model =
+    model.selectedBody
+        |> Maybe.andThen (\idx -> Array.get idx model.bodies)
 
 
-height : Float
-height =
-    toFloat width / aspect
-
-
-aspect : Float
-aspect =
-    16 / 9
-
-
-supportPoints : Vec2 -> List Body -> List (Render.Renderable msg)
+supportPoints : Vec2 -> Array Body -> List (Render.Renderable msg)
 supportPoints mousePosition bodies =
-    List.concatMap (supportPoint mousePosition) bodies
+    bodies
+        |> mapToList (supportPoint mousePosition)
+        |> List.concat
 
 
 supportPoint : Vec2 -> Body -> List (Render.Renderable msg)
@@ -274,8 +298,9 @@ supportPoint mousePosition body =
     ]
 
 
+pointProjections : Vec2 -> Array Body -> List (Render.Renderable msg)
 pointProjections mousePosition bodies =
-    List.map (pointProjection mousePosition) bodies
+    mapToList (pointProjection mousePosition) bodies
 
 
 pointProjection : Vec2 -> Body -> Render.Renderable msg
@@ -308,12 +333,17 @@ pointProjection mousePosition body =
 --                            )
 
 
-renderBodies : List Body -> List (Render.Renderable msg)
+renderBodies : Array Body -> List (Render.Renderable msg)
 renderBodies =
-    List.map
+    mapToList
         (Render.body
             [ Svg.fill "none"
             , Svg.strokeWidth "5"
             , Svg.stroke "red"
             ]
         )
+
+
+mapToList : (a -> b) -> Array a -> List b
+mapToList f arr =
+    Array.foldr (\a acc -> f a :: acc) [] arr

@@ -15,3 +15,4 @@ type Msg
     | Tick Float
     | FpsMsg Fps.Msg
     | ChangeBody Body
+    | SelectBody Int
