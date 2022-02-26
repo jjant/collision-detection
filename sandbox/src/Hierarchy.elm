@@ -4,7 +4,9 @@ import Array exposing (Array)
 import Body exposing (Body, Shape)
 import Element exposing (..)
 import Element.Input as Input
-import Vec2 exposing (vec2)
+import Isometry exposing (Isometry)
+import Unwrap
+import Vec2 exposing (Vec2, vec2)
 
 
 type ShapeKind
@@ -51,12 +53,27 @@ view onChange maybeBody =
             |> Maybe.map
                 (\body ->
                     [ text <| Vec2.toString body.transform.translation
+                    , vec2Input (\translation -> onChange <| setTranslation translation body) body.transform.translation
                     , shapeRadio (\newShapeKind -> onChange (setShape newShapeKind body)) body.shape
                     , shapeInput body.shape
                     ]
                 )
             |> Maybe.withDefault []
         )
+
+
+setTranslation : Vec2 -> Body -> Body
+setTranslation translation body =
+    let
+        iso =
+            body.transform
+    in
+    { body
+        | transform =
+            { iso
+                | translation = translation
+            }
+    }
 
 
 defaultShape : ShapeKind -> Shape
@@ -104,3 +121,18 @@ options =
     [ Input.option Circle (text "Circle")
     , Input.option Rectangle (text "Rectangle")
     ]
+
+
+vec2Input : (Vec2 -> msg) -> Vec2 -> Element msg
+vec2Input onChange vec =
+    Input.text []
+        { text = String.fromFloat vec.x
+        , onChange =
+            \s ->
+                String.toFloat s
+                    |> Unwrap.maybe
+                    |> (\x -> Vec2.setX x vec)
+                    |> onChange
+        , placeholder = Nothing
+        , label = Input.labelBelow [] (text "x")
+        }
