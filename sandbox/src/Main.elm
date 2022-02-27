@@ -15,11 +15,11 @@ import Hierarchy
 import Html as Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode
 import Json.Encode
 import Keys exposing (Keys)
 import Mat3
-import Misc exposing (listIf)
+import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
 import Render
 import Svg
@@ -133,16 +133,6 @@ subscriptions _ =
         ]
 
 
-mouseDecoder : Decoder Msg
-mouseDecoder =
-    Decode.map2
-        (\x y ->
-            MouseMove (vec2 x y)
-        )
-        (Decode.at [ "offsetX" ] Decode.float)
-        (Decode.at [ "offsetY" ] Decode.float)
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
@@ -164,6 +154,27 @@ update msg model =
 
                 MouseMove mouse ->
                     { model | mouse = mouse }
+
+                MouseClick mouse ->
+                    let
+                        worldSpaceMouse =
+                            Mat3.transformPoint (Camera.inverseMatrix model.camera) mouse
+
+                        newSelectedBody =
+                            -- TODO: Make this not horribly slow
+                            Array.indexedMap
+                                (\idx body ->
+                                    if Debug.log "" (Body.projectPoint worldSpaceMouse body).isInside then
+                                        idx
+
+                                    else
+                                        -1
+                                )
+                                model.bodies
+                                |> Array.filter (\a -> a >= 0)
+                                |> Array.get 0
+                    in
+                    { model | selectedBody = newSelectedBody }
 
                 KeysMsg keysMsg ->
                     { model | keys = Keys.update keysMsg model.keys }
@@ -201,8 +212,6 @@ view model =
                 , rotation = 0
                 }
             , shape = Circle { radius = 10 }
-
-            -- , shape = Rectangle { halfExtents = vec2 10 10 }
             }
     in
     Element.layout [] <|
@@ -244,11 +253,12 @@ view model =
                     ]
             , Element.html <|
                 Render.render
+                    MouseClick
                     [ Html.Attributes.width (round model.viewportSize.x)
                     , Html.Attributes.height (round model.viewportSize.y)
                     , Html.Attributes.style "border" "1px solid blue"
                     , Html.Attributes.style "margin" "0 auto"
-                    , Html.Events.on "mousemove" mouseDecoder
+                    , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
                     ]
                     (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
                         :: renderBodies model.bodies

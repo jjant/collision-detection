@@ -11,6 +11,7 @@ import Vec2 exposing (Vec2)
 type Msg
     = ConfigFormMsg (ConfigForm.Msg Config)
     | MouseMove Vec2
+    | MouseClick Vec2
     | KeysMsg Keys.Msg
     | Tick Float
     | FpsMsg Fps.Msg

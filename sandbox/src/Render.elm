@@ -11,9 +11,12 @@ module Render exposing
 import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
 import Isometry exposing (Isometry)
+import Json.Decode as Decode
 import Mat3 exposing (Mat3)
+import Misc exposing (mouseDecoder)
 import Svg exposing (Svg)
 import Svg.Attributes as Svg
+import Svg.Events
 import Vec2 exposing (Vec2, vec2)
 
 
@@ -21,9 +24,9 @@ type Renderable msg
     = Renderable (Mat3 -> Svg msg)
 
 
-render : List (Svg.Attribute msg) -> List (Renderable msg) -> Mat3 -> Svg msg
-render attrs children toScreen =
-    Svg.svg attrs
+render : (Vec2 -> msg) -> List (Svg.Attribute msg) -> List (Renderable msg) -> Mat3 -> Svg msg
+render onClick attrs children toScreen =
+    Svg.svg (Svg.Events.on "click" (Decode.map onClick mouseDecoder) :: attrs)
         (List.map (\(Renderable f) -> f toScreen) children)
 
 
