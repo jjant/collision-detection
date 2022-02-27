@@ -8,6 +8,7 @@ import Camera exposing (Camera)
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
+import Draggable
 import Element exposing (column, fill, paddingXY, px, rgb255, row, spaceEvenly, width)
 import Element.Background as Background
 import Fps
@@ -45,6 +46,7 @@ type alias Model =
     , fps : Fps.Model
     , bodies : Array Body
     , selectedBody : Maybe Int
+    , drag : Draggable.State ()
     }
 
 
@@ -109,6 +111,7 @@ init elmConfigUiFlags =
                   }
                 ]
       , selectedBody = Just 0
+      , drag = Draggable.init
       }
     , Cmd.none
     )
@@ -125,78 +128,100 @@ main =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
-        [ Sub.map KeysMsg Keys.subscriptions
-        , Browser.Events.onAnimationFrameDelta Tick
-        , Sub.map FpsMsg Fps.subscriptions
+        [ --      Sub.map KeysMsg Keys.subscriptions
+          -- , Browser.Events.onAnimationFrameDelta Tick
+          -- , Sub.map FpsMsg Fps.subscriptions,
+          Draggable.subscriptions DragMsg model.drag
         ]
+
+
+dragConfig : Draggable.Config () Msg
+dragConfig =
+    Draggable.basicConfig (\( x, y ) -> OnDragBy (vec2 x y))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        newModel =
-            case msg of
-                ConfigFormMsg configFormMsg ->
-                    let
-                        ( newConfig, newConfigForm ) =
-                            ConfigForm.update
-                                Config.logics
-                                model.config
-                                model.configForm
-                                configFormMsg
-                    in
-                    { model
-                        | config = newConfig
-                        , configForm = newConfigForm
-                    }
+    case msg of
+        ConfigFormMsg configFormMsg ->
+            let
+                ( newConfig, newConfigForm ) =
+                    ConfigForm.update
+                        Config.logics
+                        model.config
+                        model.configForm
+                        configFormMsg
+            in
+            ( { model
+                | config = newConfig
+                , configForm = newConfigForm
+              }
+            , Cmd.none
+            )
 
-                MouseMove mouse ->
-                    { model | mouse = mouse }
+        MouseMove mouse ->
+            ( { model | mouse = mouse }, Cmd.none )
 
-                MouseClick mouse ->
-                    let
-                        worldSpaceMouse =
-                            Mat3.transformPoint (Camera.inverseMatrix model.camera) mouse
+        MouseClick mouse ->
+            let
+                worldSpaceMouse =
+                    Mat3.transformPoint (Camera.inverseMatrix model.camera) mouse
 
-                        newSelectedBody =
-                            -- TODO: Make this not horribly slow
-                            Array.indexedMap
-                                (\idx body ->
-                                    if Debug.log "" (Body.projectPoint worldSpaceMouse body).isInside then
-                                        idx
+                newSelectedBody =
+                    -- TODO: Make this not horribly slow
+                    Array.indexedMap
+                        (\idx body ->
+                            if Debug.log "" (Body.projectPoint worldSpaceMouse body).isInside then
+                                idx
 
-                                    else
-                                        -1
-                                )
-                                model.bodies
-                                |> Array.filter (\a -> a >= 0)
-                                |> Array.get 0
-                    in
-                    { model | selectedBody = newSelectedBody }
+                            else
+                                -1
+                        )
+                        model.bodies
+                        |> Array.filter (\a -> a >= 0)
+                        |> Array.get 0
+            in
+            ( { model | selectedBody = newSelectedBody }, Cmd.none )
 
-                KeysMsg keysMsg ->
-                    { model | keys = Keys.update keysMsg model.keys }
+        KeysMsg keysMsg ->
+            ( { model | keys = Keys.update keysMsg model.keys }, Cmd.none )
 
-                Tick dt ->
-                    { model | camera = Camera.tick dt model.keys model.camera }
+        Tick dt ->
+            ( { model | camera = Camera.tick dt model.keys model.camera }, Cmd.none )
 
-                FpsMsg fpsMsg ->
-                    { model | fps = Fps.update fpsMsg model.fps }
+        FpsMsg fpsMsg ->
+            ( { model | fps = Fps.update fpsMsg model.fps }, Cmd.none )
 
-                ChangeBody body ->
-                    { model
-                        | bodies =
-                            model.selectedBody
-                                |> Maybe.map (\idx -> Array.set idx body model.bodies)
-                                |> Maybe.withDefault model.bodies
-                    }
+        ChangeBody body ->
+            ( { model
+                | bodies =
+                    model.selectedBody
+                        |> Maybe.map (\idx -> Array.set idx body model.bodies)
+                        |> Maybe.withDefault model.bodies
+              }
+            , Cmd.none
+            )
 
-                SelectBody selectedBody_ ->
-                    { model | selectedBody = Just selectedBody_ }
-    in
-    ( newModel, Cmd.none )
+        SelectBody selectedBody_ ->
+            ( { model | selectedBody = Just selectedBody_ }, Cmd.none )
+
+        OnDragBy screenSpaceDelta ->
+            let
+                worldSpaceDelta =
+                    Mat3.transformVector (Camera.inverseMatrix model.camera) screenSpaceDelta
+                        |> Debug.log "delta"
+
+                newModel =
+                    updateSelectedBody
+                        (Misc.updateTranslation (Vec2.add worldSpaceDelta))
+                        model
+            in
+            ( newModel, Cmd.none )
+
+        DragMsg dragMsg ->
+            Draggable.update dragConfig dragMsg model
 
 
 view : Model -> Html Msg
@@ -265,7 +290,7 @@ view model =
                         ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                         ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                         ++ (selectedBody model
-                                |> Maybe.map (\{ transform } -> [ Render.gizmo [] transform.translation ])
+                                |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
                                 |> Maybe.withDefault []
                            )
                     )
@@ -278,6 +303,26 @@ view model =
                 , Hierarchy.view ChangeBody (selectedBody model)
                 ]
             ]
+
+
+updateSelectedBody : (Body -> Body) -> Model -> Model
+updateSelectedBody fn ({ bodies } as model) =
+    let
+        newBodies =
+            selectedBody model
+                |> Maybe.map fn
+                |> Maybe.andThen
+                    (\b ->
+                        model.selectedBody
+                            |> Maybe.map (Tuple.pair b)
+                    )
+                |> Maybe.map
+                    (\( body, id ) ->
+                        Array.set id body bodies
+                    )
+                |> Maybe.withDefault bodies
+    in
+    { model | bodies = newBodies }
 
 
 selectedBody : Model -> Maybe Body

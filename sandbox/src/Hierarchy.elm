@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Body exposing (Body, Shape)
 import Element exposing (..)
 import Element.Input as Input
-import Isometry exposing (Isometry)
+import Misc exposing (setTranslation)
 import Unwrap
 import Vec2 exposing (Vec2, vec2)
 
@@ -60,20 +60,6 @@ view onChange maybeBody =
                 )
             |> Maybe.withDefault []
         )
-
-
-setTranslation : Vec2 -> Body -> Body
-setTranslation translation body =
-    let
-        iso =
-            body.transform
-    in
-    { body
-        | transform =
-            { iso
-                | translation = translation
-            }
-    }
 
 
 defaultShape : ShapeKind -> Shape

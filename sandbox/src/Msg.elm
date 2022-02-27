@@ -3,6 +3,7 @@ module Msg exposing (Msg(..))
 import Body exposing (Body)
 import Config exposing (Config)
 import ConfigForm
+import Draggable
 import Fps
 import Keys
 import Vec2 exposing (Vec2)
@@ -17,3 +18,5 @@ type Msg
     | FpsMsg Fps.Msg
     | ChangeBody Body
     | SelectBody Int
+    | DragMsg (Draggable.Msg ())
+    | OnDragBy Vec2
