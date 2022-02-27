@@ -3,6 +3,7 @@ module Render exposing
     , aabb
     , body
     , circle
+    , gizmo
     , rectangle
     , render
     , vector
@@ -111,6 +112,15 @@ aabb attrs ({ min, max } as aabb_) =
 rectangle : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Renderable msg
 rectangle attrs rect =
     Renderable (rectangle_ attrs rect)
+
+
+gizmo : List (Svg.Attribute msg) -> Vec2 -> Renderable msg
+gizmo attrs pos =
+    Renderable <|
+        rectangle_ ([ Svg.class "gizmo", Svg.fill "magenta" ] ++ attrs)
+            { transform = { translation = pos, rotation = 0 }
+            , halfExtents = vec2 15 15
+            }
 
 
 rectangle_ : List (Svg.Attribute msg) -> { transform : Isometry, halfExtents : Vec2 } -> Mat3 -> Svg msg

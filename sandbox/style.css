@@ -18,3 +18,8 @@ body,
   height: 100%;
   margin: 0;
 }
+
+.gizmo:hover {
+  fill: rgb(240, 180, 90, 0.8);
+  cursor: grab;
+}

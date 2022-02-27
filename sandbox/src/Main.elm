@@ -264,6 +264,10 @@ view model =
                         :: renderBodies model.bodies
                         ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                         ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
+                        ++ (selectedBody model
+                                |> Maybe.map (\{ transform } -> [ Render.gizmo [] transform.translation ])
+                                |> Maybe.withDefault []
+                           )
                     )
                     (Camera.matrix model.camera)
             , column
