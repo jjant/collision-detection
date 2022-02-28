@@ -34,7 +34,10 @@ setShape shapeKind body =
 list : (Int -> msg) -> Maybe Int -> Array Body -> Element msg
 list selectBody selectedBody bodies =
     el
-        [ width fill
+        [ width
+            (fill
+                |> Element.minimum 350
+            )
         , Background.color (rgb255 51 60 78)
         , Border.color (rgb255 26 30 41)
         , Border.width 2

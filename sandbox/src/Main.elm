@@ -9,7 +9,7 @@ import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
 import Draggable
-import Element exposing (column, fill, paddingXY, px, rgb255, row, spaceEvenly, width)
+import Element exposing (column, el, fill, height, paddingXY, px, rgb255, row, spacing, width)
 import Element.Background as Background
 import Fps
 import Hierarchy
@@ -96,6 +96,7 @@ init elmConfigUiFlags =
       , keys = Keys.init
       , fps = Fps.init 20
       , bodies =
+            -- world config
             gridWorld
       , selectedBody = Just 0
       , drag = Draggable.init
@@ -231,66 +232,70 @@ view model =
         ]
     <|
         row
-            [ spaceEvenly
-            , Element.width fill
-            , paddingXY 20 80
+            [ Element.width fill
+            , paddingXY 10 10
+            , spacing 10
             ]
-            [ Element.html <|
-                div
-                    -- some nice styles to render it on the right side of the viewport
-                    [ Html.Attributes.style "padding" "12px"
-                    , Html.Attributes.style "background" "#eec"
-                    , Html.Attributes.style "border" "1px solid #444"
-                    , Html.Attributes.style "height" "calc(100% - 80px)"
-                    , style "margin-left" "32px"
-                    , style "display" "flex"
-                    , style "flex-direction" "column"
-                    ]
-                    [ ConfigForm.view
-                        ConfigForm.viewOptions
-                        Config.logics
-                        model.configForm
-                        |> Html.map ConfigFormMsg
-
-                    -- As a developer, you'll want to save your tweaks to your config.json.
-                    -- You can copy/paste the content from this textarea to your config.json.
-                    -- Then the next time a new user loads your app, they'll see your updated config.
-                    , Html.textarea []
-                        [ ConfigForm.encode model.configForm
-                            |> Json.Encode.encode 2
-                            |> Html.text
+            [ column
+                [ height fill ]
+                [ Hierarchy.list SelectBody model.selectedBody model.bodies
+                , Element.html <|
+                    div
+                        -- some nice styles to render it on the right side of the viewport
+                        [ Html.Attributes.style "padding" "12px"
+                        , Html.Attributes.style "background" "#eec"
+                        , Html.Attributes.style "border" "1px solid #444"
+                        , Html.Attributes.style "height" "calc(100% - 80px)"
+                        , style "margin-left" "32px"
+                        , style "display" "flex"
+                        , style "flex-direction" "column"
                         ]
-                    , Html.text <|
-                        Debug.toString <|
-                            Maybe.map (\{ average } -> round average) <|
-                                Fps.fps
-                                    model.fps
-                    ]
-            , Element.html <|
-                Render.render
-                    MouseClick
-                    [ Html.Attributes.width (round model.viewportSize.x)
-                    , Html.Attributes.height (round model.viewportSize.y)
-                    , Html.Attributes.style "border" "1px solid blue"
-                    , Html.Attributes.style "margin" "0 auto"
-                    , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
-                    ]
-                    (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                        :: renderBodies model.bodies
-                        ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
-                        ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
-                        ++ (selectedBody model
-                                |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
-                                |> Maybe.withDefault []
-                           )
-                    )
-                    (Camera.matrix model.camera)
+                        [ ConfigForm.view
+                            ConfigForm.viewOptions
+                            Config.logics
+                            model.configForm
+                            |> Html.map ConfigFormMsg
+
+                        -- As a developer, you'll want to save your tweaks to your config.json.
+                        -- You can copy/paste the content from this textarea to your config.json.
+                        -- Then the next time a new user loads your app, they'll see your updated config.
+                        , Html.textarea []
+                            [ ConfigForm.encode model.configForm
+                                |> Json.Encode.encode 2
+                                |> Html.text
+                            ]
+                        , Html.text <|
+                            Debug.toString <|
+                                Maybe.map (\{ average } -> round average) <|
+                                    Fps.fps
+                                        model.fps
+                        ]
+                ]
+            , el []
+                (Element.html <|
+                    Render.render
+                        MouseClick
+                        [ Html.Attributes.width (round model.viewportSize.x)
+                        , Html.Attributes.height (round model.viewportSize.y)
+                        , Html.Attributes.style "border" "1px solid blue"
+                        , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
+                        ]
+                        (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+                            :: renderBodies model.bodies
+                            ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                            ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
+                            ++ (selectedBody model
+                                    |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
+                                    |> Maybe.withDefault []
+                               )
+                        )
+                        (Camera.matrix model.camera)
+                )
             , column
                 [ Background.color (rgb255 238 238 204)
-                , width (px 400)
+                , width fill
                 ]
-                [ Hierarchy.list SelectBody model.selectedBody model.bodies
-                , Hierarchy.view ChangeBody (selectedBody model)
+                [ Hierarchy.view ChangeBody (selectedBody model)
                 ]
             ]
 
