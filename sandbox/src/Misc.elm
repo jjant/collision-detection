@@ -1,6 +1,8 @@
-module Misc exposing (listIf, mouseDecoder, setTranslation, updateTranslation)
+module Misc exposing (listIf, mouseDecoder, setTranslation, toElementColor, updateTranslation)
 
 import Body exposing (Body)
+import Color
+import Element
 import Json.Decode as Decode exposing (Decoder)
 import Vec2 exposing (Vec2, vec2)
 
@@ -33,3 +35,12 @@ updateTranslation fn body =
 setTranslation : Vec2 -> Body -> Body
 setTranslation translation =
     updateTranslation (\_ -> translation)
+
+
+toElementColor : Color.Color -> Element.Color
+toElementColor c =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgba c
+    in
+    Element.rgba red green blue alpha

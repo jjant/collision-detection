@@ -65,7 +65,7 @@ init elmConfigUiFlags =
                         , float = 1
                         , string = "SORRY IM NEW HERE"
                         , bool = True
-                        , color = Color.rgba 1 0 1 1 -- hot pink!
+                        , color = Color.rgb255 32 37 49 -- hot pink!
                         }
                 }
 
@@ -130,10 +130,10 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ --      Sub.map KeysMsg Keys.subscriptions
-          -- , Browser.Events.onAnimationFrameDelta Tick
-          -- , Sub.map FpsMsg Fps.subscriptions,
-          Draggable.subscriptions DragMsg model.drag
+        [ Sub.map KeysMsg Keys.subscriptions
+        , Browser.Events.onAnimationFrameDelta Tick
+        , Sub.map FpsMsg Fps.subscriptions
+        , Draggable.subscriptions DragMsg model.drag
         ]
 
 
@@ -239,7 +239,10 @@ view model =
             , shape = Circle { radius = 10 }
             }
     in
-    Element.layout [] <|
+    Element.layout
+        [ Background.color <| Misc.toElementColor model.config.backgroundColor
+        ]
+    <|
         row
             [ spaceEvenly
             , Element.width fill

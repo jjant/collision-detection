@@ -3,7 +3,11 @@ module Hierarchy exposing (list, view)
 import Array exposing (Array)
 import Body exposing (Body, Shape)
 import Element exposing (..)
-import Element.Input as Input
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input exposing (OptionState(..))
+import Html.Attributes
 import Misc exposing (setTranslation)
 import Unwrap
 import Vec2 exposing (Vec2, vec2)
@@ -29,18 +33,63 @@ setShape shapeKind body =
 
 list : (Int -> msg) -> Maybe Int -> Array Body -> Element msg
 list selectBody selectedBody bodies =
-    Input.radio []
-        { onChange = selectBody
-        , options =
-            bodies
-                |> Array.indexedMap
-                    (\idx _ ->
-                        Input.option idx (text <| "Body " ++ String.fromInt idx)
-                    )
-                |> Array.toList
-        , selected = selectedBody
-        , label = Input.labelAbove [] (text "Bodies")
-        }
+    el
+        [ width fill
+        , Background.color (rgb255 51 60 78)
+        , Border.color (rgb255 26 30 41)
+        , Border.width 2
+        , padding 5
+        ]
+        (Input.radio
+            [ Background.color (rgb255 38 44 59)
+            , Border.color (rgb255 26 30 41)
+            , Border.width 2
+            , width fill
+            , Font.color (rgb255 192 195 201)
+            , Font.size 18
+            , spacing 10
+            , paddingXY 5 10
+            ]
+            { onChange = selectBody
+            , options =
+                bodies
+                    |> Array.indexedMap (\idx _ -> bodyInput idx)
+                    |> Array.toList
+            , selected = selectedBody
+            , label = Input.labelAbove [] (text "Bodies")
+            }
+        )
+
+
+bodyInput : Int -> Input.Option Int msg
+bodyInput id =
+    let
+        styles opState =
+            case opState of
+                Idle ->
+                    []
+
+                Focused ->
+                    []
+
+                Selected ->
+                    [ Border.color (rgb255 230 230 230)
+                    , Border.width 1
+                    , Background.color (rgba255 200 200 200 0.15)
+                    ]
+    in
+    Input.optionWith id
+        (\optionState ->
+            el
+                ([ Element.htmlAttribute (Html.Attributes.style "user-select" "none")
+                 , width fill
+                 , Font.alignLeft
+                 , paddingXY 2 4
+                 ]
+                    ++ styles optionState
+                )
+                (text <| "Body " ++ String.fromInt id)
+        )
 
 
 view : (Body -> msg) -> Maybe Body -> Element msg

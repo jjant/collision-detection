@@ -16,7 +16,7 @@ import Json.Decode as Decode
 import Mat3 exposing (Mat3)
 import Misc exposing (mouseDecoder)
 import Svg exposing (Svg)
-import Svg.Attributes as Svg
+import Svg.Attributes
 import Svg.Events
 import Vec2 exposing (Vec2, vec2)
 
@@ -27,7 +27,12 @@ type Renderable msg
 
 render : (Vec2 -> msg) -> List (Svg.Attribute msg) -> List (Renderable msg) -> Mat3 -> Svg msg
 render onClick attrs children toScreen =
-    Svg.svg (Svg.Events.on "click" (Decode.map onClick mouseDecoder) :: attrs)
+    Svg.svg
+        ([ Svg.Events.on "click" (Decode.map onClick mouseDecoder)
+         , Svg.Attributes.style "background: white"
+         ]
+            ++ attrs
+        )
         (List.map (\(Renderable f) -> f toScreen) children)
 
 
@@ -56,9 +61,9 @@ vector_ attrs args toScreen =
             Vec2.rotate (pi / 4) dir
     in
     Svg.g
-        [ Svg.stroke "red"
-        , Svg.strokeWidth "2"
-        , Svg.strokeLinecap "round"
+        [ Svg.Attributes.stroke "red"
+        , Svg.Attributes.strokeWidth "2"
+        , Svg.Attributes.strokeLinecap "round"
         ]
         [ line attrs { from = start, to = end }
         , line attrs { from = end, to = Vec2.add endCap1 end }
@@ -71,10 +76,10 @@ line attrs { from, to } =
     -- Takes screen space positions
     Svg.line
         (attrs
-            ++ [ Svg.x1 (String.fromFloat from.x)
-               , Svg.y1 (String.fromFloat from.y)
-               , Svg.x2 (String.fromFloat to.x)
-               , Svg.y2 (String.fromFloat to.y)
+            ++ [ Svg.Attributes.x1 (String.fromFloat from.x)
+               , Svg.Attributes.y1 (String.fromFloat from.y)
+               , Svg.Attributes.x2 (String.fromFloat to.x)
+               , Svg.Attributes.y2 (String.fromFloat to.y)
                ]
         )
         []
@@ -117,7 +122,7 @@ rectangle attrs rect =
 gizmo : List (Svg.Attribute msg) -> Vec2 -> Renderable msg
 gizmo attrs pos =
     Renderable <|
-        rectangle_ ([ Svg.class "gizmo", Svg.fill "magenta" ] ++ attrs)
+        rectangle_ ([ Svg.Attributes.class "gizmo", Svg.Attributes.fill "magenta" ] ++ attrs)
             { transform = { translation = pos, rotation = 0 }
             , halfExtents = vec2 15 15
             }
@@ -146,7 +151,7 @@ rectangle_ attrs { transform, halfExtents } toScreen =
     in
     Svg.polygon
         (attrs
-            ++ [ Svg.points svgPoints
+            ++ [ Svg.Attributes.points svgPoints
                ]
         )
         []
@@ -170,9 +175,9 @@ circle_ attrs { position, radius } toScreen =
     in
     Svg.circle
         (attrs
-            ++ [ Svg.cx (String.fromFloat screenPosition.x)
-               , Svg.cy (String.fromFloat screenPosition.y)
-               , Svg.r (String.fromFloat screenRadius)
+            ++ [ Svg.Attributes.cx (String.fromFloat screenPosition.x)
+               , Svg.Attributes.cy (String.fromFloat screenPosition.y)
+               , Svg.Attributes.r (String.fromFloat screenRadius)
                ]
         )
         []

@@ -12,6 +12,7 @@ type alias Config =
     , y : Float
     , showSupportPoints : Bool
     , showPointProjections : Bool
+    , backgroundColor : Color
     }
 
 
@@ -21,6 +22,7 @@ empty defaults =
     , y = defaults.float
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
+    , backgroundColor = defaults.color
     }
 
 
@@ -48,6 +50,13 @@ logics =
         "Point projections"
         .showPointProjections
         (\a c -> { c | showPointProjections = a })
+    , ConfigForm.section
+        "Editor UI"
+    , ConfigForm.color
+        "backgroundColor"
+        "Background color"
+        .backgroundColor
+        (\a c -> { c | backgroundColor = a })
     ]
 
 
