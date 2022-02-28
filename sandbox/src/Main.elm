@@ -96,20 +96,7 @@ init elmConfigUiFlags =
       , keys = Keys.init
       , fps = Fps.init 20
       , bodies =
-            Array.fromList
-                [ { transform =
-                        { translation = vec2 config.x config.y
-                        , rotation = 0
-                        }
-                  , shape = Rectangle { halfExtents = vec2 100 50 }
-                  }
-                , { transform =
-                        { translation = vec2 150 150
-                        , rotation = 0
-                        }
-                  , shape = Circle { radius = 50 }
-                  }
-                ]
+            gridWorld
       , selectedBody = Just 0
       , drag = Draggable.init
       }
@@ -409,3 +396,33 @@ renderBodies =
 mapToList : (a -> b) -> Array a -> List b
 mapToList f arr =
     Array.foldr (\a acc -> f a :: acc) [] arr
+
+
+world : Config -> Array Body
+world config =
+    Array.fromList
+        [ { transform =
+                { translation = vec2 config.x config.y
+                , rotation = 0
+                }
+          , shape = Rectangle { halfExtents = vec2 100 50 }
+          }
+        , { transform =
+                { translation = vec2 150 150
+                , rotation = 0
+                }
+          , shape = Circle { radius = 50 }
+          }
+        ]
+
+
+gridWorld : Array Body
+gridWorld =
+    Array.initialize (5 * 5) <|
+        \i ->
+            { transform =
+                { translation = vec2 (toFloat (i // 5) * 75) (toFloat (modBy 5 i) * 75)
+                , rotation = 0
+                }
+            , shape = Rectangle { halfExtents = vec2 25 25 }
+            }

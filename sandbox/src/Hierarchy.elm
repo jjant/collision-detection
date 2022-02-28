@@ -45,6 +45,8 @@ list selectBody selectedBody bodies =
             , Border.color (rgb255 26 30 41)
             , Border.width 2
             , width fill
+            , height (Element.minimum 300 fill)
+            , scrollbarY
             , Font.color (rgb255 192 195 201)
             , Font.size 18
             , spacing 10
@@ -56,7 +58,13 @@ list selectBody selectedBody bodies =
                     |> Array.indexedMap (\idx _ -> bodyInput idx)
                     |> Array.toList
             , selected = selectedBody
-            , label = Input.labelAbove [] (text "Bodies")
+            , label =
+                Input.labelAbove
+                    [ Font.alignLeft
+                    , Font.color (rgb255 177 180 187)
+                    , paddingXY 0 5
+                    ]
+                    (text "Bodies")
             }
         )
 
