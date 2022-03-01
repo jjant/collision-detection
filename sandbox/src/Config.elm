@@ -12,6 +12,7 @@ type alias Config =
     , y : Float
     , showSupportPoints : Bool
     , showPointProjections : Bool
+    , showContactPoints : Bool
     , backgroundColor : Color
     }
 
@@ -22,6 +23,7 @@ empty defaults =
     , y = defaults.float
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
+    , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
     }
 
@@ -50,6 +52,11 @@ logics =
         "Point projections"
         .showPointProjections
         (\a c -> { c | showPointProjections = a })
+    , ConfigForm.bool
+        "showContactPoints"
+        "Contact points"
+        .showContactPoints
+        (\a c -> { c | showContactPoints = a })
     , ConfigForm.section
         "Editor UI"
     , ConfigForm.color

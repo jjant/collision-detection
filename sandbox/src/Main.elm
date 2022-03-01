@@ -16,6 +16,7 @@ import Hierarchy
 import Html as Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
+import Isometry
 import Json.Decode as Decode
 import Json.Encode
 import Keys exposing (Keys)
@@ -96,8 +97,8 @@ init elmConfigUiFlags =
       , keys = Keys.init
       , fps = Fps.init 20
       , bodies =
-            -- world config
-            gridWorld
+            -- gridWorld
+            world config
       , selectedBody = Just 0
       , drag = Draggable.init
       }
@@ -199,7 +200,6 @@ update msg model =
             let
                 worldSpaceDelta =
                     Mat3.transformVector (Camera.inverseMatrix model.camera) screenSpaceDelta
-                        |> Debug.log "delta"
 
                 newModel =
                     updateSelectedBody
@@ -284,6 +284,7 @@ view model =
                             :: renderBodies model.bodies
                             ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
+                            ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                             ++ (selectedBody model
                                     |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
                                     |> Maybe.withDefault []
@@ -374,17 +375,33 @@ pointProjection mousePosition body =
         { position = projection.point, radius = 5 }
 
 
+contactPoints : Array Body -> List (Render.Renderable msg)
+contactPoints bodies =
+    -- TODO: Handle more than 2 bodies
+    Maybe.map2 contactPoint
+        (Array.get 0 bodies)
+        (Array.get 1 bodies)
+        |> Maybe.withDefault []
 
--- ++ (contact
---                                 |> Maybe.map
---                                     (\{ world1, world2, normal, depth } ->
---                                         [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
---                                         , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
---                                         , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
---                                         ]
---                                     )
---                                 |> Maybe.withDefault []
---                            )
+
+contactPoint : Body -> Body -> List (Render.Renderable msg)
+contactPoint body1 body2 =
+    Body.contact body1 body2
+        |> Maybe.map
+            (\{ point1, point2, normal1, dist } ->
+                let
+                    world1 =
+                        Isometry.apply body1.transform point1
+
+                    world2 =
+                        Isometry.apply body2.transform point2
+                in
+                [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
+                , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
+                , Render.vector [] { base = world1, vector = Vec2.scale dist normal1 }
+                ]
+            )
+        |> Maybe.withDefault []
 
 
 renderBodies : Array Body -> List (Render.Renderable msg)
@@ -414,9 +431,11 @@ world config =
           }
         , { transform =
                 { translation = vec2 150 150
-                , rotation = 0
+                , rotation = 0.1
                 }
-          , shape = Circle { radius = 50 }
+          , shape = Rectangle { halfExtents = vec2 30 40 }
+
+          --   , shape = Circle { radius = 50 }
           }
         ]
 

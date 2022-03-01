@@ -11,6 +11,7 @@ myConfigFields =
     , ( "Translation Y", FloatKind "y" )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
+    , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
     ]

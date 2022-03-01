@@ -36,6 +36,11 @@ render onClick attrs children toScreen =
         (List.map (\(Renderable f) -> f toScreen) children)
 
 
+none : Renderable msg
+none =
+    Renderable (\_ -> Svg.g [] [])
+
+
 vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Renderable msg
 vector attrs args =
     Renderable (vector_ attrs args)

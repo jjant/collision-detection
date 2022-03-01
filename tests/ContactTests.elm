@@ -12,16 +12,20 @@ suite =
         [ describe "contactCircleCircle"
             [ test "overlapping circles" <|
                 \_ ->
-                    Contact.contactCircleCircle (vec2 0 0) { radius = 5 } (vec2 2 0) { radius = 3 }
+                    let
+                        relativeIso =
+                            { translation = vec2 2 0, rotation = 0 }
+                    in
+                    Contact.contactCircleCircle relativeIso { radius = 5 } { radius = 3 } 0
                         |> Maybe.map
-                            (\{ normal, depth } ->
+                            (\{ normal1, dist } ->
                                 Expect.all
                                     [ \_ ->
-                                        normal
+                                        normal1
                                             |> Expect.equal Vec2.right
                                     , \_ ->
-                                        depth
-                                            |> Expect.within (Absolute 0.00001) 6
+                                        dist
+                                            |> Expect.within (Absolute 0.00001) -6
                                     ]
                                     ()
                             )
