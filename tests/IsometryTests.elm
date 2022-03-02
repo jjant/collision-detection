@@ -3,8 +3,7 @@ module IsometryTests exposing (suite)
 import Expect exposing (Expectation, FloatingPointTolerance(..))
 import Fuzz exposing (Fuzzer)
 import Isometry exposing (Isometry)
-import Rectangle
-import Test exposing (Test, describe, fuzz, test)
+import Test exposing (Test, describe, fuzz)
 import Vec2 exposing (vec2)
 
 
@@ -27,6 +26,34 @@ composeTests =
             \iso ->
                 Isometry.compose Isometry.identity iso
                     |> Expect.equal iso
+        , test "two translations together" <|
+            \name ->
+                let
+                    iso1 =
+                        { translation = vec2 2 3, rotation = 0 }
+
+                    iso2 =
+                        { translation = vec2 -24 3, rotation = 0 }
+
+                    composed =
+                        { translation = vec2 -22 6, rotation = 0 }
+                in
+                Isometry.compose iso2 iso1
+                    |> compare name composed
+        , test "two rotations together" <|
+            \name ->
+                let
+                    iso1 =
+                        { translation = Vec2.zero, rotation = 23 }
+
+                    iso2 =
+                        { translation = Vec2.zero, rotation = 42 }
+
+                    composed =
+                        { translation = Vec2.zero, rotation = 65 }
+                in
+                Isometry.compose iso2 iso1
+                    |> compare name composed
         ]
 
 
@@ -55,9 +82,9 @@ fuzzer =
 compare : String -> Isometry -> Isometry -> Expectation
 compare testName a b =
     Expect.all
-        [ \_ -> comparePrecision 0.1 a.translation.x b.translation.x
-        , \_ -> comparePrecision 0.1 a.translation.y b.translation.y
-        , \_ -> comparePrecision 0.1 a.rotation b.rotation
+        [ \_ -> comparePrecision 0.00001 a.translation.x b.translation.x
+        , \_ -> comparePrecision 0.00001 a.translation.y b.translation.y
+        , \_ -> comparePrecision 0.00001 a.rotation b.rotation
         ]
         ()
         |> Expect.onFail ("Test failed `" ++ testName ++ "`:\n" ++ "\t" ++ Debug.toString a ++ "\n\t" ++ Debug.toString b)
@@ -70,3 +97,8 @@ comparePrecision precision a b =
 
     else
         Expect.within (Absolute precision) a b
+
+
+test : String -> (String -> Expectation) -> Test
+test name fn =
+    Test.test name (\_ -> fn name)

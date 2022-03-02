@@ -27,9 +27,19 @@ identity =
 
 compose : Isometry -> Isometry -> Isometry
 compose second first =
-    first
-        |> appendRotation second.rotation
-        |> appendTranslation second.translation
+    { translation =
+        Vec2.rotate second.rotation first.translation
+            |> Vec2.add second.translation
+    , rotation = first.rotation + second.rotation
+    }
+
+
+
+-- compose : Isometry -> Isometry -> Isometry
+-- compose second first =
+--     first
+--         |> appendRotation second.rotation
+--         |> appendTranslation second.translation
 
 
 appendRotation : Float -> Isometry -> Isometry
@@ -49,7 +59,9 @@ appendTranslation t { translation, rotation } =
 invert : Isometry -> Isometry
 invert { translation, rotation } =
     { rotation = -rotation
-    , translation = Vec2.negate translation
+    , translation =
+        Vec2.rotate -rotation translation
+            |> Vec2.negate
     }
 
 

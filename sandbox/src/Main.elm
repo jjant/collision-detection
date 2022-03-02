@@ -388,17 +388,20 @@ contactPoint : Body -> Body -> List (Render.Renderable msg)
 contactPoint body1 body2 =
     Body.contact body1 body2
         |> Maybe.map
-            (\{ point1, point2, normal1, dist } ->
+            (\{ point1, point2, normal1, normal2, dist } ->
                 let
                     world1 =
                         Isometry.apply body1.transform point1
 
                     world2 =
                         Isometry.apply body2.transform point2
+
+                    depth =
+                        -dist
                 in
                 [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
                 , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
-                , Render.vector [] { base = world1, vector = Vec2.scale dist normal1 }
+                , Render.vector [] { base = world1, vector = Vec2.scale depth normal1 }
                 ]
             )
         |> Maybe.withDefault []
@@ -427,15 +430,17 @@ world config =
                 { translation = vec2 config.x config.y
                 , rotation = 0
                 }
-          , shape = Rectangle { halfExtents = vec2 100 50 }
+
+          --   , shape = Rectangle { halfExtents = vec2 100 50 }
+          , shape = Circle { radius = 50 }
           }
         , { transform =
                 { translation = vec2 150 150
-                , rotation = 0.1
+                , rotation = 0.9
                 }
-          , shape = Rectangle { halfExtents = vec2 30 40 }
 
-          --   , shape = Circle { radius = 50 }
+          --   , shape = Rectangle { halfExtents = vec2 30 40 }
+          , shape = Circle { radius = 50 }
           }
         ]
 
