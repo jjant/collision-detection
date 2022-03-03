@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
-import Camera exposing (Camera)
+import Camera exposing (Camera, tick)
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
@@ -23,7 +23,7 @@ import Keys exposing (Keys)
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
-import Render
+import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
 import Vec2 exposing (Vec2, vec2)
@@ -281,7 +281,8 @@ view model =
                         , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
                         ]
                         (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                            :: renderBodies model.bodies
+                            :: [ axis ]
+                            ++ renderBodies model.bodies
                             ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                             ++ listIf model.config.showContactPoints (contactPoints model.bodies)
@@ -455,3 +456,38 @@ gridWorld =
                 }
             , shape = Rectangle { halfExtents = vec2 25 25 }
             }
+
+
+axis : Renderable msg
+axis =
+    -- TODO: Implement properly
+    Render.group
+        [ Svg.strokeWidth "2", Svg.stroke "gray" ]
+        [ Render.line []
+            { from = vec2 -1000 0, to = vec2 1000 0 }
+        , Render.line []
+            { from = vec2 0 -1000, to = vec2 0 1000 }
+        , Render.group []
+            (List.range -20 20
+                |> List.map
+                    (\index ->
+                        let
+                            i =
+                                toFloat index
+
+                            tickDistance =
+                                50
+                        in
+                        Render.group [ Svg.stroke "black" ]
+                            [ Render.line []
+                                { from = vec2 (i * tickDistance) -10
+                                , to = vec2 (i * tickDistance) 10
+                                }
+                            , Render.line []
+                                { from = vec2 -10 (i * tickDistance)
+                                , to = vec2 10 (i * tickDistance)
+                                }
+                            ]
+                    )
+            )
+        ]

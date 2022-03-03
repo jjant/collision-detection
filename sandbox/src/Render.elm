@@ -4,6 +4,8 @@ module Render exposing
     , body
     , circle
     , gizmo
+    , group
+    , line
     , rectangle
     , render
     , vector
@@ -70,14 +72,25 @@ vector_ attrs args toScreen =
         , Svg.Attributes.strokeWidth "2"
         , Svg.Attributes.strokeLinecap "round"
         ]
-        [ line attrs { from = start, to = end }
-        , line attrs { from = end, to = Vec2.add endCap1 end }
-        , line attrs { from = end, to = Vec2.add endCap2 end }
+        [ screenLine attrs { from = start, to = end }
+        , screenLine attrs { from = end, to = Vec2.add endCap1 end }
+        , screenLine attrs { from = end, to = Vec2.add endCap2 end }
         ]
 
 
-line : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Svg msg
+line : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Renderable msg
 line attrs { from, to } =
+    Renderable
+        (\toScreen ->
+            screenLine attrs
+                { from = Mat3.transformPoint toScreen from
+                , to = Mat3.transformPoint toScreen to
+                }
+        )
+
+
+screenLine : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Svg msg
+screenLine attrs { from, to } =
     -- Takes screen space positions
     Svg.line
         (attrs
@@ -186,3 +199,12 @@ circle_ attrs { position, radius } toScreen =
                ]
         )
         []
+
+
+group : List (Svg.Attribute msg) -> List (Renderable msg) -> Renderable msg
+group attrs renderables =
+    Renderable
+        (\toScreen ->
+            Svg.g attrs
+                (List.map (\(Renderable f) -> f toScreen) renderables)
+        )
