@@ -6,6 +6,7 @@ module Render exposing
     , gizmo
     , group
     , line
+    , polygon
     , rectangle
     , render
     , text
@@ -226,4 +227,22 @@ text attrs args =
                     ++ attrs
                 )
                 [ Svg.text args.text ]
+        )
+
+
+polygon : List (Svg.Attribute msg) -> List Vec2 -> Renderable msg
+polygon attrs points =
+    Renderable
+        (\toScreen ->
+            let
+                screenPoints =
+                    points
+                        |> List.map (Mat3.transformPoint toScreen)
+
+                svgPoints =
+                    screenPoints
+                        |> List.map (\{ x, y } -> String.fromFloat x ++ "," ++ String.fromFloat y)
+                        |> String.join " "
+            in
+            Svg.polygon (Svg.Attributes.points svgPoints :: attrs) []
         )

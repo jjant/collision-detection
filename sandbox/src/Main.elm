@@ -5,6 +5,7 @@ import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
 import Camera exposing (Camera, tick)
+import Circle
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
@@ -44,6 +45,7 @@ import Svg.Attributes as Svg
 import Unwrap
 import Vec2 exposing (Vec2, vec2)
 import Vec3 exposing (vec3)
+import VoronoiSimplex exposing (Simplex(..))
 
 
 type alias Flags =
@@ -260,6 +262,15 @@ view model =
                     _ ->
                         Nothing
 
+        getCircle b =
+            Unwrap.maybe <|
+                case b.shape of
+                    Circle circ ->
+                        Just circ
+
+                    _ ->
+                        Nothing
+
         relIso =
             Debug.log "iso" <|
                 Isometry.compose
@@ -269,7 +280,7 @@ view model =
         res =
             Body.gjkIntersection relIso
                 (Rectangle.localSupportPoint <| getRect b1)
-                (Rectangle.localSupportPoint <| getRect b2)
+                (Circle.localSupportPoint <| getCircle b2)
 
         mouseBody : Body
         mouseBody =
@@ -277,7 +288,7 @@ view model =
                 { translation = mousePosition
                 , rotation = 0
                 }
-            , shape = Circle { radius = 10 }
+            , shape = Circle { radius = 3 }
             }
     in
     Element.layout
@@ -317,14 +328,12 @@ view model =
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]
-                        , Html.text <|
-                            Debug.toString <|
-                                Maybe.map (\{ average } -> round average) <|
-                                    Fps.fps
-                                        model.fps
+                        , Fps.fps model.fps
+                            |> Maybe.map (\{ average } -> round average)
+                            |> Maybe.map (\avg -> String.fromInt avg)
+                            |> Maybe.withDefault "Loading"
+                            |> Html.text
                         ]
-                , el [ Font.color (rgb 1 1 1) ]
-                    (Element.text <| Debug.toString res)
                 ]
             , el []
                 (Element.html <|
@@ -339,15 +348,28 @@ view model =
                             :: axis
                             :: renderBodies
                                 [ Svg.stroke
-                                    (if res then
-                                        "magenta"
+                                    (case res of
+                                        Ok _ ->
+                                            "magenta"
 
-                                     else
-                                        "black"
+                                        Err _ ->
+                                            "black"
                                     )
                                 ]
                                 model.bodies
                             :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                            ++ (case res of
+                                    Ok (Three { a, b, c }) ->
+                                        [ Render.polygon
+                                            [ Svg.stroke "black"
+                                            , Svg.fill "none"
+                                            ]
+                                            [ a, b, c ]
+                                        ]
+
+                                    _ ->
+                                        []
+                               )
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                             ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                             ++ (selectedBody model
@@ -504,9 +526,9 @@ world config =
                 { translation = vec2 0 75
                 , rotation = 0
                 }
-          , shape = Rectangle { halfExtents = vec2 40 30 }
 
-          --   , shape = Circle { radius = 50 }
+          --   , shape = Rectangle { halfExtents = vec2 40 30 }
+          , shape = Circle { radius = 50 }
           }
         , { transform =
                 { translation = vec2 150 150
@@ -551,30 +573,34 @@ axis =
                             tickDistance =
                                 50
                         in
-                        Render.group [ Svg.stroke "black" ]
-                            [ Render.line []
-                                { from = vec2 (i * tickDistance) -10
-                                , to = vec2 (i * tickDistance) 10
-                                }
-                            , Render.line []
-                                { from = vec2 -10 (i * tickDistance)
-                                , to = vec2 10 (i * tickDistance)
-                                }
-                            , Render.text
-                                [ Svg.strokeWidth "1"
-                                , Svg.fontSize "15"
+                        if i == 0 then
+                            Render.group [] []
+
+                        else
+                            Render.group [ Svg.stroke "black" ]
+                                [ Render.line []
+                                    { from = vec2 (i * tickDistance) -10
+                                    , to = vec2 (i * tickDistance) 10
+                                    }
+                                , Render.line []
+                                    { from = vec2 -10 (i * tickDistance)
+                                    , to = vec2 10 (i * tickDistance)
+                                    }
+                                , Render.text
+                                    [ Svg.strokeWidth "1"
+                                    , Svg.fontSize "15"
+                                    ]
+                                    { position = vec2 (i * tickDistance + 2) -20
+                                    , text = String.fromFloat <| i * tickDistance
+                                    }
+                                , Render.text
+                                    [ Svg.strokeWidth "1"
+                                    , Svg.fontSize "15"
+                                    ]
+                                    { position = vec2 -35 (i * tickDistance + 5)
+                                    , text = String.fromFloat <| i * tickDistance
+                                    }
                                 ]
-                                { position = vec2 (i * tickDistance + 2) -20
-                                , text = String.fromFloat <| i * tickDistance
-                                }
-                            , Render.text
-                                [ Svg.strokeWidth "1"
-                                , Svg.fontSize "15"
-                                ]
-                                { position = vec2 -35 (i * tickDistance + 5)
-                                , text = String.fromFloat <| i * tickDistance
-                                }
-                            ]
                     )
             )
         ]

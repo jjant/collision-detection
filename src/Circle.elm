@@ -31,8 +31,8 @@ projectLocalPoint localPoint { radius } =
     }
 
 
-localSupportPoint : Vec2 -> Circle -> Vec2
-localSupportPoint dir { radius } =
+localSupportPoint : Circle -> Vec2 -> Vec2
+localSupportPoint { radius } dir =
     dir
         |> Vec2.normalize
         |> Vec2.scale radius

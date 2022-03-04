@@ -34,7 +34,7 @@ localSupportPoint : Vec2 -> Shape -> Vec2
 localSupportPoint direction shape =
     case shape of
         Circle circle ->
-            Circle.localSupportPoint direction circle
+            Circle.localSupportPoint circle direction
 
         Rectangle rectangle ->
             Rectangle.localSupportPoint rectangle direction
@@ -157,7 +157,7 @@ type alias LocalSupportMap =
     Vec2 -> Vec2
 
 
-gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> Bool
+gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> Result String Simplex
 gjkIntersection pos12 g1 g2 =
     let
         initialAxis =
@@ -170,14 +170,14 @@ gjkIntersection pos12 g1 g2 =
     gjkIntersectionHelp pos12 g1 g2 (One { a = a }) (Vec2.negate a)
 
 
-gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> Bool
+gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> Result String Simplex
 gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
     let
         a =
             support pos12 g1 g2 dir
     in
     if Vec2.dot a dir < 0 then
-        False
+        Err "not found"
 
     else
         let
@@ -188,8 +188,8 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
                 doSimplex s
         in
         case res of
-            Ok _ ->
-                True
+            Ok endSimplex ->
+                Ok endSimplex
 
             Err ( newSimplex, newDir ) ->
                 gjkIntersectionHelp pos12 g1 g2 (Simplex newSimplex) newDir
@@ -197,10 +197,28 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
 
 support : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Vec2 -> Vec2
 support pos12 g1 g2 dir =
-    Vec2.sub (g1 dir) (Isometry.apply pos12 (g2 (Vec2.negate dir)))
+    let
+        _ =
+            Debug.log "dir" dir
+
+        support1 =
+            Debug.log "support1" (g1 dir)
+
+        support2 =
+            Debug.log "support2" (Isometry.apply pos12 (g2 (Vec2.negate dir)))
+
+        -- support2: { x = 40, y = 45 }
+        -- support1: { x = 100, y = 50 }
+        -- dir: { x = 0, y = 1 }
+    in
+    Vec2.sub support1 support2
 
 
-doSimplex : Simplex -> Result ( Simplex, Vec2 ) ()
+
+-- |> (\_ -> Debug.todo "crash")
+
+
+doSimplex : Simplex -> Result ( Simplex, Vec2 ) Simplex
 doSimplex simplex =
     case simplex of
         Two { a, b } ->
@@ -225,7 +243,7 @@ lineCase a b =
     ( Two { a = a, b = b }, perp )
 
 
-triangleCase : Vec2 -> Vec2 -> Vec2 -> Result ( Simplex, Vec2 ) ()
+triangleCase : Vec2 -> Vec2 -> Vec2 -> Result ( Simplex, Vec2 ) Simplex
 triangleCase a b c =
     let
         ab =
@@ -253,7 +271,7 @@ triangleCase a b c =
 
     else
         -- Ok = Done
-        Ok ()
+        Ok (Three { a = a, b = b, c = c })
 
 
 tripleProduct : Vec2 -> Vec2 -> Vec2 -> Vec2
