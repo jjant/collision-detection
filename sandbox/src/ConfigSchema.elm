@@ -6,10 +6,7 @@ import Html exposing (Html)
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "Translate", SectionKind )
-    , ( "Translation X", FloatKind "x" )
-    , ( "Translation Y", FloatKind "y" )
-    , ( "Rotation 1", FloatKind "rotation1" )
+    [ ( "Visualise", SectionKind )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
     , ( "Contact points", BoolKind "showContactPoints" )

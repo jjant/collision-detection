@@ -55,6 +55,9 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import Dict exposing (Dict)
+import Element exposing (Element, column)
+import Element.Background as Background
+import Element.Font as Font
 import Html exposing (Html)
 import Html.Attributes exposing (style)
 import Html.Events
@@ -836,46 +839,49 @@ colorValDecoder =
 
 {-| View the config form.
 -}
-view : ViewOptions -> List (Logic config) -> ConfigForm -> Html (Msg config)
+view : ViewOptions -> List (Logic config) -> ConfigForm -> Element (Msg config)
 view options logics ((ConfigForm configForm) as configFormType) =
-    Html.div [ style "font-size" (pxInt options.fontSize) ]
-        [ Html.table
-            [ style "border-spacing" ("0 " ++ pxInt options.rowSpacing)
-            ]
-            (logics
-                |> List.indexedMap
-                    (\i logic ->
-                        Html.tr
-                            (case configForm.activeField of
-                                Just ( state, fieldName ) ->
-                                    if fieldName == logic.fieldName then
-                                        [ style
-                                            "background"
-                                            (Color.toCssString options.labelHighlightBgColor)
-                                        ]
+    column [ Font.size options.fontSize ]
+        [ Element.html <|
+            Html.table
+                [ style "border-spacing" ("0 " ++ pxInt options.rowSpacing)
+                ]
+                (logics
+                    |> List.indexedMap
+                        (\i logic ->
+                            Html.tr
+                                (case configForm.activeField of
+                                    Just ( state, fieldName ) ->
+                                        if fieldName == logic.fieldName then
+                                            [ style
+                                                "background"
+                                                (Color.toCssString options.labelHighlightBgColor)
+                                            ]
 
-                                    else
+                                        else
+                                            []
+
+                                    Nothing ->
                                         []
-
-                                Nothing ->
-                                    []
-                            )
-                            [ viewLabel options configFormType i logic
-                            , viewChanger options configFormType i logic
-                            ]
-                    )
-            )
-        , Html.div [ Html.Attributes.id "elm-config-ui-pointerlock" ] []
-        , Html.node "elm-config-ui-json"
-            [ Html.Attributes.attribute
-                "data-encoded-config"
-                (configForm
-                    |> ConfigForm
-                    |> encode
-                    |> JE.encode 2
+                                )
+                                [ viewLabel options configFormType i logic
+                                , viewChanger options configFormType i logic
+                                ]
+                        )
                 )
-            ]
-            []
+        , Element.html <|
+            Html.div [ Html.Attributes.id "elm-config-ui-pointerlock" ] []
+        , Element.html <|
+            Html.node "elm-config-ui-json"
+                [ Html.Attributes.attribute
+                    "data-encoded-config"
+                    (configForm
+                        |> ConfigForm
+                        |> encode
+                        |> JE.encode 2
+                    )
+                ]
+                []
         ]
 
 

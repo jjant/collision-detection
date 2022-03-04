@@ -17,15 +17,18 @@ import Element
         , el
         , fill
         , height
+        , padding
         , paddingXY
         , px
         , rgb
         , rgb255
         , row
         , spacing
+        , spacingXY
         , width
         )
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Fps
 import Hierarchy
@@ -117,7 +120,7 @@ init elmConfigUiFlags =
       , fps = Fps.init 20
       , bodies =
             -- gridWorld
-            world config
+            world
       , selectedBody = Just 0
       , drag = Draggable.init
       }
@@ -297,39 +300,49 @@ view model =
             , spacing 10
             ]
             [ column
-                [ height fill ]
+                [ height fill
+                , spacingXY 0 10
+                ]
                 [ Hierarchy.list SelectBody model.selectedBody model.bodies
-                , Element.html <|
-                    div
-                        -- some nice styles to render it on the right side of the viewport
-                        [ Html.Attributes.style "padding" "12px"
-                        , Html.Attributes.style "background" "#eec"
-                        , Html.Attributes.style "border" "1px solid #444"
-                        , Html.Attributes.style "height" "calc(100% - 80px)"
-                        , style "margin-left" "32px"
-                        , style "display" "flex"
-                        , style "flex-direction" "column"
-                        ]
-                        [ ConfigForm.view
-                            ConfigForm.viewOptions
-                            Config.logics
-                            model.configForm
-                            |> Html.map ConfigFormMsg
+                , column
+                    -- some nice styles to render it on the right side of the viewport
+                    [ --     Html.Attributes.style "padding" "12px"
+                      Background.color (rgb255 51 60 78)
+                    , width fill
+                    , Border.color (rgb255 26 30 41)
+                    , Border.width 2
+                    , padding 5
+                    , Font.color (rgb255 192 195 201)
 
-                        -- As a developer, you'll want to save your tweaks to your config.json.
-                        -- You can copy/paste the content from this textarea to your config.json.
-                        -- Then the next time a new user loads your app, they'll see your updated config.
-                        , Html.textarea []
+                    -- , Html.Attributes.style "border" "1px solid #444"
+                    -- , Html.Attributes.style "height" "calc(100% - 80px)"
+                    -- , style "margin-left" "32px"
+                    -- , style "display" "flex"
+                    -- , style "flex-direction" "column"
+                    ]
+                    [ ConfigForm.view
+                        ConfigForm.viewOptions
+                        Config.logics
+                        model.configForm
+                        |> Element.map ConfigFormMsg
+
+                    -- As a developer, you'll want to save your tweaks to your config.json.
+                    -- You can copy/paste the content from this textarea to your config.json.
+                    -- Then the next time a new user loads your app, they'll see your updated config.
+                    , Element.html <|
+                        Html.textarea []
                             [ ConfigForm.encode model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]
-                        , Fps.fps model.fps
+                    , el []
+                        (Fps.fps model.fps
                             |> Maybe.map (\{ average } -> round average)
                             |> Maybe.map (\avg -> String.fromInt avg)
                             |> Maybe.withDefault "Loading"
-                            |> Html.text
-                        ]
+                            |> Element.text
+                        )
+                    ]
                 ]
             , el [ alignTop ]
                 (Element.html <|
@@ -507,11 +520,11 @@ mapToList f arr =
     Array.foldr (\a acc -> f a :: acc) [] arr
 
 
-world : Config -> Array Body
-world config =
+world : Array Body
+world =
     Array.fromList
         [ { transform =
-                { translation = vec2 config.x config.y
+                { translation = vec2 0 0
                 , rotation = 0
                 }
           , shape = Rectangle { halfExtents = vec2 100 50 }
