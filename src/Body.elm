@@ -1,4 +1,4 @@
-module Body exposing (Body, Shape(..), contact, gjkIntersection, projectPoint, supportPoint)
+module Body exposing (Body, Shape(..), contact, gjkIntersection, localSupportPoint, projectPoint, supportPoint)
 
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
@@ -30,14 +30,14 @@ projectLocalPoint point shape =
             Rectangle.projectLocalPoint point rectangle
 
 
-localSupportPoint : Vec2 -> Shape -> Vec2
-localSupportPoint direction shape =
+localSupportPoint : Shape -> LocalSupportMap
+localSupportPoint shape =
     case shape of
         Circle circle ->
-            Circle.localSupportPoint circle direction
+            Circle.localSupportPoint circle
 
         Rectangle rectangle ->
-            Rectangle.localSupportPoint rectangle direction
+            Rectangle.localSupportPoint rectangle
 
 
 projectPoint : Vec2 -> Body -> PointProjection
@@ -62,7 +62,7 @@ supportPoint dir { transform, shape } =
     dir
         |> Vec2.normalize
         |> Isometry.vectorApplyInverse transform
-        |> (\d -> localSupportPoint d shape)
+        |> localSupportPoint shape
         |> Isometry.apply transform
 
 
@@ -205,7 +205,10 @@ support pos12 g1 g2 dir =
             Debug.log "support1" (g1 dir)
 
         support2 =
-            Debug.log "support2" (Isometry.apply pos12 (g2 (Vec2.negate dir)))
+            Debug.log "support2"
+                (Isometry.apply pos12
+                    (g2 (Vec2.negate (Isometry.vectorApplyInverse pos12 dir)))
+                )
 
         -- support2: { x = 40, y = 45 }
         -- support1: { x = 100, y = 50 }

@@ -279,8 +279,8 @@ view model =
 
         res =
             Body.gjkIntersection relIso
-                (Rectangle.localSupportPoint <| getRect b1)
-                (Circle.localSupportPoint <| getCircle b2)
+                (Body.localSupportPoint b1.shape)
+                (Body.localSupportPoint b2.shape)
 
         mouseBody : Body
         mouseBody =
@@ -526,9 +526,9 @@ world config =
                 { translation = vec2 0 75
                 , rotation = 0
                 }
+          , shape = Rectangle { halfExtents = vec2 40 30 }
 
-          --   , shape = Rectangle { halfExtents = vec2 40 30 }
-          , shape = Circle { radius = 50 }
+          --   , shape = Circle { radius = 50 }
           }
         , { transform =
                 { translation = vec2 150 150
