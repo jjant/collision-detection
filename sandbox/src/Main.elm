@@ -12,7 +12,8 @@ import ConfigForm exposing (ConfigForm)
 import Draggable
 import Element
     exposing
-        ( column
+        ( alignTop
+        , column
         , el
         , fill
         , height
@@ -198,11 +199,6 @@ update msg model =
         Tick dt ->
             ( { model
                 | camera = Camera.tick dt model.keys model.camera
-                , bodies =
-                    Array.get 1 model.bodies
-                        |> Maybe.map (Misc.updateTransform (\t -> { t | rotation = model.config.rotation1 }))
-                        |> Maybe.map (\b -> Array.set 1 b model.bodies)
-                        |> Maybe.withDefault model.bodies
               }
             , Cmd.none
             )
@@ -335,7 +331,7 @@ view model =
                             |> Html.text
                         ]
                 ]
-            , el []
+            , el [ alignTop ]
                 (Element.html <|
                     Render.render
                         MouseClick

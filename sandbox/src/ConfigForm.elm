@@ -63,6 +63,7 @@ import Json.Decode as JD
 import Json.Encode as JE
 import OrderedDict exposing (OrderedDict)
 import Round
+import UI exposing (slider)
 
 
 {-| ConfigForm is the state of the config form. Keep it in your model along with the `config` record.
@@ -878,20 +879,6 @@ view options logics ((ConfigForm configForm) as configFormType) =
         ]
 
 
-slider : List (Html (Msg config)) -> Html (Msg config)
-slider children =
-    Html.node "elm-config-ui-slider"
-        [ Html.Events.on "pl"
-            (JD.at [ "detail", "x" ] JD.int
-                |> JD.map MouseMove
-            )
-        , Html.Attributes.style "user-select" "none"
-        , style "width" "100%"
-        , style "display" "block"
-        ]
-        children
-
-
 viewLabel : ViewOptions -> ConfigForm -> Int -> Logic config -> Html (Msg config)
 viewLabel options configForm i logic =
     case logic.kind of
@@ -903,14 +890,14 @@ viewLabel options configForm i logic =
         IntLogic getter setter ->
             Html.td
                 (resizeAttrs options configForm logic)
-                [ slider [ Html.text logic.label ]
+                [ slider MouseMove [ Html.text logic.label ]
                 , powerEl options configForm logic
                 ]
 
         FloatLogic getter setter ->
             Html.td
                 (resizeAttrs options configForm logic)
-                [ slider [ Html.text logic.label ]
+                [ slider MouseMove [ Html.text logic.label ]
                 , powerEl options configForm logic
                 ]
 
