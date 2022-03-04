@@ -8,6 +8,7 @@ module Render exposing
     , line
     , rectangle
     , render
+    , text
     , vector
     )
 
@@ -207,4 +208,22 @@ group attrs renderables =
         (\toScreen ->
             Svg.g attrs
                 (List.map (\(Renderable f) -> f toScreen) renderables)
+        )
+
+
+text : List (Svg.Attribute msg) -> { position : Vec2, text : String } -> Renderable msg
+text attrs args =
+    Renderable
+        (\toScreen ->
+            let
+                screenPosition =
+                    Mat3.transformPoint toScreen args.position
+            in
+            Svg.text_
+                ([ Svg.Attributes.x (String.fromFloat screenPosition.x)
+                 , Svg.Attributes.y (String.fromFloat screenPosition.y)
+                 ]
+                    ++ attrs
+                )
+                [ Svg.text args.text ]
         )

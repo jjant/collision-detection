@@ -9,8 +9,22 @@ import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
 import Draggable
-import Element exposing (column, el, fill, height, paddingXY, px, rgb255, row, spacing, width)
+import Element
+    exposing
+        ( column
+        , el
+        , fill
+        , height
+        , paddingXY
+        , px
+        , rgb
+        , rgb255
+        , row
+        , spacing
+        , width
+        )
 import Element.Background as Background
+import Element.Font as Font
 import Fps
 import Hierarchy
 import Html as Html exposing (Html, div)
@@ -23,9 +37,11 @@ import Keys exposing (Keys)
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
+import Rectangle
 import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
+import Unwrap
 import Vec2 exposing (Vec2, vec2)
 import Vec3 exposing (vec3)
 
@@ -178,7 +194,16 @@ update msg model =
             ( { model | keys = Keys.update keysMsg model.keys }, Cmd.none )
 
         Tick dt ->
-            ( { model | camera = Camera.tick dt model.keys model.camera }, Cmd.none )
+            ( { model
+                | camera = Camera.tick dt model.keys model.camera
+                , bodies =
+                    Array.get 1 model.bodies
+                        |> Maybe.map (Misc.updateTransform (\t -> { t | rotation = model.config.rotation1 }))
+                        |> Maybe.map (\b -> Array.set 1 b model.bodies)
+                        |> Maybe.withDefault model.bodies
+              }
+            , Cmd.none
+            )
 
         FpsMsg fpsMsg ->
             ( { model | fps = Fps.update fpsMsg model.fps }, Cmd.none )
@@ -217,6 +242,34 @@ view model =
     let
         mousePosition =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
+
+        b1 =
+            Array.get 0 model.bodies
+                |> Unwrap.maybe
+
+        b2 =
+            Array.get 1 model.bodies
+                |> Unwrap.maybe
+
+        getRect b =
+            Unwrap.maybe <|
+                case b.shape of
+                    Rectangle rect ->
+                        Just rect
+
+                    _ ->
+                        Nothing
+
+        relIso =
+            Debug.log "iso" <|
+                Isometry.compose
+                    (Isometry.invert b1.transform)
+                    b2.transform
+
+        res =
+            Body.gjkIntersection relIso
+                (Rectangle.localSupportPoint <| getRect b1)
+                (Rectangle.localSupportPoint <| getRect b2)
 
         mouseBody : Body
         mouseBody =
@@ -270,6 +323,8 @@ view model =
                                     Fps.fps
                                         model.fps
                         ]
+                , el [ Font.color (rgb 1 1 1) ]
+                    (Element.text <| Debug.toString res)
                 ]
             , el []
                 (Element.html <|
@@ -281,9 +336,18 @@ view model =
                         , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
                         ]
                         (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                            :: [ axis ]
-                            ++ renderBodies model.bodies
-                            ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                            :: axis
+                            :: renderBodies
+                                [ Svg.stroke
+                                    (if res then
+                                        "magenta"
+
+                                     else
+                                        "black"
+                                    )
+                                ]
+                                model.bodies
+                            :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                             ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                             ++ (selectedBody model
@@ -408,15 +472,16 @@ contactPoint body1 body2 =
         |> Maybe.withDefault []
 
 
-renderBodies : Array Body -> List (Render.Renderable msg)
-renderBodies =
-    mapToList
-        (Render.body
-            [ Svg.fill "none"
-            , Svg.strokeWidth "5"
-            , Svg.stroke "red"
-            ]
+renderBodies : List (Svg.Attribute msg) -> Array Body -> Render.Renderable msg
+renderBodies attrs bodies =
+    Render.group
+        ([ Svg.fill "none"
+         , Svg.strokeWidth "5"
+         , Svg.stroke "red"
+         ]
+            ++ attrs
         )
+        (mapToList (Render.body []) bodies)
 
 
 mapToList : (a -> b) -> Array a -> List b
@@ -431,17 +496,25 @@ world config =
                 { translation = vec2 config.x config.y
                 , rotation = 0
                 }
+          , shape = Rectangle { halfExtents = vec2 100 50 }
 
-          --   , shape = Rectangle { halfExtents = vec2 100 50 }
-          , shape = Circle { radius = 50 }
+          --   , shape = Circle { radius = 50 }
+          }
+        , { transform =
+                { translation = vec2 0 75
+                , rotation = 0
+                }
+          , shape = Rectangle { halfExtents = vec2 40 30 }
+
+          --   , shape = Circle { radius = 50 }
           }
         , { transform =
                 { translation = vec2 150 150
-                , rotation = 0.9
+                , rotation = 0.0
                 }
+          , shape = Rectangle { halfExtents = vec2 30 40 }
 
-          --   , shape = Rectangle { halfExtents = vec2 30 40 }
-          , shape = Circle { radius = 50 }
+          --   , shape = Circle { radius = 50 }
           }
         ]
 
@@ -486,6 +559,20 @@ axis =
                             , Render.line []
                                 { from = vec2 -10 (i * tickDistance)
                                 , to = vec2 10 (i * tickDistance)
+                                }
+                            , Render.text
+                                [ Svg.strokeWidth "1"
+                                , Svg.fontSize "15"
+                                ]
+                                { position = vec2 (i * tickDistance + 2) -20
+                                , text = String.fromFloat <| i * tickDistance
+                                }
+                            , Render.text
+                                [ Svg.strokeWidth "1"
+                                , Svg.fontSize "15"
+                                ]
+                                { position = vec2 -35 (i * tickDistance + 5)
+                                , text = String.fromFloat <| i * tickDistance
                                 }
                             ]
                     )

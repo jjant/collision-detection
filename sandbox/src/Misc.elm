@@ -1,8 +1,9 @@
-module Misc exposing (listIf, mouseDecoder, setTranslation, toElementColor, updateTranslation)
+module Misc exposing (listIf, mouseDecoder, setTranslation, toElementColor, updateTransform, updateTranslation)
 
 import Body exposing (Body)
 import Color
 import Element
+import Isometry exposing (Isometry)
 import Json.Decode as Decode exposing (Decoder)
 import Vec2 exposing (Vec2, vec2)
 
@@ -23,13 +24,14 @@ mouseDecoder =
         (Decode.at [ "offsetY" ] Decode.float)
 
 
+updateTransform : (Isometry -> Isometry) -> Body -> Body
+updateTransform fn body =
+    { body | transform = fn body.transform }
+
+
 updateTranslation : (Vec2 -> Vec2) -> Body -> Body
 updateTranslation fn body =
-    let
-        transform =
-            body.transform
-    in
-    { body | transform = { transform | translation = fn transform.translation } }
+    updateTransform (\transform -> { transform | translation = fn transform.translation }) body
 
 
 setTranslation : Vec2 -> Body -> Body

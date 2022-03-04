@@ -10,6 +10,7 @@ import ConfigForm as ConfigForm
 type alias Config =
     { x : Float
     , y : Float
+    , rotation1 : Float
     , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
@@ -21,6 +22,7 @@ empty : ConfigForm.Defaults -> Config
 empty defaults =
     { x = defaults.float
     , y = defaults.float
+    , rotation1 = defaults.float
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
@@ -42,6 +44,11 @@ logics =
         "Translation Y"
         .y
         (\a c -> { c | y = a })
+    , ConfigForm.float
+        "rotation1"
+        "Rotation 1"
+        .rotation1
+        (\a c -> { c | rotation1 = a })
     , ConfigForm.bool
         "showSupportPoints"
         "Support points"

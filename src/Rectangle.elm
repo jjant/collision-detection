@@ -19,6 +19,6 @@ projectLocalPoint localPoint { halfExtents } =
         |> AABB.projectLocalPoint localPoint
 
 
-localSupportPoint : Vec2 -> Rectangle -> Vec2
-localSupportPoint dir { halfExtents } =
+localSupportPoint : Rectangle -> Vec2 -> Vec2
+localSupportPoint { halfExtents } dir =
     Util.copySign2 { from = dir, to = halfExtents }

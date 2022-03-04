@@ -1,11 +1,12 @@
-module Body exposing (Body, Shape(..), contact, projectPoint, supportPoint)
+module Body exposing (Body, Shape(..), contact, gjkIntersection, projectPoint, supportPoint)
 
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
 import Isometry exposing (Isometry)
 import Rectangle exposing (Rectangle)
-import Vec2 exposing (Vec2, point)
-import VoronoiSimplex exposing (VoronoiSimplex)
+import Vec2 exposing (Vec2, point, vec2)
+import Vec3 exposing (Vec3)
+import VoronoiSimplex exposing (IncompleteSimplex(..), Simplex(..), VoronoiSimplex, append)
 
 
 type alias Body =
@@ -36,7 +37,7 @@ localSupportPoint direction shape =
             Circle.localSupportPoint direction circle
 
         Rectangle rectangle ->
-            Rectangle.localSupportPoint direction rectangle
+            Rectangle.localSupportPoint rectangle direction
 
 
 projectPoint : Vec2 -> Body -> PointProjection
@@ -138,10 +139,136 @@ contactSupportMapSupportMap pos12 g1 g2 prediction =
 
 
 contactSupportMapSupportMapWithParams : Isometry -> SupportMap -> SupportMap -> Float -> VoronoiSimplex -> Maybe Vec2 -> GJKResult
-contactSupportMapSupportMapWithParams =
-    Debug.todo ""
+contactSupportMapSupportMapWithParams pos12 g1 g2 prediction simplex initDirection =
+    let
+        dir =
+            initDirection
+                |> Maybe.withDefault (Vec2.normalize pos12.translation)
+    in
+    Debug.todo "todo"
 
 
 closestPoints : Isometry -> SupportMap -> Isometry -> SupportMap -> Float -> Bool -> VoronoiSimplex -> GJKResult
 closestPoints m1 g1 m2 g2 maxDistance exactDistance simplex =
     Debug.todo ""
+
+
+type alias LocalSupportMap =
+    Vec2 -> Vec2
+
+
+gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> Bool
+gjkIntersection pos12 g1 g2 =
+    let
+        initialAxis =
+            pos12.translation
+                |> Vec2.normalize
+
+        a =
+            support pos12 g1 g2 initialAxis
+    in
+    gjkIntersectionHelp pos12 g1 g2 (One { a = a }) (Vec2.negate a)
+
+
+gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> Bool
+gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
+    let
+        a =
+            support pos12 g1 g2 dir
+    in
+    if Vec2.dot a dir < 0 then
+        False
+
+    else
+        let
+            s =
+                append a incompleteSimplex
+
+            res =
+                doSimplex s
+        in
+        case res of
+            Ok _ ->
+                True
+
+            Err ( newSimplex, newDir ) ->
+                gjkIntersectionHelp pos12 g1 g2 (Simplex newSimplex) newDir
+
+
+support : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Vec2 -> Vec2
+support pos12 g1 g2 dir =
+    Vec2.sub (g1 dir) (Isometry.apply pos12 (g2 (Vec2.negate dir)))
+
+
+doSimplex : Simplex -> Result ( Simplex, Vec2 ) ()
+doSimplex simplex =
+    case simplex of
+        Two { a, b } ->
+            Err (lineCase a b)
+
+        Three { a, b, c } ->
+            triangleCase a b c
+
+
+lineCase : Vec2 -> Vec2 -> ( Simplex, Vec2 )
+lineCase a b =
+    let
+        ab =
+            Vec2.sub b a
+
+        ao =
+            Vec2.negate a
+
+        perp =
+            tripleProduct ab ao ab
+    in
+    ( Two { a = a, b = b }, perp )
+
+
+triangleCase : Vec2 -> Vec2 -> Vec2 -> Result ( Simplex, Vec2 ) ()
+triangleCase a b c =
+    let
+        ab =
+            Vec2.sub b a
+
+        ac =
+            Vec2.sub c a
+
+        ao =
+            Vec2.negate a
+
+        abPerp =
+            tripleProduct ac ab ab
+
+        acPerp =
+            tripleProduct ab ac ac
+    in
+    if Vec2.dot abPerp ao > 0 then
+        -- Err = Keep looking
+        Err ( Two { a = a, b = b }, abPerp )
+
+    else if Vec2.dot acPerp ao > 0 then
+        -- Err = Keep looking
+        Err ( Two { a = a, b = c }, acPerp )
+
+    else
+        -- Ok = Done
+        Ok ()
+
+
+tripleProduct : Vec2 -> Vec2 -> Vec2 -> Vec2
+tripleProduct a b c =
+    let
+        a3 =
+            Vec3.vec3 a.x a.y 0
+
+        b3 =
+            Vec3.vec3 b.x b.y 0
+
+        c3 =
+            Vec3.vec3 c.x c.y 0
+
+        prod =
+            Vec3.cross (Vec3.cross a3 b3) c3
+    in
+    vec2 prod.x prod.y
