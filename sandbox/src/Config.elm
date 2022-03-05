@@ -8,20 +8,18 @@ import ConfigForm as ConfigForm
 
 
 type alias Config =
-    { x : Float
-    , y : Float
-    , showSupportPoints : Bool
+    { showSupportPoints : Bool
     , showPointProjections : Bool
+    , showContactPoints : Bool
     , backgroundColor : Color
     }
 
 
 empty : ConfigForm.Defaults -> Config
 empty defaults =
-    { x = defaults.float
-    , y = defaults.float
-    , showSupportPoints = defaults.bool
+    { showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
+    , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
     }
 
@@ -29,17 +27,7 @@ empty defaults =
 --logics : List (ConfigForm.Logic Config)
 logics =
     [ ConfigForm.section
-        "Translate"
-    , ConfigForm.float
-        "x"
-        "Translation X"
-        .x
-        (\a c -> { c | x = a })
-    , ConfigForm.float
-        "y"
-        "Translation Y"
-        .y
-        (\a c -> { c | y = a })
+        "Visualise"
     , ConfigForm.bool
         "showSupportPoints"
         "Support points"
@@ -50,6 +38,11 @@ logics =
         "Point projections"
         .showPointProjections
         (\a c -> { c | showPointProjections = a })
+    , ConfigForm.bool
+        "showContactPoints"
+        "Contact points"
+        .showContactPoints
+        (\a c -> { c | showContactPoints = a })
     , ConfigForm.section
         "Editor UI"
     , ConfigForm.color

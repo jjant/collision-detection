@@ -2,6 +2,9 @@ module Isometry exposing
     ( Isometry
     , apply
     , applyInverse
+    , compose
+    , identity
+    , invert
     , vectorApply
     , vectorApplyInverse
     )
@@ -12,6 +15,53 @@ import Vec2 exposing (Vec2)
 type alias Isometry =
     { translation : Vec2
     , rotation : Float
+    }
+
+
+identity : Isometry
+identity =
+    { translation = Vec2.zero
+    , rotation = 0
+    }
+
+
+compose : Isometry -> Isometry -> Isometry
+compose second first =
+    { translation =
+        Vec2.rotate second.rotation first.translation
+            |> Vec2.add second.translation
+    , rotation = first.rotation + second.rotation
+    }
+
+
+
+-- compose : Isometry -> Isometry -> Isometry
+-- compose second first =
+--     first
+--         |> appendRotation second.rotation
+--         |> appendTranslation second.translation
+
+
+appendRotation : Float -> Isometry -> Isometry
+appendRotation angle { rotation, translation } =
+    { translation = translation
+    , rotation = rotation + angle
+    }
+
+
+appendTranslation : Vec2 -> Isometry -> Isometry
+appendTranslation t { translation, rotation } =
+    { translation = Vec2.add t translation
+    , rotation = rotation
+    }
+
+
+invert : Isometry -> Isometry
+invert { translation, rotation } =
+    { rotation = -rotation
+    , translation =
+        Vec2.rotate -rotation translation
+            |> Vec2.negate
     }
 
 

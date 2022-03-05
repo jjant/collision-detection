@@ -9,7 +9,8 @@ ElmConfigUi.init({
   localStorageKey: "my_app",
   callback: function (elmConfigUiData) {
     const root = document.querySelector("#app div");
-    const app = Elm.Main.init({
+
+    Elm.Main.init({
       node: root,
       flags: elmConfigUiData,
     });

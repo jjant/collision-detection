@@ -7,8 +7,10 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (OptionState(..))
+import Html exposing (Html)
 import Html.Attributes
-import Misc exposing (setTranslation)
+import Misc exposing (setTranslation, updateTransform)
+import UI
 import Unwrap
 import Vec2 exposing (Vec2, vec2)
 
@@ -18,8 +20,8 @@ type ShapeKind
     | Rectangle
 
 
-setShape : ShapeKind -> Body -> Body
-setShape shapeKind body =
+setShapeKind : ShapeKind -> Body -> Body
+setShapeKind shapeKind body =
     case ( shapeKind, body.shape ) of
         ( Circle, Body.Circle _ ) ->
             body
@@ -29,6 +31,11 @@ setShape shapeKind body =
 
         _ ->
             { body | shape = defaultShape shapeKind }
+
+
+setShape : Shape -> Body -> Body
+setShape shape body =
+    { body | shape = shape }
 
 
 list : (Int -> msg) -> Maybe Int -> Array Body -> Element msg
@@ -108,14 +115,19 @@ view onChange maybeBody =
     column
         [ width fill
         , height (px 300)
+        , Background.color (rgb255 51 60 78)
+        , Border.color (rgb255 26 30 41)
+        , Border.width 2
+        , padding 5
+        , Font.color (rgb255 192 195 201)
         ]
         (maybeBody
             |> Maybe.map
                 (\body ->
-                    [ text <| Vec2.toString body.transform.translation
-                    , vec2Input (\translation -> onChange <| setTranslation translation body) body.transform.translation
-                    , shapeRadio (\newShapeKind -> onChange (setShape newShapeKind body)) body.shape
-                    , shapeInput body.shape
+                    [ vec2Input "Translation" (\translation -> onChange <| setTranslation translation body) body.transform.translation
+                    , floatInput "Rotation" (\deltaRotation -> onChange <| updateTransform (\t -> { t | rotation = t.rotation + deltaRotation }) body) body.transform.rotation
+                    , shapeRadio (\newShapeKind -> onChange (setShapeKind newShapeKind body)) body.shape
+                    , shapeInput (\newShape -> onChange (setShape newShape body)) body.shape
                     ]
                 )
             |> Maybe.withDefault []
@@ -142,14 +154,14 @@ selectedShape shape =
             Rectangle
 
 
-shapeInput : Shape -> Element msg
-shapeInput shape =
+shapeInput : (Shape -> msg) -> Shape -> Element msg
+shapeInput onChange shape =
     case shape of
         Body.Circle { radius } ->
-            text <| Debug.toString radius
+            floatInput "Radius" (\deltaRadius -> onChange (Body.Circle { radius = radius + deltaRadius })) radius
 
         Body.Rectangle { halfExtents } ->
-            text <| Debug.toString halfExtents
+            vec2Input "Half Extents" (\newExtents -> onChange (Body.Rectangle { halfExtents = newExtents })) halfExtents
 
 
 shapeRadio : (ShapeKind -> msg) -> Shape -> Element msg
@@ -169,16 +181,23 @@ options =
     ]
 
 
-vec2Input : (Vec2 -> msg) -> Vec2 -> Element msg
-vec2Input onChange vec =
-    Input.text []
-        { text = String.fromFloat vec.x
-        , onChange =
-            \s ->
-                String.toFloat s
-                    |> Unwrap.maybe
-                    |> (\x -> Vec2.setX x vec)
-                    |> onChange
-        , placeholder = Nothing
-        , label = Input.labelBelow [] (text "x")
-        }
+vec2Input : String -> (Vec2 -> msg) -> Vec2 -> Element msg
+vec2Input label onChange vec =
+    Element.row [ width fill ]
+        [ text label
+        , Element.column [ width fill, Background.color (rgb255 255 0 255) ]
+            [ floatInput "x" (\deltaX -> Vec2.add vec (vec2 deltaX 0) |> onChange) vec.x
+            , floatInput "y" (\deltaY -> Vec2.add vec (vec2 0 deltaY) |> onChange) vec.y
+            ]
+        ]
+
+
+floatInput : String -> (Float -> msg) -> Float -> Element msg
+floatInput label onChange float =
+    Element.row [ width fill ]
+        [ text label
+        , Element.html <|
+            UI.slider
+                (onChange << toFloat)
+                [ Html.text <| String.fromFloat float ]
+        ]

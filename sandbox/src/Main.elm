@@ -4,29 +4,52 @@ import Array exposing (Array)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
-import Camera exposing (Camera)
+import Camera exposing (Camera, tick)
+import Circle
 import Color
 import Config exposing (Config)
 import ConfigForm exposing (ConfigForm)
 import Draggable
-import Element exposing (column, el, fill, height, paddingXY, px, rgb255, row, spacing, width)
+import Element
+    exposing
+        ( alignTop
+        , column
+        , el
+        , fill
+        , height
+        , padding
+        , paddingXY
+        , px
+        , rgb
+        , rgb255
+        , row
+        , spacing
+        , spacingXY
+        , width
+        )
 import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import Fps
 import Hierarchy
 import Html as Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
+import Isometry
 import Json.Decode as Decode
 import Json.Encode
 import Keys exposing (Keys)
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
-import Render
+import Rectangle
+import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
+import Unwrap
 import Vec2 exposing (Vec2, vec2)
 import Vec3 exposing (vec3)
+import VoronoiSimplex exposing (Simplex(..))
 
 
 type alias Flags =
@@ -96,8 +119,8 @@ init elmConfigUiFlags =
       , keys = Keys.init
       , fps = Fps.init 20
       , bodies =
-            -- world config
-            gridWorld
+            -- gridWorld
+            world
       , selectedBody = Just 0
       , drag = Draggable.init
       }
@@ -177,7 +200,11 @@ update msg model =
             ( { model | keys = Keys.update keysMsg model.keys }, Cmd.none )
 
         Tick dt ->
-            ( { model | camera = Camera.tick dt model.keys model.camera }, Cmd.none )
+            ( { model
+                | camera = Camera.tick dt model.keys model.camera
+              }
+            , Cmd.none
+            )
 
         FpsMsg fpsMsg ->
             ( { model | fps = Fps.update fpsMsg model.fps }, Cmd.none )
@@ -199,7 +226,6 @@ update msg model =
             let
                 worldSpaceDelta =
                     Mat3.transformVector (Camera.inverseMatrix model.camera) screenSpaceDelta
-                        |> Debug.log "delta"
 
                 newModel =
                     updateSelectedBody
@@ -218,13 +244,50 @@ view model =
         mousePosition =
             Mat3.transformPoint (Camera.inverseMatrix model.camera) model.mouse
 
+        b1 =
+            Array.get 0 model.bodies
+                |> Unwrap.maybe
+
+        b2 =
+            Array.get 1 model.bodies
+                |> Unwrap.maybe
+
+        getRect b =
+            Unwrap.maybe <|
+                case b.shape of
+                    Rectangle rect ->
+                        Just rect
+
+                    _ ->
+                        Nothing
+
+        getCircle b =
+            Unwrap.maybe <|
+                case b.shape of
+                    Circle circ ->
+                        Just circ
+
+                    _ ->
+                        Nothing
+
+        relIso =
+            Debug.log "iso" <|
+                Isometry.compose
+                    (Isometry.invert b1.transform)
+                    b2.transform
+
+        res =
+            Body.gjkIntersection relIso
+                (Body.localSupportPoint b1.shape)
+                (Body.localSupportPoint b2.shape)
+
         mouseBody : Body
         mouseBody =
             { transform =
                 { translation = mousePosition
                 , rotation = 0
                 }
-            , shape = Circle { radius = 10 }
+            , shape = Circle { radius = 3 }
             }
     in
     Element.layout
@@ -237,41 +300,51 @@ view model =
             , spacing 10
             ]
             [ column
-                [ height fill ]
+                [ height fill
+                , spacingXY 0 10
+                ]
                 [ Hierarchy.list SelectBody model.selectedBody model.bodies
-                , Element.html <|
-                    div
-                        -- some nice styles to render it on the right side of the viewport
-                        [ Html.Attributes.style "padding" "12px"
-                        , Html.Attributes.style "background" "#eec"
-                        , Html.Attributes.style "border" "1px solid #444"
-                        , Html.Attributes.style "height" "calc(100% - 80px)"
-                        , style "margin-left" "32px"
-                        , style "display" "flex"
-                        , style "flex-direction" "column"
-                        ]
-                        [ ConfigForm.view
-                            ConfigForm.viewOptions
-                            Config.logics
-                            model.configForm
-                            |> Html.map ConfigFormMsg
+                , column
+                    -- some nice styles to render it on the right side of the viewport
+                    [ --     Html.Attributes.style "padding" "12px"
+                      Background.color (rgb255 51 60 78)
+                    , width fill
+                    , Border.color (rgb255 26 30 41)
+                    , Border.width 2
+                    , padding 5
+                    , Font.color (rgb255 192 195 201)
 
-                        -- As a developer, you'll want to save your tweaks to your config.json.
-                        -- You can copy/paste the content from this textarea to your config.json.
-                        -- Then the next time a new user loads your app, they'll see your updated config.
-                        , Html.textarea []
+                    -- , Html.Attributes.style "border" "1px solid #444"
+                    -- , Html.Attributes.style "height" "calc(100% - 80px)"
+                    -- , style "margin-left" "32px"
+                    -- , style "display" "flex"
+                    -- , style "flex-direction" "column"
+                    ]
+                    [ ConfigForm.view
+                        ConfigForm.viewOptions
+                        Config.logics
+                        model.configForm
+                        |> Element.map ConfigFormMsg
+
+                    -- As a developer, you'll want to save your tweaks to your config.json.
+                    -- You can copy/paste the content from this textarea to your config.json.
+                    -- Then the next time a new user loads your app, they'll see your updated config.
+                    , Element.html <|
+                        Html.textarea []
                             [ ConfigForm.encode model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]
-                        , Html.text <|
-                            Debug.toString <|
-                                Maybe.map (\{ average } -> round average) <|
-                                    Fps.fps
-                                        model.fps
-                        ]
+                    , el []
+                        (Fps.fps model.fps
+                            |> Maybe.map (\{ average } -> round average)
+                            |> Maybe.map (\avg -> String.fromInt avg)
+                            |> Maybe.withDefault "Loading"
+                            |> Element.text
+                        )
+                    ]
                 ]
-            , el []
+            , el [ alignTop ]
                 (Element.html <|
                     Render.render
                         MouseClick
@@ -281,9 +354,33 @@ view model =
                         , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
                         ]
                         (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                            :: renderBodies model.bodies
-                            ++ listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                            :: axis
+                            :: renderBodies
+                                [ Svg.stroke
+                                    (case res of
+                                        Ok _ ->
+                                            "magenta"
+
+                                        Err _ ->
+                                            "black"
+                                    )
+                                ]
+                                model.bodies
+                            :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                            ++ (case res of
+                                    Ok (Three { a, b, c }) ->
+                                        [ Render.polygon
+                                            [ Svg.stroke "black"
+                                            , Svg.fill "none"
+                                            ]
+                                            [ a, b, c ]
+                                        ]
+
+                                    _ ->
+                                        []
+                               )
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
+                            ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                             ++ (selectedBody model
                                     |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
                                     |> Maybe.withDefault []
@@ -374,28 +471,48 @@ pointProjection mousePosition body =
         { position = projection.point, radius = 5 }
 
 
-
--- ++ (contact
---                                 |> Maybe.map
---                                     (\{ world1, world2, normal, depth } ->
---                                         [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
---                                         , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
---                                         , Render.vector [] { base = world1, vector = Vec2.scale depth normal }
---                                         ]
---                                     )
---                                 |> Maybe.withDefault []
---                            )
+contactPoints : Array Body -> List (Render.Renderable msg)
+contactPoints bodies =
+    -- TODO: Handle more than 2 bodies
+    Maybe.map2 contactPoint
+        (Array.get 0 bodies)
+        (Array.get 1 bodies)
+        |> Maybe.withDefault []
 
 
-renderBodies : Array Body -> List (Render.Renderable msg)
-renderBodies =
-    mapToList
-        (Render.body
-            [ Svg.fill "none"
-            , Svg.strokeWidth "5"
-            , Svg.stroke "red"
-            ]
+contactPoint : Body -> Body -> List (Render.Renderable msg)
+contactPoint body1 body2 =
+    Body.contact body1 body2
+        |> Maybe.map
+            (\{ point1, point2, normal1, normal2, dist } ->
+                let
+                    world1 =
+                        Isometry.apply body1.transform point1
+
+                    world2 =
+                        Isometry.apply body2.transform point2
+
+                    depth =
+                        -dist
+                in
+                [ Render.circle [ Svg.fill "magenta" ] { position = world1, radius = 5 }
+                , Render.circle [ Svg.fill "magenta" ] { position = world2, radius = 5 }
+                , Render.vector [] { base = world1, vector = Vec2.scale depth normal1 }
+                ]
+            )
+        |> Maybe.withDefault []
+
+
+renderBodies : List (Svg.Attribute msg) -> Array Body -> Render.Renderable msg
+renderBodies attrs bodies =
+    Render.group
+        ([ Svg.fill "none"
+         , Svg.strokeWidth "5"
+         , Svg.stroke "red"
+         ]
+            ++ attrs
         )
+        (mapToList (Render.body []) bodies)
 
 
 mapToList : (a -> b) -> Array a -> List b
@@ -403,20 +520,32 @@ mapToList f arr =
     Array.foldr (\a acc -> f a :: acc) [] arr
 
 
-world : Config -> Array Body
-world config =
+world : Array Body
+world =
     Array.fromList
         [ { transform =
-                { translation = vec2 config.x config.y
+                { translation = vec2 0 0
                 , rotation = 0
                 }
           , shape = Rectangle { halfExtents = vec2 100 50 }
+
+          --   , shape = Circle { radius = 50 }
+          }
+        , { transform =
+                { translation = vec2 0 75
+                , rotation = 0
+                }
+          , shape = Rectangle { halfExtents = vec2 40 30 }
+
+          --   , shape = Circle { radius = 50 }
           }
         , { transform =
                 { translation = vec2 150 150
-                , rotation = 0
+                , rotation = 0.0
                 }
-          , shape = Circle { radius = 50 }
+          , shape = Rectangle { halfExtents = vec2 30 40 }
+
+          --   , shape = Circle { radius = 50 }
           }
         ]
 
@@ -431,3 +560,56 @@ gridWorld =
                 }
             , shape = Rectangle { halfExtents = vec2 25 25 }
             }
+
+
+axis : Renderable msg
+axis =
+    -- TODO: Implement properly
+    Render.group
+        [ Svg.strokeWidth "2", Svg.stroke "gray" ]
+        [ Render.line []
+            { from = vec2 -1000 0, to = vec2 1000 0 }
+        , Render.line []
+            { from = vec2 0 -1000, to = vec2 0 1000 }
+        , Render.group []
+            (List.range -20 20
+                |> List.map
+                    (\index ->
+                        let
+                            i =
+                                toFloat index
+
+                            tickDistance =
+                                50
+                        in
+                        if i == 0 then
+                            Render.group [] []
+
+                        else
+                            Render.group [ Svg.stroke "black" ]
+                                [ Render.line []
+                                    { from = vec2 (i * tickDistance) -10
+                                    , to = vec2 (i * tickDistance) 10
+                                    }
+                                , Render.line []
+                                    { from = vec2 -10 (i * tickDistance)
+                                    , to = vec2 10 (i * tickDistance)
+                                    }
+                                , Render.text
+                                    [ Svg.strokeWidth "1"
+                                    , Svg.fontSize "15"
+                                    ]
+                                    { position = vec2 (i * tickDistance + 2) -20
+                                    , text = String.fromFloat <| i * tickDistance
+                                    }
+                                , Render.text
+                                    [ Svg.strokeWidth "1"
+                                    , Svg.fontSize "15"
+                                    ]
+                                    { position = vec2 -35 (i * tickDistance + 5)
+                                    , text = String.fromFloat <| i * tickDistance
+                                    }
+                                ]
+                    )
+            )
+        ]

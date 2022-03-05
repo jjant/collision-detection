@@ -4,8 +4,12 @@ module Render exposing
     , body
     , circle
     , gizmo
+    , group
+    , line
+    , polygon
     , rectangle
     , render
+    , text
     , vector
     )
 
@@ -34,6 +38,11 @@ render onClick attrs children toScreen =
             ++ attrs
         )
         (List.map (\(Renderable f) -> f toScreen) children)
+
+
+none : Renderable msg
+none =
+    Renderable (\_ -> Svg.g [] [])
 
 
 vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Renderable msg
@@ -65,14 +74,25 @@ vector_ attrs args toScreen =
         , Svg.Attributes.strokeWidth "2"
         , Svg.Attributes.strokeLinecap "round"
         ]
-        [ line attrs { from = start, to = end }
-        , line attrs { from = end, to = Vec2.add endCap1 end }
-        , line attrs { from = end, to = Vec2.add endCap2 end }
+        [ screenLine attrs { from = start, to = end }
+        , screenLine attrs { from = end, to = Vec2.add endCap1 end }
+        , screenLine attrs { from = end, to = Vec2.add endCap2 end }
         ]
 
 
-line : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Svg msg
+line : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Renderable msg
 line attrs { from, to } =
+    Renderable
+        (\toScreen ->
+            screenLine attrs
+                { from = Mat3.transformPoint toScreen from
+                , to = Mat3.transformPoint toScreen to
+                }
+        )
+
+
+screenLine : List (Svg.Attribute msg) -> { from : Vec2, to : Vec2 } -> Svg msg
+screenLine attrs { from, to } =
     -- Takes screen space positions
     Svg.line
         (attrs
@@ -181,3 +201,48 @@ circle_ attrs { position, radius } toScreen =
                ]
         )
         []
+
+
+group : List (Svg.Attribute msg) -> List (Renderable msg) -> Renderable msg
+group attrs renderables =
+    Renderable
+        (\toScreen ->
+            Svg.g attrs
+                (List.map (\(Renderable f) -> f toScreen) renderables)
+        )
+
+
+text : List (Svg.Attribute msg) -> { position : Vec2, text : String } -> Renderable msg
+text attrs args =
+    Renderable
+        (\toScreen ->
+            let
+                screenPosition =
+                    Mat3.transformPoint toScreen args.position
+            in
+            Svg.text_
+                ([ Svg.Attributes.x (String.fromFloat screenPosition.x)
+                 , Svg.Attributes.y (String.fromFloat screenPosition.y)
+                 ]
+                    ++ attrs
+                )
+                [ Svg.text args.text ]
+        )
+
+
+polygon : List (Svg.Attribute msg) -> List Vec2 -> Renderable msg
+polygon attrs points =
+    Renderable
+        (\toScreen ->
+            let
+                screenPoints =
+                    points
+                        |> List.map (Mat3.transformPoint toScreen)
+
+                svgPoints =
+                    screenPoints
+                        |> List.map (\{ x, y } -> String.fromFloat x ++ "," ++ String.fromFloat y)
+                        |> String.join " "
+            in
+            Svg.polygon (Svg.Attributes.points svgPoints :: attrs) []
+        )
