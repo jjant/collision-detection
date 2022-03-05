@@ -55,15 +55,18 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import Dict exposing (Dict)
-import Element exposing (Element, column)
+import Element exposing (Element, column, el, fill, height, paddingXY, rgba255, row, spaceEvenly, spacingXY, width)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes exposing (style)
 import Html.Events
 import Html.Events.Extra.Pointer as Pointer
 import Json.Decode as JD
 import Json.Encode as JE
+import Misc
 import OrderedDict exposing (OrderedDict)
 import Round
 import UI exposing (slider)
@@ -841,34 +844,31 @@ colorValDecoder =
 -}
 view : ViewOptions -> List (Logic config) -> ConfigForm -> Element (Msg config)
 view options logics ((ConfigForm configForm) as configFormType) =
-    column [ Font.size options.fontSize ]
-        [ Element.html <|
-            Html.table
-                [ style "border-spacing" ("0 " ++ pxInt options.rowSpacing)
-                ]
-                (logics
-                    |> List.indexedMap
-                        (\i logic ->
-                            Html.tr
-                                (case configForm.activeField of
-                                    Just ( state, fieldName ) ->
-                                        if fieldName == logic.fieldName then
-                                            [ style
-                                                "background"
-                                                (Color.toCssString options.labelHighlightBgColor)
-                                            ]
+    column [ width fill, Font.size options.fontSize ]
+        [ column [ width fill, spacingXY 0 options.rowSpacing ]
+            (logics
+                |> List.indexedMap
+                    (\i logic ->
+                        row
+                            ([ width fill, spaceEvenly ]
+                                ++ (case configForm.activeField of
+                                        Just ( state, fieldName ) ->
+                                            if fieldName == logic.fieldName then
+                                                [ Background.color (Misc.toElementColor options.labelHighlightBgColor)
+                                                ]
 
-                                        else
+                                            else
+                                                []
+
+                                        Nothing ->
                                             []
-
-                                    Nothing ->
-                                        []
-                                )
-                                [ viewLabel options configFormType i logic
-                                , viewChanger options configFormType i logic
-                                ]
-                        )
-                )
+                                   )
+                            )
+                            [ viewLabel options configFormType i logic
+                            , viewChanger options configFormType i logic
+                            ]
+                    )
+            )
         , Element.html <|
             Html.div [ Html.Attributes.id "elm-config-ui-pointerlock" ] []
         , Element.html <|
@@ -885,50 +885,50 @@ view options logics ((ConfigForm configForm) as configFormType) =
         ]
 
 
-viewLabel : ViewOptions -> ConfigForm -> Int -> Logic config -> Html (Msg config)
+viewLabel : ViewOptions -> ConfigForm -> Int -> Logic config -> Element (Msg config)
 viewLabel options configForm i logic =
     case logic.kind of
         StringLogic getter setter ->
-            Html.td
+            row
                 []
-                [ Html.text logic.label ]
+                [ Element.text logic.label ]
 
         IntLogic getter setter ->
-            Html.td
-                (resizeAttrs options configForm logic)
-                [ slider MouseMove [ Html.text logic.label ]
-                , powerEl options configForm logic
+            row
+                (List.map Element.htmlAttribute (resizeAttrs options configForm logic))
+                [ Element.html <| slider MouseMove [ Html.text logic.label ]
+                , Element.html <| powerEl options configForm logic
                 ]
 
         FloatLogic getter setter ->
-            Html.td
-                (resizeAttrs options configForm logic)
-                [ slider MouseMove [ Html.text logic.label ]
-                , powerEl options configForm logic
+            row
+                (List.map Element.htmlAttribute (resizeAttrs options configForm logic))
+                [ Element.html <| slider MouseMove [ Html.text logic.label ]
+                , Element.html <| powerEl options configForm logic
                 ]
 
         BoolLogic getter setter ->
-            Html.td
+            row
                 []
-                [ Html.text logic.label ]
+                [ Element.text logic.label ]
 
         ColorLogic getter setter ->
-            Html.td
-                []
-                [ Html.text logic.label
+            row
+                [ width fill ]
+                [ Element.text logic.label
                 , closeEl options configForm i logic
                 ]
 
         SectionLogic ->
-            Html.td
-                [ style "font-weight" "bold"
-                , style "padding" (pxInt options.sectionSpacing ++ " 0 5px 0")
-                , Html.Attributes.colspan 2
+            row
+                [ Font.bold
+
+                -- , style "padding" (pxInt options.sectionSpacing ++ " 0 5px 0")
                 ]
-                [ Html.text logic.label ]
+                [ Element.text logic.label ]
 
 
-closeEl : ViewOptions -> ConfigForm -> Int -> Logic config -> Html (Msg config)
+closeEl : ViewOptions -> ConfigForm -> Int -> Logic config -> Element (Msg config)
 closeEl options (ConfigForm configForm) i logic =
     let
         maybeCloseMsg =
@@ -969,22 +969,23 @@ closeEl options (ConfigForm configForm) i logic =
     in
     case maybeCloseMsg of
         Just msg ->
-            Html.button
-                [ style "background" "rgba(255,255,255,0.9)"
-                , style "border" "1px solid rgba(0,0,0,0.9)"
-                , style "border-radius" "4px"
-                , style "width" (px (1.5 * toFloat options.fontSize))
-                , style "height" (px (1.5 * toFloat options.fontSize))
-                , Html.Attributes.tabindex (1 + i)
-                , Html.Events.onClick msg
+            Input.button
+                [ Background.color (rgba255 255 255 255 0.9)
+                , Border.width 1
+                , Border.color (rgba255 0 0 0 0.9)
+
+                -- , style "border-radius" "4px"
+                , width (Element.px (round (1.5 * toFloat options.fontSize)))
+                , height (Element.px (round (1.5 * toFloat options.fontSize)))
+
+                -- , Html.Attributes.tabindex (1 + i)
                 ]
-                [ Html.div
-                    [ style "padding" "3px 0 0 2px" ]
-                    [ Html.text "❌" ]
-                ]
+                { onPress = Just msg
+                , label = el [ paddingXY 3 2 ] (Element.text "❌")
+                }
 
         Nothing ->
-            Html.text ""
+            Element.none
 
 
 formattedPower : Int -> String
@@ -1134,7 +1135,7 @@ inputFieldVertPadding options =
     toFloat options.fontSize * options.inputSpacing
 
 
-viewChanger : ViewOptions -> ConfigForm -> Int -> Logic config -> Html (Msg config)
+viewChanger : ViewOptions -> ConfigForm -> Int -> Logic config -> Element (Msg config)
 viewChanger options (ConfigForm configForm) i logic =
     let
         defaultAttrs =
@@ -1194,107 +1195,111 @@ viewChanger options (ConfigForm configForm) i logic =
     in
     case maybeField of
         Just (StringField data) ->
-            Html.td []
-                [ textInputHelper
-                    options
-                    { label = logic.label
-                    , valStr = data.val
-                    , attrs = defaultAttrs ++ tabAttrs
-                    , setterMsg =
-                        \newStr ->
-                            ChangedConfigForm
-                                logic.fieldName
-                                (StringField { data | val = newStr })
-                    }
-                ]
+            Element.html <|
+                Html.td []
+                    [ textInputHelper
+                        options
+                        { label = logic.label
+                        , valStr = data.val
+                        , attrs = defaultAttrs ++ tabAttrs
+                        , setterMsg =
+                            \newStr ->
+                                ChangedConfigForm
+                                    logic.fieldName
+                                    (StringField { data | val = newStr })
+                        }
+                    ]
 
         Just (BoolField data) ->
-            Html.td []
-                [ Html.input
-                    (defaultAttrs
-                        ++ tabAttrs
-                        ++ [ Html.Attributes.type_ "checkbox"
-                           , Html.Attributes.checked data.val
-                           , Html.Events.onCheck
-                                (\newBool ->
-                                    ChangedConfigForm
-                                        logic.fieldName
-                                        (BoolField { data | val = newBool })
-                                )
-                           ]
-                    )
-                    []
-                ]
+            Element.html <|
+                Html.td []
+                    [ Html.input
+                        (defaultAttrs
+                            ++ tabAttrs
+                            ++ [ Html.Attributes.type_ "checkbox"
+                               , Html.Attributes.checked data.val
+                               , Html.Events.onCheck
+                                    (\newBool ->
+                                        ChangedConfigForm
+                                            logic.fieldName
+                                            (BoolField { data | val = newBool })
+                                    )
+                               ]
+                        )
+                        []
+                    ]
 
         Just (IntField data) ->
-            Html.td []
-                [ textInputHelper
-                    options
-                    { label = logic.label
-                    , valStr = data.str
-                    , attrs =
-                        defaultAttrs
-                            ++ tabAttrs
-                            ++ incrementalAttrs String.fromInt IntField data
-                            ++ (if String.toInt data.str == Nothing then
-                                    [ style "background" "1,0,0,0.3)" ]
+            Element.html <|
+                Html.td []
+                    [ textInputHelper
+                        options
+                        { label = logic.label
+                        , valStr = data.str
+                        , attrs =
+                            defaultAttrs
+                                ++ tabAttrs
+                                ++ incrementalAttrs String.fromInt IntField data
+                                ++ (if String.toInt data.str == Nothing then
+                                        [ style "background" "1,0,0,0.3)" ]
 
-                                else
-                                    []
-                               )
-                    , setterMsg =
-                        \newStr ->
-                            ChangedConfigForm
-                                logic.fieldName
-                            <|
-                                IntField
-                                    { data
-                                        | str = newStr
-                                        , val =
-                                            case String.toInt newStr of
-                                                Just num ->
-                                                    num
+                                    else
+                                        []
+                                   )
+                        , setterMsg =
+                            \newStr ->
+                                ChangedConfigForm
+                                    logic.fieldName
+                                <|
+                                    IntField
+                                        { data
+                                            | str = newStr
+                                            , val =
+                                                case String.toInt newStr of
+                                                    Just num ->
+                                                        num
 
-                                                Nothing ->
-                                                    data.val
-                                    }
-                    }
-                ]
+                                                    Nothing ->
+                                                        data.val
+                                        }
+                        }
+                    ]
 
         Just (FloatField data) ->
-            Html.td []
-                [ textInputHelper
-                    options
-                    { label = logic.label
-                    , valStr = data.str
-                    , attrs =
-                        defaultAttrs
-                            ++ tabAttrs
-                            ++ incrementalAttrs String.fromFloat FloatField data
-                            ++ (if String.toFloat data.str == Nothing then
-                                    [ style "background" "rgba(1,0,0,0.3)" ]
+            Element.html <|
+                Html.td []
+                    [ textInputHelper
+                        options
+                        { label = logic.label
+                        , valStr = data.str
+                        , attrs =
+                            defaultAttrs
+                                ++ tabAttrs
+                                ++ incrementalAttrs String.fromFloat FloatField data
+                                ++ (if String.toFloat data.str == Nothing then
+                                        [ style "background" "rgba(1,0,0,0.3)" ]
 
-                                else
-                                    []
-                               )
-                    , setterMsg =
-                        \newStr ->
-                            ChangedConfigForm
-                                logic.fieldName
-                            <|
-                                FloatField
-                                    { data
-                                        | str = newStr
-                                        , val =
-                                            case String.toFloat newStr of
-                                                Just num ->
-                                                    num
+                                    else
+                                        []
+                                   )
+                        , setterMsg =
+                            \newStr ->
+                                ChangedConfigForm
+                                    logic.fieldName
+                                <|
+                                    FloatField
+                                        { data
+                                            | str = newStr
+                                            , val =
+                                                case String.toFloat newStr of
+                                                    Just num ->
+                                                        num
 
-                                                Nothing ->
-                                                    data.val
-                                    }
-                    }
-                ]
+                                                    Nothing ->
+                                                        data.val
+                                        }
+                        }
+                    ]
 
         Just (ColorField data) ->
             let
@@ -1303,64 +1308,63 @@ viewChanger options (ConfigForm configForm) i logic =
                         ColorFieldMeta m ->
                             m
             in
-            Html.td []
-                [ if meta.isOpen then
-                    ColorPicker.view
-                        data.val
-                        meta.state
-                        |> Html.map
-                            (\pickerMsg ->
-                                let
-                                    ( newPickerState, newColor ) =
-                                        ColorPicker.update
-                                            pickerMsg
-                                            data.val
-                                            meta.state
-                                in
-                                ChangedConfigForm logic.fieldName
-                                    (ColorField
-                                        { data
-                                            | val = newColor |> Maybe.withDefault data.val
-                                            , meta =
-                                                ColorFieldMeta
-                                                    { state = newPickerState
-                                                    , isOpen = meta.isOpen
-                                                    }
-                                        }
-                                    )
-                            )
-
-                  else
-                    Html.div
-                        (defaultAttrs
-                            ++ [ style "background" (Color.toCssString data.val)
-                               , style "width" "100%"
-                               , style "border" "1px solid rgba(0,0,0,0.3)"
-                               , style "border-radius" "3px"
-                               , style "box-sizing" "border-box"
-                               , Html.Events.onMouseDown
-                                    (ChangedConfigForm
-                                        logic.fieldName
+            row [ width fill ]
+                [ Element.html <|
+                    if meta.isOpen then
+                        ColorPicker.view data.val meta.state
+                            |> Html.map
+                                (\pickerMsg ->
+                                    let
+                                        ( newPickerState, newColor ) =
+                                            ColorPicker.update
+                                                pickerMsg
+                                                data.val
+                                                meta.state
+                                    in
+                                    ChangedConfigForm logic.fieldName
                                         (ColorField
                                             { data
-                                                | meta =
+                                                | val = newColor |> Maybe.withDefault data.val
+                                                , meta =
                                                     ColorFieldMeta
-                                                        { state = meta.state
-                                                        , isOpen = True
+                                                        { state = newPickerState
+                                                        , isOpen = meta.isOpen
                                                         }
                                             }
                                         )
-                                    )
-                               ]
-                        )
-                        []
+                                )
+
+                    else
+                        Html.div
+                            (defaultAttrs
+                                ++ [ style "background" (Color.toCssString data.val)
+                                   , style "width" "100%"
+                                   , style "border" "1px solid rgba(0,0,0,0.3)"
+                                   , style "border-radius" "3px"
+                                   , style "box-sizing" "border-box"
+                                   , Html.Events.onMouseDown
+                                        (ChangedConfigForm
+                                            logic.fieldName
+                                            (ColorField
+                                                { data
+                                                    | meta =
+                                                        ColorFieldMeta
+                                                            { state = meta.state
+                                                            , isOpen = True
+                                                            }
+                                                }
+                                            )
+                                        )
+                                   ]
+                            )
+                            []
                 ]
 
         Just (SectionField str) ->
-            Html.text ""
+            Element.none
 
         Nothing ->
-            Html.text ""
+            Element.none
 
 
 textInputHelper :
