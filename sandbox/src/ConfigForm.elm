@@ -55,7 +55,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import Dict exposing (Dict)
-import Element exposing (Element, column, el, fill, height, paddingXY, rgba255, row, spaceEvenly, spacingXY, width)
+import Element exposing (Element, centerX, centerY, column, el, fill, height, paddingXY, rgba255, row, spaceEvenly, spacingXY, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -970,18 +970,17 @@ closeEl options (ConfigForm configForm) i logic =
     case maybeCloseMsg of
         Just msg ->
             Input.button
-                [ Background.color (rgba255 255 255 255 0.9)
+                [ Background.color (rgba255 255 255 255 0.2)
                 , Border.width 1
                 , Border.color (rgba255 0 0 0 0.9)
-
-                -- , style "border-radius" "4px"
+                , Border.rounded 4
                 , width (Element.px (round (1.5 * toFloat options.fontSize)))
                 , height (Element.px (round (1.5 * toFloat options.fontSize)))
 
                 -- , Html.Attributes.tabindex (1 + i)
                 ]
                 { onPress = Just msg
-                , label = el [ paddingXY 3 2 ] (Element.text "❌")
+                , label = el [ centerX, centerY ] (Element.text "❌")
                 }
 
         Nothing ->
