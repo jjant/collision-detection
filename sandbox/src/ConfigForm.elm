@@ -54,6 +54,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 
 import Color exposing (Color)
 import ColorPicker
+import ConfigFormGeneric exposing (Lens)
 import Dict exposing (Dict)
 import Element exposing (Element, centerX, centerY, column, el, fill, height, rgba255, row, spaceEvenly, spacingXY, width)
 import Element.Background as Background
@@ -258,7 +259,7 @@ emptyField logic emptyConfig =
                         }
                 }
 
-        SectionLogic ->
+        SectionLogic _ ->
             SectionField logic.fieldName
 
 
@@ -280,13 +281,7 @@ type LogicKind config
     | StringLogic (Lens config String)
     | ColorLogic (Lens config Color)
     | BoolLogic (Lens config Bool)
-    | SectionLogic
-
-
-type alias Lens big small =
-    { getter : big -> small
-    , setter : small -> big -> big
-    }
+    | SectionLogic (Lens config ())
 
 
 {-| Creates the logic for Int values
@@ -345,7 +340,11 @@ section : String -> Logic config
 section sectionStr =
     { fieldName = ""
     , label = sectionStr
-    , kind = SectionLogic
+    , kind =
+        SectionLogic
+            { getter = \_ -> ()
+            , setter = \_ config -> config
+            }
     }
 
 
@@ -739,7 +738,7 @@ decodeField logic json =
                 Err _ ->
                     Nothing
 
-        SectionLogic ->
+        SectionLogic _ ->
             logic.fieldName
                 |> SectionField
                 |> Just
@@ -812,7 +811,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Err _ ->
                                         config
 
-                            SectionLogic ->
+                            SectionLogic _ ->
                                 config
                     )
                     tmpConfig
@@ -914,7 +913,7 @@ viewLabel options configForm i logic =
                 , closeEl options configForm i logic
                 ]
 
-        SectionLogic ->
+        SectionLogic _ ->
             row
                 [ Font.bold
 

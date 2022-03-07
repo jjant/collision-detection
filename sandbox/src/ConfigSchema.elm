@@ -12,6 +12,7 @@ myConfigFields =
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
+    , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
 
 

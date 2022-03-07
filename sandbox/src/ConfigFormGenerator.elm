@@ -94,6 +94,7 @@ npm install --global elm elm-live@next chokidir
 -}
 
 import Dict exposing (Dict)
+import Set exposing (Set)
 
 
 {-| Use these to define what kind of value your field is. For all values except `SectionKind`, the `String` is the field's camelCase variable name for both your `Config` record and its JSON representation, such as "headerFontSize".
@@ -108,6 +109,7 @@ type Kind
     | BoolKind String
     | ColorKind String
     | SectionKind
+    | CustomKind { fieldName : String, logicName : String }
 
 
 {-| Generates the elm code for your Config module given a list of labels and field kinds.
@@ -117,6 +119,7 @@ toFile data =
     [ header
     , typeAlias data
     , empty data
+    , logicKindType data
     , logics data
     , "--"
     ]
@@ -229,6 +232,44 @@ emptyEntry kind =
             Nothing
 
 
+gatherCustomTypes : List ( String, Kind ) -> Set String
+gatherCustomTypes kinds =
+    kinds
+        |> List.filterMap
+            (\( _, kind ) ->
+                case kind of
+                    CustomKind { logicName } ->
+                        Just logicName
+
+                    _ ->
+                        Nothing
+            )
+        |> Set.fromList
+
+
+logicKindType : List ( String, Kind ) -> String
+logicKindType kinds =
+    let
+        defaultKinds =
+            [ "Int"
+            , "Float"
+            , "String"
+            , "Color"
+            , "Bool"
+            , "Section"
+            ]
+    in
+    "type alias LogicKind big small\n"
+        ++ "    =\n"
+        ++ (kinds
+                |> gatherCustomTypes
+                |> Set.toList
+                |> (++) defaultKinds
+                |> List.map (\k -> k ++ "Logic" ++ "(Lens config " ++ k ++ ")")
+                |> String.join "\n    |"
+           )
+
+
 logics : List ( String, Kind ) -> String
 logics data =
     let
@@ -291,6 +332,9 @@ kindToType kind =
         SectionKind ->
             Nothing
 
+        CustomKind { logicName } ->
+            Just logicName
+
 
 kindToDefault : Kind -> Maybe String
 kindToDefault kind =
@@ -313,6 +357,9 @@ kindToDefault kind =
         SectionKind ->
             Nothing
 
+        CustomKind { logicName } ->
+            Just <| "defaults." ++ logicName
+
 
 kindToLogic : Kind -> String
 kindToLogic kind =
@@ -334,6 +381,9 @@ kindToLogic kind =
 
         SectionKind ->
             "ConfigForm.section"
+
+        CustomKind { logicName } ->
+            "ConfigForm.Custom." ++ logicName
 
 
 kindToLogicArgs : ( String, Kind ) -> List String
@@ -385,3 +435,6 @@ kindToFieldName kind =
 
         SectionKind ->
             Nothing
+
+        CustomKind { fieldName } ->
+            Just fieldName
