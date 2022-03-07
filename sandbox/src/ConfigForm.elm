@@ -55,7 +55,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import Dict exposing (Dict)
-import Element exposing (Element, centerX, centerY, column, el, fill, height, paddingXY, rgba255, row, spaceEvenly, spacingXY, width)
+import Element exposing (Element, centerX, centerY, column, el, fill, height, rgba255, row, spaceEvenly, spacingXY, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -384,15 +384,8 @@ encodeFields fields =
         |> OrderedDict.toList
         |> List.filterMap
             (\( fieldName, field ) ->
-                case encodeField field of
-                    Just json ->
-                        Just
-                            ( fieldName
-                            , json
-                            )
-
-                    Nothing ->
-                        Nothing
+                encodeField field
+                    |> Maybe.map (\json -> ( fieldName, json ))
             )
         |> JE.object
 
@@ -573,12 +566,8 @@ update logics config (ConfigForm configForm) msg =
             , ConfigForm
                 { configForm
                     | activeField =
-                        case configForm.activeField of
-                            Just ( state, fieldName ) ->
-                                Just ( Hovering, fieldName )
-
-                            Nothing ->
-                                Nothing
+                        configForm.activeField
+                            |> Maybe.map (\( _, fieldName ) -> ( Hovering, fieldName ))
                 }
             )
 
@@ -670,7 +659,7 @@ decodeField logic json =
                         |> IntField
                         |> Just
 
-                Err err ->
+                Err _ ->
                     Nothing
 
         FloatLogic getter setter ->
@@ -691,7 +680,7 @@ decodeField logic json =
                         |> FloatField
                         |> Just
 
-                Err err ->
+                Err _ ->
                     Nothing
 
         StringLogic getter setter ->
@@ -706,7 +695,7 @@ decodeField logic json =
                         |> StringField
                         |> Just
 
-                Err err ->
+                Err _ ->
                     Nothing
 
         BoolLogic getter setter ->
@@ -721,7 +710,7 @@ decodeField logic json =
                         |> BoolField
                         |> Just
 
-                Err err ->
+                Err _ ->
                     Nothing
 
         ColorLogic getter setter ->
@@ -741,7 +730,7 @@ decodeField logic json =
                         |> ColorField
                         |> Just
 
-                Err err ->
+                Err _ ->
                     Nothing
 
         SectionLogic ->
@@ -782,7 +771,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Ok intVal ->
                                         setter intVal config
 
-                                    Err err ->
+                                    Err _ ->
                                         config
 
                             FloatLogic getter setter ->
@@ -790,7 +779,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Ok floatVal ->
                                         setter floatVal config
 
-                                    Err err ->
+                                    Err _ ->
                                         config
 
                             StringLogic getter setter ->
@@ -798,7 +787,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Ok str ->
                                         setter str config
 
-                                    Err err ->
+                                    Err _ ->
                                         config
 
                             BoolLogic getter setter ->
@@ -806,7 +795,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Ok str ->
                                         setter str config
 
-                                    Err err ->
+                                    Err _ ->
                                         config
 
                             ColorLogic getter setter ->
@@ -814,7 +803,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Ok col ->
                                         setter col config
 
-                                    Err err ->
+                                    Err _ ->
                                         config
 
                             SectionLogic ->
@@ -1197,7 +1186,6 @@ viewChanger options (ConfigForm configForm) i logic =
             Element.html <|
                 Html.td []
                     [ textInputHelper
-                        options
                         { label = logic.label
                         , valStr = data.val
                         , attrs = defaultAttrs ++ tabAttrs
@@ -1232,7 +1220,6 @@ viewChanger options (ConfigForm configForm) i logic =
             Element.html <|
                 Html.td []
                     [ textInputHelper
-                        options
                         { label = logic.label
                         , valStr = data.str
                         , attrs =
@@ -1268,7 +1255,6 @@ viewChanger options (ConfigForm configForm) i logic =
             Element.html <|
                 Html.td []
                     [ textInputHelper
-                        options
                         { label = logic.label
                         , valStr = data.str
                         , attrs =
@@ -1283,9 +1269,7 @@ viewChanger options (ConfigForm configForm) i logic =
                                    )
                         , setterMsg =
                             \newStr ->
-                                ChangedConfigForm
-                                    logic.fieldName
-                                <|
+                                ChangedConfigForm logic.fieldName <|
                                     FloatField
                                         { data
                                             | str = newStr
@@ -1367,15 +1351,13 @@ viewChanger options (ConfigForm configForm) i logic =
 
 
 textInputHelper :
-    ViewOptions
-    ->
-        { label : String
-        , valStr : String
-        , attrs : List (Html.Attribute (Msg config))
-        , setterMsg : String -> Msg config
-        }
+    { label : String
+    , valStr : String
+    , attrs : List (Html.Attribute (Msg config))
+    , setterMsg : String -> Msg config
+    }
     -> Html (Msg config)
-textInputHelper options { label, valStr, attrs, setterMsg } =
+textInputHelper { label, valStr, attrs, setterMsg } =
     Html.input
         ([ Html.Attributes.value valStr
          , Html.Events.onInput setterMsg
