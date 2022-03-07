@@ -224,31 +224,31 @@ init options =
 emptyField : Logic config -> config -> Field
 emptyField logic emptyConfig =
     case logic.kind of
-        IntLogic getter setter ->
+        IntLogic { getter } ->
             IntField
                 { val = getter emptyConfig
                 , str = getter emptyConfig |> String.fromInt
                 , power = 0
                 }
 
-        FloatLogic getter setter ->
+        FloatLogic { getter } ->
             FloatField
                 { val = getter emptyConfig
                 , str = getter emptyConfig |> String.fromFloat
                 , power = 0
                 }
 
-        StringLogic getter setter ->
+        StringLogic { getter } ->
             StringField
                 { val = getter emptyConfig
                 }
 
-        BoolLogic getter setter ->
+        BoolLogic { getter } ->
             BoolField
                 { val = getter emptyConfig
                 }
 
-        ColorLogic getter setter ->
+        ColorLogic { getter } ->
             ColorField
                 { val = getter emptyConfig
                 , meta =
@@ -275,12 +275,18 @@ type alias Logic config =
 
 
 type LogicKind config
-    = IntLogic (config -> Int) (Int -> config -> config)
-    | FloatLogic (config -> Float) (Float -> config -> config)
-    | StringLogic (config -> String) (String -> config -> config)
-    | ColorLogic (config -> Color) (Color -> config -> config)
-    | BoolLogic (config -> Bool) (Bool -> config -> config)
+    = IntLogic (Lens config Int)
+    | FloatLogic (Lens config Float)
+    | StringLogic (Lens config String)
+    | ColorLogic (Lens config Color)
+    | BoolLogic (Lens config Bool)
     | SectionLogic
+
+
+type alias Lens big small =
+    { getter : big -> small
+    , setter : small -> big -> big
+    }
 
 
 {-| Creates the logic for Int values
@@ -289,7 +295,7 @@ int : String -> String -> (config -> Int) -> (Int -> config -> config) -> Logic 
 int fieldName label getter setter =
     { fieldName = fieldName
     , label = label
-    , kind = IntLogic getter setter
+    , kind = IntLogic { getter = getter, setter = setter }
     }
 
 
@@ -299,7 +305,7 @@ float : String -> String -> (config -> Float) -> (Float -> config -> config) -> 
 float fieldName label getter setter =
     { fieldName = fieldName
     , label = label
-    , kind = FloatLogic getter setter
+    , kind = FloatLogic { getter = getter, setter = setter }
     }
 
 
@@ -309,7 +315,7 @@ string : String -> String -> (config -> String) -> (String -> config -> config) 
 string fieldName label getter setter =
     { fieldName = fieldName
     , label = label
-    , kind = StringLogic getter setter
+    , kind = StringLogic { getter = getter, setter = setter }
     }
 
 
@@ -319,7 +325,7 @@ bool : String -> String -> (config -> Bool) -> (Bool -> config -> config) -> Log
 bool fieldName label getter setter =
     { fieldName = fieldName
     , label = label
-    , kind = BoolLogic getter setter
+    , kind = BoolLogic { getter = getter, setter = setter }
     }
 
 
@@ -329,7 +335,7 @@ color : String -> String -> (config -> Color) -> (Color -> config -> config) -> 
 color fieldName label getter setter =
     { fieldName = fieldName
     , label = label
-    , kind = ColorLogic getter setter
+    , kind = ColorLogic { getter = getter, setter = setter }
     }
 
 
@@ -582,19 +588,19 @@ configFromFields logics configForm config =
                         OrderedDict.get logic.fieldName configForm
                 in
                 case ( maybeField, logic.kind ) of
-                    ( Just (IntField data), IntLogic getter setter ) ->
+                    ( Just (IntField data), IntLogic { setter } ) ->
                         setter data.val newConfig
 
-                    ( Just (FloatField data), FloatLogic getter setter ) ->
+                    ( Just (FloatField data), FloatLogic { setter } ) ->
                         setter data.val newConfig
 
-                    ( Just (StringField data), StringLogic getter setter ) ->
+                    ( Just (StringField data), StringLogic { setter } ) ->
                         setter data.val newConfig
 
-                    ( Just (BoolField data), BoolLogic getter setter ) ->
+                    ( Just (BoolField data), BoolLogic { setter } ) ->
                         setter data.val newConfig
 
-                    ( Just (ColorField data), ColorLogic getter setter ) ->
+                    ( Just (ColorField data), ColorLogic { setter } ) ->
                         setter data.val newConfig
 
                     _ ->
@@ -640,7 +646,7 @@ decodeFields logics json =
 decodeField : Logic config -> JE.Value -> Maybe Field
 decodeField logic json =
     case logic.kind of
-        IntLogic getter setter ->
+        IntLogic _ ->
             let
                 decoder =
                     JD.at [ "fields", logic.fieldName ]
@@ -662,7 +668,7 @@ decodeField logic json =
                 Err _ ->
                     Nothing
 
-        FloatLogic getter setter ->
+        FloatLogic _ ->
             let
                 decoder =
                     JD.at [ "fields", logic.fieldName ]
@@ -683,7 +689,7 @@ decodeField logic json =
                 Err _ ->
                     Nothing
 
-        StringLogic getter setter ->
+        StringLogic _ ->
             let
                 decoder =
                     JD.at [ "fields", logic.fieldName ] JD.string
@@ -698,7 +704,7 @@ decodeField logic json =
                 Err _ ->
                     Nothing
 
-        BoolLogic getter setter ->
+        BoolLogic _ ->
             let
                 decoder =
                     JD.at [ "fields", logic.fieldName ] JD.bool
@@ -713,7 +719,7 @@ decodeField logic json =
                 Err _ ->
                     Nothing
 
-        ColorLogic getter setter ->
+        ColorLogic _ ->
             let
                 decoder =
                     JD.at [ "fields", logic.fieldName ] colorValDecoder
@@ -766,7 +772,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                 |> List.foldl
                     (\logic config ->
                         case logic.kind of
-                            IntLogic getter setter ->
+                            IntLogic { setter } ->
                                 case JD.decodeValue (JD.field logic.fieldName JD.int) json of
                                     Ok intVal ->
                                         setter intVal config
@@ -774,7 +780,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Err _ ->
                                         config
 
-                            FloatLogic getter setter ->
+                            FloatLogic { setter } ->
                                 case JD.decodeValue (JD.field logic.fieldName JD.float) json of
                                     Ok floatVal ->
                                         setter floatVal config
@@ -782,7 +788,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Err _ ->
                                         config
 
-                            StringLogic getter setter ->
+                            StringLogic { setter } ->
                                 case JD.decodeValue (JD.field logic.fieldName JD.string) json of
                                     Ok str ->
                                         setter str config
@@ -790,7 +796,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Err _ ->
                                         config
 
-                            BoolLogic getter setter ->
+                            BoolLogic { setter } ->
                                 case JD.decodeValue (JD.field logic.fieldName JD.bool) json of
                                     Ok str ->
                                         setter str config
@@ -798,7 +804,7 @@ decodeConfig logics emptyConfig { file, localStorage } =
                                     Err _ ->
                                         config
 
-                            ColorLogic getter setter ->
+                            ColorLogic { setter } ->
                                 case JD.decodeValue (JD.field logic.fieldName colorValDecoder) json of
                                     Ok col ->
                                         setter col config
@@ -877,31 +883,31 @@ view options logics ((ConfigForm configForm) as configFormType) =
 viewLabel : ViewOptions -> ConfigForm -> Int -> Logic config -> Element (Msg config)
 viewLabel options configForm i logic =
     case logic.kind of
-        StringLogic getter setter ->
+        StringLogic _ ->
             row
                 []
                 [ Element.text logic.label ]
 
-        IntLogic getter setter ->
+        IntLogic _ ->
             row
                 (List.map Element.htmlAttribute (resizeAttrs options configForm logic))
                 [ Element.html <| slider MouseMove [ Html.text logic.label ]
                 , Element.html <| powerEl options configForm logic
                 ]
 
-        FloatLogic getter setter ->
+        FloatLogic _ ->
             row
                 (List.map Element.htmlAttribute (resizeAttrs options configForm logic))
                 [ Element.html <| slider MouseMove [ Html.text logic.label ]
                 , Element.html <| powerEl options configForm logic
                 ]
 
-        BoolLogic getter setter ->
+        BoolLogic _ ->
             row
                 []
                 [ Element.text logic.label ]
 
-        ColorLogic getter setter ->
+        ColorLogic _ ->
             row
                 [ width fill ]
                 [ Element.text logic.label
