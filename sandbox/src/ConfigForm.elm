@@ -6,6 +6,7 @@ module ConfigForm exposing
     , view
     , viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
+    , Logic
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -910,7 +911,7 @@ viewLabel options configForm i logic =
             row
                 [ width fill ]
                 [ Element.text logic.label
-                , closeEl options configForm i logic
+                , closeEl options configForm i logic.fieldName
                 ]
 
         SectionLogic _ ->
@@ -922,11 +923,11 @@ viewLabel options configForm i logic =
                 [ Element.text logic.label ]
 
 
-closeEl : ViewOptions -> ConfigForm -> Int -> Logic config -> Element (Msg config)
-closeEl options (ConfigForm configForm) i logic =
+closeEl : { r | fontSize : Int } -> ConfigForm -> Int -> String -> Element (Msg config)
+closeEl options (ConfigForm configForm) i fieldName =
     let
         maybeCloseMsg =
-            case OrderedDict.get logic.fieldName configForm.fields of
+            case OrderedDict.get fieldName configForm.fields of
                 Just (ColorField data) ->
                     let
                         shouldShow =
@@ -943,7 +944,7 @@ closeEl options (ConfigForm configForm) i logic =
                         in
                         Just
                             (ChangedConfigForm
-                                logic.fieldName
+                                fieldName
                                 (ColorField
                                     { data
                                         | meta =

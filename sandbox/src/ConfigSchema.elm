@@ -1,7 +1,11 @@
-module ConfigSchema exposing (myConfigFields)
+port module ConfigSchema exposing (myConfigFields)
 
 import ConfigFormGenerator exposing (Kind(..))
 import Html exposing (Html)
+import Platform
+
+
+port generateFile : ( String, String ) -> Cmd msg
 
 
 myConfigFields : List ( String, Kind )
@@ -16,13 +20,14 @@ myConfigFields =
     ]
 
 
-main : Html msg
+main : Program {} {} {}
 main =
     let
         generatedElmCode =
             ConfigFormGenerator.toFile myConfigFields
-
-        _ =
-            Debug.log generatedElmCode ""
     in
-    Html.text ""
+    Platform.worker
+        { init = \_ -> ( {}, generateFile ( "fileName", generatedElmCode ) )
+        , update = \_ _ -> ( {}, Cmd.none )
+        , subscriptions = \_ -> Sub.none
+        }

@@ -94,7 +94,9 @@ npm install --global elm elm-live@next chokidir
 -}
 
 import Dict exposing (Dict)
+import Regex
 import Set exposing (Set)
+import Unwrap
 
 
 {-| Use these to define what kind of value your field is. For all values except `SectionKind`, the `String` is the field's camelCase variable name for both your `Config` record and its JSON representation, such as "headerFontSize".
@@ -121,22 +123,39 @@ toFile data =
     , empty data
     , logicKindType data
     , logics data
-    , "--"
+    , customLogics data
+
+    -- , specialCaseSection
     ]
         |> String.join "\n\n\n"
 
 
+specialCaseSection : String
+specialCaseSection =
+    "type alias Section =\n    ()"
+
+
 header : String
 header =
-    """
+    let
+        moduleDeclaration =
+            """
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
 module Config exposing (Config, empty, logics)
-
-import Color exposing (Color)
-import ConfigForm as ConfigForm
 """
+
+        imports =
+            """
+import Color exposing (Color)
+import ConfigForm
+import ConfigForm.Custom
+import ConfigFormGeneric
+"""
+    in
+    moduleDeclaration
+        ++ imports
         |> String.trim
 
 
@@ -251,23 +270,29 @@ logicKindType : List ( String, Kind ) -> String
 logicKindType kinds =
     let
         defaultKinds =
-            [ "Int"
-            , "Float"
-            , "String"
-            , "Color"
-            , "Bool"
-            , "Section"
+            [ ( "Int", "Int" )
+            , ( "Float", "Float" )
+            , ( "String", "String" )
+            , ( "Color", "Color" )
+            , ( "Bool", "Bool" )
+            , ( "Section", "()" )
             ]
     in
-    "type alias LogicKind big small\n"
-        ++ "    =\n"
+    "type LogicKind config\n"
+        ++ "    = "
         ++ (kinds
                 |> gatherCustomTypes
                 |> Set.toList
+                |> List.map (\k -> ( k, customTypeName k ))
                 |> (++) defaultKinds
-                |> List.map (\k -> k ++ "Logic" ++ "(Lens config " ++ k ++ ")")
-                |> String.join "\n    |"
+                |> List.map (\( kind, type_ ) -> kind ++ "Logic " ++ "(ConfigFormGeneric.Lens config " ++ type_ ++ ")")
+                |> String.join "\n    | "
            )
+
+
+customTypeName : String -> String
+customTypeName k =
+    "ConfigForm.Custom." ++ k
 
 
 logics : List ( String, Kind ) -> String
@@ -275,7 +300,7 @@ logics data =
     let
         pre =
             """
---logics : List (ConfigForm.Logic Config)
+logics : List (ConfigForm.Logic Config)
 logics =
 """
                 |> String.trim
@@ -333,7 +358,7 @@ kindToType kind =
             Nothing
 
         CustomKind { logicName } ->
-            Just logicName
+            Just <| "ConfigForm.Custom." ++ logicName
 
 
 kindToDefault : Kind -> Maybe String
@@ -358,7 +383,7 @@ kindToDefault kind =
             Nothing
 
         CustomKind { logicName } ->
-            Just <| "defaults." ++ logicName
+            Just <| "defaults." ++ uncapitalize logicName
 
 
 kindToLogic : Kind -> String
@@ -383,7 +408,12 @@ kindToLogic kind =
             "ConfigForm.section"
 
         CustomKind { logicName } ->
-            "ConfigForm.Custom." ++ logicName
+            "ConfigForm.Custom." ++ uncapitalize logicName
+
+
+uncapitalize : String -> String
+uncapitalize str =
+    String.toLower (String.left 1 str) ++ String.dropLeft 1 str
 
 
 kindToLogicArgs : ( String, Kind ) -> List String
@@ -438,3 +468,43 @@ kindToFieldName kind =
 
         CustomKind { fieldName } ->
             Just fieldName
+
+
+customLogics : List ( String, Kind ) -> String
+customLogics kinds =
+    gatherCustomTypes kinds
+        |> Set.map
+            (\kind ->
+                let
+                    funcName =
+                        uncapitalize kind
+
+                    typeName =
+                        customTypeName kind
+
+                    logicConstructorName =
+                        kind ++ "Logic"
+
+                    templateStr =
+                        """$funcName : String -> String -> (config -> $typeName) -> ($typeName -> config -> config) -> Logic logicKind
+$funcName fieldName label getter setter =
+    { fieldName = fieldName
+    , label = label
+    , kind = $logicConstructorName { getter = getter, setter = setter }
+    }"""
+                in
+                templateStr
+                    |> interpolate "\\$funcName" funcName
+                    |> interpolate "\\$typeName" typeName
+                    |> interpolate "\\$logicConstructorName" logicConstructorName
+            )
+        |> Set.toList
+        |> String.join "\n\n"
+
+
+regex =
+    Regex.fromString >> Unwrap.maybe
+
+
+interpolate pattern word =
+    Regex.replace (regex pattern) (\_ -> word)
