@@ -1,11 +1,12 @@
 module ConfigForm exposing
-    ( ConfigForm, init, InitOptions, Defaults
+    ( ConfigForm, init, InitOptions
     , Msg
     , update
     , encode
     , view
     , viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
+    , encodeColor, tuple2Encoder
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -18,7 +19,7 @@ module ConfigForm exposing
 
 Also, `Value` is shorthand for `Json.Encode.Value`.
 
-@docs ConfigForm, init, InitOptions, Defaults
+@docs ConfigForm, init, InitOptions
 
 
 # Msg
@@ -86,26 +87,6 @@ type ConfigForm
 type FieldState
     = Hovering
     | Dragging
-
-
-{-| If a particular value isn't found from localStorage or file, then it fallbacks to these values. It might be a good idea to use wild values that are easy to spot so you can quickly replace them with real values.
-
-    defaults =
-        { int = -9999
-        , float = -9999
-        , string = "PLEASE REPLACE ME"
-        , bool = True
-        , color = Color.rgb 1 0 1 -- hot pink!
-        }
-
--}
-type alias Defaults =
-    { int : Int
-    , float : Float
-    , string : String
-    , bool : Bool
-    , color : Color
-    }
 
 
 {-| InitOptions are used to initialize your config and ConfigForm.
@@ -330,35 +311,6 @@ tuple2Encoder : (a -> JE.Value) -> (b -> JE.Value) -> ( a, b ) -> JE.Value
 tuple2Encoder enc1 enc2 ( val1, val2 ) =
     -- from https://stackoverflow.com/a/52676142
     JE.list identity [ enc1 val1, enc2 val2 ]
-
-
-encodeField : Field -> Maybe JE.Value
-encodeField field =
-    case field of
-        IntField data ->
-            ( data.val, data.power )
-                |> tuple2Encoder JE.int JE.int
-                |> Just
-
-        FloatField data ->
-            ( data.val, data.power )
-                |> tuple2Encoder JE.float JE.int
-                |> Just
-
-        StringField data ->
-            JE.string data.val
-                |> Just
-
-        BoolField data ->
-            JE.bool data.val
-                |> Just
-
-        ColorField data ->
-            encodeColor data.val
-                |> Just
-
-        SectionField _ ->
-            Nothing
 
 
 {-| When you receive a Config.Msg, update your `Config` and `ConfigForm` using this. It returns a new `Config` and `ConfigForm`, plus possible json to pass through ports for pointerlock.

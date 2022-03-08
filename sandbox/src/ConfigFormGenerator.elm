@@ -93,6 +93,7 @@ npm install --global elm elm-live@next chokidir
 
 -}
 
+import Html.Events exposing (custom)
 import Regex
 import Set exposing (Set)
 import Unwrap
@@ -117,6 +118,10 @@ type Kind
 -}
 toFiles : List ( String, Kind ) -> List ( String, String )
 toFiles data =
+    let
+        customKinds =
+            gatherCustomTypes data
+    in
     [ ( "ConfigTypes.elm"
       , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
@@ -149,6 +154,8 @@ import ConfigForm.Custom
         , empty data
         , logics data
         , customLogics data
+        , encodeField customKinds
+        , defaults customKinds
         ]
             |> String.join "\n\n\n"
       )
@@ -172,7 +179,8 @@ import Color exposing (Color)
 import ConfigForm
 import ConfigForm.Custom
 import ConfigFormGeneric
-import ConfigTypes exposing (Logic, LogicKind(..))
+import ConfigTypes exposing (Field(..), Logic, LogicKind(..))
+import Json.Encode as Encode exposing (Value)
 """
     in
     moduleDeclaration
@@ -229,7 +237,7 @@ empty data =
     let
         pre =
             """
-empty : ConfigForm.Defaults -> Config
+empty : Defaults -> Config
 empty defaults =
 """
                 |> String.trim
@@ -589,3 +597,60 @@ type ColorFieldMeta
 """
     ]
         |> String.join "\n\n\n"
+
+
+encodeField : Set String -> String
+encodeField customKinds =
+    let
+        customKindCases =
+            customKinds
+                |> Set.map (\kind -> "        " ++ kind ++ "Field data ->\n" ++ "            " ++ "ConfigForm.Custom.encode" ++ kind ++ " data")
+                |> Set.toList
+                |> String.join "\n\n"
+    in
+    """encodeField : Field -> Maybe Value
+encodeField field =
+    case field of
+        IntField data ->
+            ( data.val, data.power )
+                |> ConfigForm.tuple2Encoder Encode.int Encode.int
+                |> Just
+
+        FloatField data ->
+            ( data.val, data.power )
+                |> ConfigForm.tuple2Encoder Encode.float Encode.int
+                |> Just
+
+        StringField data ->
+            Encode.string data.val
+                |> Just
+
+        BoolField data ->
+            Encode.bool data.val
+                |> Just
+
+        ColorField data ->
+            ConfigForm.encodeColor data.val
+                |> Just
+
+        SectionField _ ->
+            Nothing
+
+""" ++ customKindCases
+
+
+defaults : Set String -> String
+defaults customKinds =
+    """type alias Defaults =
+    { int : Int
+    , float : Float
+    , string : String
+    , bool : Bool
+    , color : Color
+"""
+        ++ (customKinds
+                |> Set.map (\kind -> "    , " ++ uncapitalize kind ++ " : " ++ customTypeName kind ++ "\n")
+                |> Set.toList
+                |> String.join ""
+           )
+        ++ """    }"""

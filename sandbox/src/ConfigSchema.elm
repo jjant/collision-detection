@@ -1,7 +1,6 @@
-port module ConfigSchema exposing (myConfigFields)
+port module ConfigSchema exposing (main)
 
 import ConfigFormGenerator exposing (Kind(..))
-import Html exposing (Html)
 import Platform
 
 
@@ -16,8 +15,7 @@ myConfigFields =
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
-
-    -- , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
+    , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
 
 

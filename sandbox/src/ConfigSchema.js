@@ -3043,6 +3043,9 @@ var $author$project$ConfigFormGenerator$BoolKind = function (a) {
 var $author$project$ConfigFormGenerator$ColorKind = function (a) {
 	return {$: 'ColorKind', a: a};
 };
+var $author$project$ConfigFormGenerator$CustomKind = function (a) {
+	return {$: 'CustomKind', a: a};
+};
 var $author$project$ConfigFormGenerator$SectionKind = {$: 'SectionKind'};
 var $author$project$ConfigSchema$myConfigFields = _List_fromArray(
 	[
@@ -3059,7 +3062,11 @@ var $author$project$ConfigSchema$myConfigFields = _List_fromArray(
 		_Utils_Tuple2('Editor UI', $author$project$ConfigFormGenerator$SectionKind),
 		_Utils_Tuple2(
 		'Background color',
-		$author$project$ConfigFormGenerator$ColorKind('backgroundColor'))
+		$author$project$ConfigFormGenerator$ColorKind('backgroundColor')),
+		_Utils_Tuple2(
+		'My custom thing',
+		$author$project$ConfigFormGenerator$CustomKind(
+			{fieldName: 'myKind', logicName: 'Vec2'}))
 	]);
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$core$Platform$Sub$batch = _Platform_batch;
@@ -3363,6 +3370,18 @@ var $author$project$ConfigFormGenerator$customLogics = function (kinds) {
 				},
 				$author$project$ConfigFormGenerator$gatherCustomTypes(kinds))));
 };
+var $author$project$ConfigFormGenerator$defaults = function (customKinds) {
+	return 'type alias Defaults =\n    { int : Int\n    , float : Float\n    , string : String\n    , bool : Bool\n    , color : Color\n' + (A2(
+		$elm$core$String$join,
+		'',
+		$elm$core$Set$toList(
+			A2(
+				$elm$core$Set$map,
+				function (kind) {
+					return '    , ' + ($author$project$ConfigFormGenerator$uncapitalize(kind) + (' : ' + ($author$project$ConfigFormGenerator$customTypeName(kind) + '\n')));
+				},
+				customKinds))) + '    }');
+};
 var $author$project$ConfigFormGenerator$kindToDefault = function (kind) {
 	switch (kind.$) {
 		case 'IntKind':
@@ -3425,7 +3444,7 @@ var $elm$core$Tuple$second = function (_v0) {
 };
 var $elm$core$String$trim = _String_trim;
 var $author$project$ConfigFormGenerator$empty = function (data) {
-	var pre = $elm$core$String$trim('\nempty : ConfigForm.Defaults -> Config\nempty defaults =\n');
+	var pre = $elm$core$String$trim('\nempty : Defaults -> Config\nempty defaults =\n');
 	var post = '    }';
 	var middle = A2(
 		$elm$core$String$join,
@@ -3446,6 +3465,19 @@ var $author$project$ConfigFormGenerator$empty = function (data) {
 		'\n',
 		_List_fromArray(
 			[pre, middle, post]));
+};
+var $author$project$ConfigFormGenerator$encodeField = function (customKinds) {
+	var customKindCases = A2(
+		$elm$core$String$join,
+		'\n\n',
+		$elm$core$Set$toList(
+			A2(
+				$elm$core$Set$map,
+				function (kind) {
+					return '        ' + (kind + ('Field data ->\n' + ('            ' + ('ConfigForm.Custom.encode' + (kind + ' data')))));
+				},
+				customKinds)));
+	return 'encodeField : Field -> Maybe Value\nencodeField field =\n    case field of\n        IntField data ->\n            ( data.val, data.power )\n                |> ConfigForm.tuple2Encoder Encode.int Encode.int\n                |> Just\n\n        FloatField data ->\n            ( data.val, data.power )\n                |> ConfigForm.tuple2Encoder Encode.float Encode.int\n                |> Just\n\n        StringField data ->\n            Encode.string data.val\n                |> Just\n\n        BoolField data ->\n            Encode.bool data.val\n                |> Just\n\n        ColorField data ->\n            ConfigForm.encodeColor data.val\n                |> Just\n\n        SectionField _ ->\n            Nothing\n\n' + customKindCases;
 };
 var $author$project$ConfigFormGenerator$fieldTypes = function (data) {
 	var customKinds = $author$project$ConfigFormGenerator$gatherCustomTypes(data);
@@ -3469,7 +3501,7 @@ var $author$project$ConfigFormGenerator$fieldTypes = function (data) {
 };
 var $author$project$ConfigFormGenerator$header = function () {
 	var moduleDeclaration = '\n-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule Config exposing (Config, empty, logics)\n';
-	var imports = '\nimport Color exposing (Color)\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (Logic, LogicKind(..))\n';
+	var imports = '\nimport Color exposing (Color)\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (Field(..), Logic, LogicKind(..))\nimport Json.Encode as Encode exposing (Value)\n';
 	return $elm$core$String$trim(
 		_Utils_ap(moduleDeclaration, imports));
 }();
@@ -3628,6 +3660,7 @@ var $author$project$ConfigFormGenerator$typeAlias = function (data) {
 			[pre, middle, post]));
 };
 var $author$project$ConfigFormGenerator$toFiles = function (data) {
+	var customKinds = $author$project$ConfigFormGenerator$gatherCustomTypes(data);
 	return _List_fromArray(
 		[
 			_Utils_Tuple2(
@@ -3654,7 +3687,9 @@ var $author$project$ConfigFormGenerator$toFiles = function (data) {
 						$author$project$ConfigFormGenerator$typeAlias(data),
 						$author$project$ConfigFormGenerator$empty(data),
 						$author$project$ConfigFormGenerator$logics(data),
-						$author$project$ConfigFormGenerator$customLogics(data)
+						$author$project$ConfigFormGenerator$customLogics(data),
+						$author$project$ConfigFormGenerator$encodeField(customKinds),
+						$author$project$ConfigFormGenerator$defaults(customKinds)
 					])))
 		]);
 };
