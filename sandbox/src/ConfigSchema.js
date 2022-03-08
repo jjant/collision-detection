@@ -2537,9 +2537,11 @@ var $elm$core$Set$toList = function (_v0) {
 	return $elm$core$Dict$keys(dict);
 };
 var $elm$core$Basics$GT = {$: 'GT'};
-var $elm$core$Basics$identity = function (x) {
-	return x;
-};
+var $elm$core$Basics$apR = F2(
+	function (x, f) {
+		return f(x);
+	});
+var $elm$core$Basics$append = _Utils_append;
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -2569,7 +2571,6 @@ var $elm$core$Maybe$Just = function (a) {
 var $elm$core$Maybe$Nothing = {$: 'Nothing'};
 var $elm$core$String$all = _String_all;
 var $elm$core$Basics$and = _Basics_and;
-var $elm$core$Basics$append = _Utils_append;
 var $elm$json$Json$Encode$encode = _Json_encode;
 var $elm$core$String$fromInt = _String_fromNumber;
 var $elm$core$String$join = F2(
@@ -2805,10 +2806,6 @@ var $elm$core$Basics$apL = F2(
 	function (f, x) {
 		return f(x);
 	});
-var $elm$core$Basics$apR = F2(
-	function (x, f) {
-		return f(x);
-	});
 var $elm$core$Basics$eq = _Utils_equal;
 var $elm$core$Basics$floor = _Basics_floor;
 var $elm$core$Elm$JsArray$length = _JsArray_length;
@@ -2935,6 +2932,10 @@ var $elm$core$Result$isOk = function (result) {
 		return false;
 	}
 };
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Basics$identity = function (x) {
+	return x;
+};
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -2959,45 +2960,6 @@ var $author$project$ConfigSchema$generateFile = _Platform_outgoingPort(
 					$elm$json$Json$Encode$string(b)
 				]));
 	});
-var $author$project$ConfigFormGenerator$BoolKind = function (a) {
-	return {$: 'BoolKind', a: a};
-};
-var $author$project$ConfigFormGenerator$ColorKind = function (a) {
-	return {$: 'ColorKind', a: a};
-};
-var $author$project$ConfigFormGenerator$CustomKind = function (a) {
-	return {$: 'CustomKind', a: a};
-};
-var $author$project$ConfigFormGenerator$SectionKind = {$: 'SectionKind'};
-var $author$project$ConfigSchema$myConfigFields = _List_fromArray(
-	[
-		_Utils_Tuple2('Visualise', $author$project$ConfigFormGenerator$SectionKind),
-		_Utils_Tuple2(
-		'Support points',
-		$author$project$ConfigFormGenerator$BoolKind('showSupportPoints')),
-		_Utils_Tuple2(
-		'Point projections',
-		$author$project$ConfigFormGenerator$BoolKind('showPointProjections')),
-		_Utils_Tuple2(
-		'Contact points',
-		$author$project$ConfigFormGenerator$BoolKind('showContactPoints')),
-		_Utils_Tuple2('Editor UI', $author$project$ConfigFormGenerator$SectionKind),
-		_Utils_Tuple2(
-		'Background color',
-		$author$project$ConfigFormGenerator$ColorKind('backgroundColor')),
-		_Utils_Tuple2(
-		'My custom thing',
-		$author$project$ConfigFormGenerator$CustomKind(
-			{fieldName: 'myKind', logicName: 'Vec2'}))
-	]);
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $elm$json$Json$Decode$succeed = _Json_succeed;
-var $author$project$ConfigFormGenerator$customTypeName = function (k) {
-	return 'ConfigForm.Custom.' + k;
-};
 var $elm$core$List$foldrHelper = F4(
 	function (fn, acc, ctr, ls) {
 		if (!ls.b) {
@@ -3053,6 +3015,59 @@ var $elm$core$List$foldr = F3(
 	function (fn, acc, ls) {
 		return A4($elm$core$List$foldrHelper, fn, acc, 0, ls);
 	});
+var $elm$core$List$map = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, acc) {
+					return A2(
+						$elm$core$List$cons,
+						f(x),
+						acc);
+				}),
+			_List_Nil,
+			xs);
+	});
+var $elm$core$Tuple$mapFirst = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			func(x),
+			y);
+	});
+var $author$project$ConfigFormGenerator$BoolKind = function (a) {
+	return {$: 'BoolKind', a: a};
+};
+var $author$project$ConfigFormGenerator$ColorKind = function (a) {
+	return {$: 'ColorKind', a: a};
+};
+var $author$project$ConfigFormGenerator$SectionKind = {$: 'SectionKind'};
+var $author$project$ConfigSchema$myConfigFields = _List_fromArray(
+	[
+		_Utils_Tuple2('Visualise', $author$project$ConfigFormGenerator$SectionKind),
+		_Utils_Tuple2(
+		'Support points',
+		$author$project$ConfigFormGenerator$BoolKind('showSupportPoints')),
+		_Utils_Tuple2(
+		'Point projections',
+		$author$project$ConfigFormGenerator$BoolKind('showPointProjections')),
+		_Utils_Tuple2(
+		'Contact points',
+		$author$project$ConfigFormGenerator$BoolKind('showContactPoints')),
+		_Utils_Tuple2('Editor UI', $author$project$ConfigFormGenerator$SectionKind),
+		_Utils_Tuple2(
+		'Background color',
+		$author$project$ConfigFormGenerator$ColorKind('backgroundColor'))
+	]);
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$json$Json$Decode$succeed = _Json_succeed;
+var $author$project$ConfigFormGenerator$customTypeName = function (k) {
+	return 'ConfigForm.Custom.' + k;
+};
 var $elm$core$List$maybeCons = F3(
 	function (f, mx, xs) {
 		var _v0 = f(mx);
@@ -3404,20 +3419,6 @@ var $author$project$ConfigFormGenerator$emptyEntry = function (kind) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
-var $elm$core$List$map = F2(
-	function (f, xs) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, acc) {
-					return A2(
-						$elm$core$List$cons,
-						f(x),
-						acc);
-				}),
-			_List_Nil,
-			xs);
-	});
 var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
@@ -3446,9 +3447,29 @@ var $author$project$ConfigFormGenerator$empty = function (data) {
 		_List_fromArray(
 			[pre, middle, post]));
 };
+var $author$project$ConfigFormGenerator$fieldTypes = function (data) {
+	var customKinds = $author$project$ConfigFormGenerator$gatherCustomTypes(data);
+	return A2(
+		$elm$core$String$join,
+		'\n\n\n',
+		_List_fromArray(
+			[
+				'type Field\n    = IntField IntFieldData\n    | FloatField FloatFieldData\n    | StringField StringFieldData\n    | BoolField BoolFieldData\n    | ColorField ColorFieldData\n    | SectionField String' + A2(
+				$elm$core$String$join,
+				'',
+				$elm$core$Set$toList(
+					A2(
+						$elm$core$Set$map,
+						function (kind) {
+							return '\n    | ' + (kind + ('Field ' + ('(' + ('ConfigForm.Custom.' + (kind + ('Field' + ')'))))));
+						},
+						customKinds))),
+				'type alias IntFieldData =\n    { val : Int\n    , str : String\n    , power : Int\n    }\n\n\ntype alias FloatFieldData =\n    { val : Float\n    , str : String\n    , power : Int\n    }\n\n\ntype alias StringFieldData =\n    { val : String\n    }\n\n\ntype alias BoolFieldData =\n    { val : Bool\n    }\n\n\ntype alias ColorFieldData =\n    { val : Color\n    , meta : ColorFieldMeta\n    }\n\n\ntype ColorFieldMeta\n    = ColorFieldMeta\n        { state : ColorPicker.State\n        , isOpen : Bool\n        }\n'
+			]));
+};
 var $author$project$ConfigFormGenerator$header = function () {
 	var moduleDeclaration = '\n-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule Config exposing (Config, empty, logics)\n';
-	var imports = '\nimport Color exposing (Color)\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\n';
+	var imports = '\nimport Color exposing (Color)\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (Logic, LogicKind(..))\n';
 	return $elm$core$String$trim(
 		_Utils_ap(moduleDeclaration, imports));
 }();
@@ -3470,7 +3491,7 @@ var $author$project$ConfigFormGenerator$logicKindType = function (kinds) {
 			function (_v0) {
 				var kind = _v0.a;
 				var type_ = _v0.b;
-				return kind + ('Logic ' + ('(ConfigFormGeneric.Lens config ' + (type_ + ')')));
+				return kind + ('Logic ' + ('(Lens config ' + (type_ + ')')));
 			},
 			_Utils_ap(
 				defaultKinds,
@@ -3500,7 +3521,7 @@ var $author$project$ConfigFormGenerator$kindToLogic = function (kind) {
 			return 'ConfigForm.section';
 		default:
 			var logicName = kind.a.logicName;
-			return 'ConfigForm.Custom.' + $author$project$ConfigFormGenerator$uncapitalize(logicName);
+			return $author$project$ConfigFormGenerator$uncapitalize(logicName);
 	}
 };
 var $author$project$ConfigFormGenerator$kindToLogicArgs = function (_v0) {
@@ -3521,7 +3542,7 @@ var $author$project$ConfigFormGenerator$kindToLogicArgs = function (_v0) {
 	}
 };
 var $author$project$ConfigFormGenerator$logics = function (data) {
-	var pre = $elm$core$String$trim('\nlogics : List (ConfigForm.Logic Config)\nlogics =\n');
+	var pre = $elm$core$String$trim('\nlogics : List (Logic Config)\nlogics =\n');
 	var post = '    ]';
 	var middle = A2(
 		$elm$core$String$join,
@@ -3606,30 +3627,54 @@ var $author$project$ConfigFormGenerator$typeAlias = function (data) {
 		_List_fromArray(
 			[pre, middle, post]));
 };
-var $author$project$ConfigFormGenerator$toFile = function (data) {
-	return A2(
-		$elm$core$String$join,
-		'\n\n\n',
-		_List_fromArray(
-			[
-				$author$project$ConfigFormGenerator$header,
-				$author$project$ConfigFormGenerator$typeAlias(data),
-				$author$project$ConfigFormGenerator$empty(data),
-				$author$project$ConfigFormGenerator$logicKindType(data),
-				$author$project$ConfigFormGenerator$logics(data),
-				$author$project$ConfigFormGenerator$customLogics(data)
-			]));
+var $author$project$ConfigFormGenerator$toFiles = function (data) {
+	return _List_fromArray(
+		[
+			_Utils_Tuple2(
+			'ConfigTypes.elm',
+			A2(
+				$elm$core$String$join,
+				'\n\n\n',
+				_List_fromArray(
+					[
+						'-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule ConfigTypes exposing (Logic, LogicKind(..), Field(..), ColorFieldMeta(..))\n\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm.Custom\n',
+						'type alias Logic config =\n    { fieldName : String\n    , label : String\n    , kind : LogicKind config\n    }\n',
+						$author$project$ConfigFormGenerator$logicKindType(data),
+						'type alias Lens big small =\n    { getter : big -> small\n    , setter : small -> big -> big\n    }\n',
+						$author$project$ConfigFormGenerator$fieldTypes(data)
+					]))),
+			_Utils_Tuple2(
+			'Config.Elm',
+			A2(
+				$elm$core$String$join,
+				'\n\n\n',
+				_List_fromArray(
+					[
+						$author$project$ConfigFormGenerator$header,
+						$author$project$ConfigFormGenerator$typeAlias(data),
+						$author$project$ConfigFormGenerator$empty(data),
+						$author$project$ConfigFormGenerator$logics(data),
+						$author$project$ConfigFormGenerator$customLogics(data)
+					])))
+		]);
 };
 var $elm$core$Platform$worker = _Platform_worker;
 var $author$project$ConfigSchema$main = function () {
-	var generatedElmCode = $author$project$ConfigFormGenerator$toFile($author$project$ConfigSchema$myConfigFields);
+	var generateElmCode = $elm$core$Platform$Cmd$batch(
+		A2(
+			$elm$core$List$map,
+			$author$project$ConfigSchema$generateFile,
+			A2(
+				$elm$core$List$map,
+				$elm$core$Tuple$mapFirst(
+					$elm$core$Basics$append('./src/')),
+				$author$project$ConfigFormGenerator$toFiles($author$project$ConfigSchema$myConfigFields))));
 	return $elm$core$Platform$worker(
 		{
 			init: function (_v0) {
 				return _Utils_Tuple2(
 					{},
-					$author$project$ConfigSchema$generateFile(
-						_Utils_Tuple2('fileName', generatedElmCode)));
+					generateElmCode);
 			},
 			subscriptions: function (_v1) {
 				return $elm$core$Platform$Sub$none;

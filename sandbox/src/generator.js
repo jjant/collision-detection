@@ -1,7 +1,7 @@
 const { Elm } = require("./ConfigSchema.js");
-
+const fs = require("fs");
 const app = Elm.ConfigSchema.init();
 
-app.ports.generateFile.subscribe(([a, b]) => {
-  console.log(a, b);
+app.ports.generateFile.subscribe(([fileName, fileContents]) => {
+  fs.writeFileSync(fileName, fileContents);
 });

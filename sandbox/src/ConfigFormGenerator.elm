@@ -1,6 +1,6 @@
 module ConfigFormGenerator exposing
     ( Kind(..)
-    , toFile
+    , toFiles
     )
 
 {-| Imagine being able to add a field to the config form with just one line! It can be done if you use code generation.
@@ -24,7 +24,7 @@ Use `ConfigFormGenerator` in your `ConfigSchema.elm` to make a `Config.elm` file
     main =
         let
             generatedElmCode =
-                ConfigFormGenerator.toFile myConfigFields
+                ConfigFormGenerator.toFiles myConfigFields
 
             _ =
                 Debug.log generatedElmCode ""
@@ -89,11 +89,10 @@ npm install --global elm elm-live@next chokidir
 ```
 
 @docs Kind
-@docs toFile
+@docs toFiles
 
 -}
 
-import Dict exposing (Dict)
 import Regex
 import Set exposing (Set)
 import Unwrap
@@ -116,23 +115,44 @@ type Kind
 
 {-| Generates the elm code for your Config module given a list of labels and field kinds.
 -}
-toFile : List ( String, Kind ) -> String
-toFile data =
-    [ header
-    , typeAlias data
-    , empty data
-    , logicKindType data
-    , logics data
-    , customLogics data
+toFiles : List ( String, Kind ) -> List ( String, String )
+toFiles data =
+    [ ( "ConfigTypes.elm"
+      , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
-    -- , specialCaseSection
+
+module ConfigTypes exposing (Logic, LogicKind(..), Field(..), ColorFieldMeta(..))
+
+import Color exposing (Color)
+import ColorPicker
+import ConfigForm.Custom
+"""
+        , """type alias Logic config =
+    { fieldName : String
+    , label : String
+    , kind : LogicKind config
+    }
+"""
+        , logicKindType data
+        , """type alias Lens big small =
+    { getter : big -> small
+    , setter : small -> big -> big
+    }
+"""
+        , fieldTypes data
+        ]
+            |> String.join "\n\n\n"
+      )
+    , ( "Config.Elm"
+      , [ header
+        , typeAlias data
+        , empty data
+        , logics data
+        , customLogics data
+        ]
+            |> String.join "\n\n\n"
+      )
     ]
-        |> String.join "\n\n\n"
-
-
-specialCaseSection : String
-specialCaseSection =
-    "type alias Section =\n    ()"
 
 
 header : String
@@ -152,6 +172,7 @@ import Color exposing (Color)
 import ConfigForm
 import ConfigForm.Custom
 import ConfigFormGeneric
+import ConfigTypes exposing (Logic, LogicKind(..))
 """
     in
     moduleDeclaration
@@ -285,7 +306,7 @@ logicKindType kinds =
                 |> Set.toList
                 |> List.map (\k -> ( k, customTypeName k ))
                 |> (++) defaultKinds
-                |> List.map (\( kind, type_ ) -> kind ++ "Logic " ++ "(ConfigFormGeneric.Lens config " ++ type_ ++ ")")
+                |> List.map (\( kind, type_ ) -> kind ++ "Logic " ++ "(Lens config " ++ type_ ++ ")")
                 |> String.join "\n    | "
            )
 
@@ -300,7 +321,7 @@ logics data =
     let
         pre =
             """
-logics : List (ConfigForm.Logic Config)
+logics : List (Logic Config)
 logics =
 """
                 |> String.trim
@@ -408,7 +429,7 @@ kindToLogic kind =
             "ConfigForm.section"
 
         CustomKind { logicName } ->
-            "ConfigForm.Custom." ++ uncapitalize logicName
+            uncapitalize logicName
 
 
 uncapitalize : String -> String
@@ -502,9 +523,69 @@ $funcName fieldName label getter setter =
         |> String.join "\n\n"
 
 
+regex : String -> Regex.Regex
 regex =
     Regex.fromString >> Unwrap.maybe
 
 
+interpolate : String -> String -> String -> String
 interpolate pattern word =
     Regex.replace (regex pattern) (\_ -> word)
+
+
+fieldTypes : List ( String, Kind ) -> String
+fieldTypes data =
+    let
+        customKinds =
+            gatherCustomTypes data
+    in
+    [ """type Field
+    = IntField IntFieldData
+    | FloatField FloatFieldData
+    | StringField StringFieldData
+    | BoolField BoolFieldData
+    | ColorField ColorFieldData
+    | SectionField String"""
+        ++ (customKinds
+                |> Set.map (\kind -> "\n    | " ++ kind ++ "Field " ++ "(" ++ "ConfigForm.Custom." ++ kind ++ "Field" ++ ")")
+                |> Set.toList
+                |> String.join ""
+           )
+    , """type alias IntFieldData =
+    { val : Int
+    , str : String
+    , power : Int
+    }
+
+
+type alias FloatFieldData =
+    { val : Float
+    , str : String
+    , power : Int
+    }
+
+
+type alias StringFieldData =
+    { val : String
+    }
+
+
+type alias BoolFieldData =
+    { val : Bool
+    }
+
+
+type alias ColorFieldData =
+    { val : Color
+    , meta : ColorFieldMeta
+    }
+
+
+type ColorFieldMeta
+    = ColorFieldMeta
+        { state : ColorPicker.State
+        , isOpen : Bool
+        }
+"""
+    ]
+        |> String.join "\n\n\n"

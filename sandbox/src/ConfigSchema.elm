@@ -16,18 +16,22 @@ myConfigFields =
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
-    , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
+
+    -- , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
 
 
 main : Program {} {} {}
 main =
     let
-        generatedElmCode =
-            ConfigFormGenerator.toFile myConfigFields
+        generateElmCode =
+            ConfigFormGenerator.toFiles myConfigFields
+                |> List.map (Tuple.mapFirst ((++) "./src/"))
+                |> List.map generateFile
+                |> Cmd.batch
     in
     Platform.worker
-        { init = \_ -> ( {}, generateFile ( "fileName", generatedElmCode ) )
+        { init = \_ -> ( {}, generateElmCode )
         , update = \_ _ -> ( {}, Cmd.none )
         , subscriptions = \_ -> Sub.none
         }

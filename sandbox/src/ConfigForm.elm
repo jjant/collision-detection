@@ -6,7 +6,6 @@ module ConfigForm exposing
     , view
     , viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
-    , Logic
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -55,7 +54,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormGeneric exposing (Lens)
+import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Dict exposing (Dict)
 import Element exposing (Element, centerX, centerY, column, el, fill, height, rgba255, row, spaceEvenly, spacingXY, width)
 import Element.Background as Background
@@ -87,54 +86,6 @@ type ConfigForm
 type FieldState
     = Hovering
     | Dragging
-
-
-{-| Field
--}
-type Field
-    = IntField IntFieldData
-    | FloatField FloatFieldData
-    | StringField StringFieldData
-    | BoolField BoolFieldData
-    | ColorField ColorFieldData
-    | SectionField String
-
-
-type alias IntFieldData =
-    { val : Int
-    , str : String
-    , power : Int
-    }
-
-
-type alias FloatFieldData =
-    { val : Float
-    , str : String
-    , power : Int
-    }
-
-
-type alias StringFieldData =
-    { val : String
-    }
-
-
-type alias BoolFieldData =
-    { val : Bool
-    }
-
-
-type alias ColorFieldData =
-    { val : Color
-    , meta : ColorFieldMeta
-    }
-
-
-type ColorFieldMeta
-    = ColorFieldMeta
-        { state : ColorPicker.State
-        , isOpen : Bool
-        }
 
 
 {-| If a particular value isn't found from localStorage or file, then it fallbacks to these values. It might be a good idea to use wild values that are easy to spot so you can quickly replace them with real values.
@@ -169,7 +120,7 @@ type alias Defaults =
 -}
 type alias InitOptions config =
     { flags : JE.Value
-    , logics : List (Logic config)
+    , logics : List (ConfigTypes.Logic config)
     , emptyConfig : config
     }
 
@@ -262,27 +213,6 @@ emptyField logic emptyConfig =
 
         SectionLogic _ ->
             SectionField logic.fieldName
-
-
-
--- STUFF NEEDED ONLY BY GENERATED CONFIG STUFF
-{- Logic stuff. Never persist Logic in your model! -}
-
-
-type alias Logic config =
-    { fieldName : String
-    , label : String
-    , kind : LogicKind config
-    }
-
-
-type LogicKind config
-    = IntLogic (Lens config Int)
-    | FloatLogic (Lens config Float)
-    | StringLogic (Lens config String)
-    | ColorLogic (Lens config Color)
-    | BoolLogic (Lens config Bool)
-    | SectionLogic (Lens config ())
 
 
 {-| Creates the logic for Int values

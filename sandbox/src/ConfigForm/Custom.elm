@@ -1,7 +1,5 @@
-module ConfigForm.Custom exposing (Vec2)
+module ConfigForm.Custom exposing (Vec2, Vec2Field)
 
-import ConfigForm exposing (Logic)
-import ConfigFormGeneric exposing (Lens)
 import Vec2
 
 
@@ -9,8 +7,5 @@ type alias Vec2 =
     Vec2.Vec2
 
 
-type alias Logic logicKind =
-    { fieldName : String
-    , label : String
-    , kind : logicKind
-    }
+type alias Vec2Field =
+    {}
