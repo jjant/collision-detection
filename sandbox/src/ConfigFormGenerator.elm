@@ -126,7 +126,7 @@ toFiles data =
       , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigTypes exposing (ColorFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker

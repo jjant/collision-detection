@@ -9,13 +9,15 @@ port generateFile : ( String, String ) -> Cmd msg
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "Visualise", SectionKind )
+    [ ( "My Float", FloatKind "myFloat" )
+    , ( "Visualise", SectionKind )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
-    , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
+
+    -- , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
 
 

@@ -8,7 +8,8 @@ import Camera exposing (Camera, tick)
 import Circle
 import Color
 import Config exposing (Config)
-import ConfigForm exposing (ConfigForm)
+import ConfigForm
+import ConfigFormGeneric exposing (ConfigForm)
 import Draggable
 import Element
     exposing
@@ -79,7 +80,7 @@ init elmConfigUiFlags =
         -- Initialize your config and configForm,
         -- passing in defaults for any empty config fields
         ( config, configForm ) =
-            ConfigForm.init
+            ConfigFormGeneric.init
                 { flags = elmConfigUiFlags
                 , logics = Config.logics
                 , emptyConfig =
@@ -159,7 +160,7 @@ update msg model =
         ConfigFormMsg configFormMsg ->
             let
                 ( newConfig, newConfigForm ) =
-                    ConfigForm.update
+                    ConfigFormGeneric.update
                         Config.logics
                         model.config
                         model.configForm
@@ -320,7 +321,7 @@ view model =
                     -- , style "display" "flex"
                     -- , style "flex-direction" "column"
                     ]
-                    [ ConfigForm.view
+                    [ ConfigFormGeneric.view
                         ConfigForm.viewOptions
                         Config.logics
                         model.configForm
@@ -331,7 +332,7 @@ view model =
                     -- Then the next time a new user loads your app, they'll see your updated config.
                     , Element.html <|
                         Html.textarea []
-                            [ ConfigForm.encode model.configForm
+                            [ ConfigFormGeneric.encode model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]

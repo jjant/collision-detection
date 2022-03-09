@@ -1,7 +1,7 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigTypes exposing (ColorFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker
@@ -24,7 +24,6 @@ type LogicKind config
     | ColorLogic (Lens config Color)
     | BoolLogic (Lens config Bool)
     | SectionLogic (Lens config ())
-    | Vec2Logic (Lens config ConfigForm.Custom.Vec2)
 
 
 type alias Lens big small =
@@ -41,7 +40,6 @@ type Field
     | BoolField BoolFieldData
     | ColorField ColorFieldData
     | SectionField String
-    | Vec2Field (ConfigForm.Custom.Vec2Field)
 
 
 type alias IntFieldData =

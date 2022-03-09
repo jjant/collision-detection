@@ -1,11 +1,19 @@
 module ConfigFormGeneric exposing (..)
 
 import Config
+import ConfigForm
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
+import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
+import Element.Background as Background
+import Element.Font as Font
+import Html
+import Html.Attributes
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Misc
 import OrderedDict exposing (OrderedDict)
+import Unwrap
 
 
 {-| InitOptions are used to initialize your config and ConfigForm.
@@ -31,6 +39,16 @@ type alias Flags =
     }
 
 
+{-| A Msg is an opaque type for ConfigForm to communicate with your app through ConfigForm.update.
+-}
+type Msg config
+    = ChangedConfigForm String Field
+    | ClickedPointerLockLabel String
+    | HoveredLabel String Bool
+    | MouseMove Int
+    | MouseUp
+
+
 {-| ConfigForm is the state of the config form. Keep it in your model along with the `config` record.
 -}
 type ConfigForm
@@ -39,6 +57,147 @@ type ConfigForm
         , fileFields : Dict String Field
         , activeField : Maybe ( FieldState, String )
         }
+
+
+{-| When you receive a Config.Msg, update your `Config` and `ConfigForm` using this. It returns a new `Config` and `ConfigForm`, plus possible json to pass through ports for pointerlock.
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            ConfigFormMsg configFormMsg ->
+                let
+                    ( newConfig, newConfigForm, maybeJsonCmd ) =
+                        ConfigForm.update
+                            Config.logics
+                            model.config
+                            model.configForm
+                            configFormMsg
+
+                    newModel =
+                        { model
+                            | config = newConfig
+                            , configForm = newConfigForm
+                        }
+                in
+                ( newModel
+                , Cmd.batch
+                    [ saveToLocalStorageCmd newModel
+                    , case maybeJsonCmd of
+                        Just jsonCmd ->
+                            sendToPort
+                                (Json.Encode.object
+                                    [ ( "id", Json.Encode.string "CONFIG" )
+                                    , ( "val", jsonCmd )
+                                    ]
+                                )
+
+                        Nothing ->
+                            Cmd.none
+                    ]
+                )
+
+-}
+update : List (ConfigTypes.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
+update logics config (ConfigForm configForm) msg =
+    case msg of
+        ChangedConfigForm fieldName field ->
+            let
+                newConfigForm =
+                    configForm.fields
+                        |> OrderedDict.insert fieldName field
+
+                newConfig =
+                    Config.configFromFields logics newConfigForm config
+            in
+            ( newConfig
+            , ConfigForm { configForm | fields = newConfigForm }
+            )
+
+        ClickedPointerLockLabel fieldName ->
+            ( config
+            , ConfigForm { configForm | activeField = Just ( Dragging, fieldName ) }
+            )
+
+        HoveredLabel fieldName didEnter ->
+            ( config
+            , ConfigForm
+                { configForm
+                    | activeField =
+                        -- chrome triggers a mouseleave when entering pointerlock,
+                        -- so check if you're dragging first, and don't change anything if so
+                        case configForm.activeField of
+                            Just ( Dragging, _ ) ->
+                                configForm.activeField
+
+                            _ ->
+                                if didEnter then
+                                    Just ( Hovering, fieldName )
+
+                                else
+                                    Nothing
+                }
+            )
+
+        MouseMove num ->
+            let
+                newConfigForm =
+                    case configForm.activeField of
+                        Just ( state, fieldName ) ->
+                            { configForm
+                                | fields =
+                                    configForm.fields
+                                        |> OrderedDict.update fieldName
+                                            (\maybeField ->
+                                                case maybeField of
+                                                    Just (IntField data) ->
+                                                        let
+                                                            newVal =
+                                                                data.val
+                                                                    + (num * (10 ^ data.power))
+                                                        in
+                                                        Just
+                                                            (IntField
+                                                                { data
+                                                                    | val = newVal
+                                                                    , str = ConfigForm.formatPoweredInt data.power newVal
+                                                                }
+                                                            )
+
+                                                    Just (FloatField data) ->
+                                                        let
+                                                            newVal =
+                                                                data.val
+                                                                    + toFloat (num * (10 ^ data.power))
+                                                        in
+                                                        Just
+                                                            (FloatField
+                                                                { data | val = newVal, str = ConfigForm.formatPoweredFloat data.power newVal }
+                                                            )
+
+                                                    _ ->
+                                                        Nothing
+                                            )
+                            }
+
+                        Nothing ->
+                            configForm
+
+                newConfig =
+                    Config.configFromFields logics newConfigForm.fields config
+            in
+            ( newConfig
+            , ConfigForm newConfigForm
+            )
+
+        MouseUp ->
+            ( config
+            , ConfigForm
+                { configForm
+                    | activeField =
+                        configForm.activeField
+                            |> Maybe.map (\( _, fieldName ) -> ( Hovering, fieldName ))
+                }
+            )
 
 
 type FieldState
@@ -87,6 +246,61 @@ init options =
         , activeField = Nothing
         }
     )
+
+
+{-| View the config form.
+-}
+
+
+
+-- view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
+
+
+view viewOptions logics ((ConfigForm configForm) as configFormType) =
+    column [ width fill, Font.size viewOptions.fontSize ]
+        [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
+            (logics
+                |> List.indexedMap
+                    (\i logic ->
+                        let
+                            field =
+                                OrderedDict.get logic.fieldName configForm.fields
+                                    |> Unwrap.maybe
+                        in
+                        row
+                            ([ width fill, spaceEvenly ]
+                                ++ (case configForm.activeField of
+                                        Just ( _, fieldName ) ->
+                                            if fieldName == logic.fieldName then
+                                                [ Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
+                                                ]
+
+                                            else
+                                                []
+
+                                        Nothing ->
+                                            []
+                                   )
+                            )
+                            [ ConfigForm.viewLabel { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm } viewOptions field i logic
+                            , ConfigForm.viewChanger ChangedConfigForm viewOptions field i logic
+                            ]
+                    )
+            )
+        , Element.html <|
+            Html.div [ Html.Attributes.id "elm-config-ui-pointerlock" ] []
+        , Element.html <|
+            Html.node "elm-config-ui-json"
+                [ Html.Attributes.attribute
+                    "data-encoded-config"
+                    (configForm
+                        |> ConfigForm
+                        |> encode
+                        |> Encode.encode 2
+                    )
+                ]
+                []
+        ]
 
 
 {-| Encodes the current data of your config form to be persisted, including meta-data. This is typically used to save to localStorage.

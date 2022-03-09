@@ -14,27 +14,32 @@ import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
-    { showSupportPoints : Bool
+    { myFloat : Float
+    , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
     , backgroundColor : Color
-    , myKind : ConfigForm.Custom.Vec2
     }
 
 
 empty : Defaults -> Config
 empty defaults =
-    { showSupportPoints = defaults.bool
+    { myFloat = defaults.float
+    , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
-    , myKind = defaults.vec2
     }
 
 
 logics : List (Logic Config)
 logics =
-    [ ConfigForm.section
+    [ ConfigForm.float
+        "myFloat"
+        "My Float"
+        .myFloat
+        (\a c -> { c | myFloat = a })
+    , ConfigForm.section
         "Visualise"
     , ConfigForm.bool
         "showSupportPoints"
@@ -58,20 +63,10 @@ logics =
         "Background color"
         .backgroundColor
         (\a c -> { c | backgroundColor = a })
-    , vec2
-        "myKind"
-        "My custom thing"
-        .myKind
-        (\a c -> { c | myKind = a })
     ]
 
 
-vec2 : String -> String -> (config -> ConfigForm.Custom.Vec2) -> (ConfigForm.Custom.Vec2 -> config -> config) -> Logic logicKind
-vec2 fieldName label getter setter =
-    { fieldName = fieldName
-    , label = label
-    , kind = Vec2Logic { getter = getter, setter = setter }
-    }
+
 
 
 encodeField : Field -> Maybe Value
@@ -102,8 +97,7 @@ encodeField field =
         SectionField _ ->
             Nothing
 
-        Vec2Field data ->
-            ConfigForm.Custom.encodeVec2 data
+
 
 
 type alias Defaults =
@@ -112,7 +106,6 @@ type alias Defaults =
     , string : String
     , bool : Bool
     , color : Color
-    , vec2 : ConfigForm.Custom.Vec2
     }
 
 
@@ -156,8 +149,7 @@ emptyField logic emptyConfig =
         SectionLogic _ ->
             SectionField logic.fieldName
 
-        Vec2Logic lens ->
-            Vec2Field <| ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig
+
 
 
 configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config
@@ -185,8 +177,7 @@ configFromFields logics_ configForm config =
                     ( Just (ColorField data), ColorLogic { setter } ) ->
                         setter data.val newConfig
 
-                    ( Just (Vec2Field data), Vec2Logic { setter } ) ->
-                        setter data.val newConfig
+
 
                     _ ->
                         newConfig
@@ -297,14 +288,3 @@ decodeField logic json =
                 |> SectionField
                 |> Just
 
-        Vec2Logic _ ->
-            let
-                decoder =
-                    Decode.at [ "fields", logic.fieldName ] ConfigForm.Custom.decodeVec2Field
-            in
-            case Decode.decodeValue decoder json of
-                Ok field ->
-                    Just <| Vec2Field field
-
-                Err _ ->
-                    Nothing
