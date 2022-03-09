@@ -62,7 +62,8 @@ import Html.Events
 import Html.Events.Extra.Pointer as Pointer
 import Json.Decode as JD
 import Json.Encode as JE
-import OrderedDict exposing (OrderedDict)
+import Misc
+import OrderedDict
 import Round
 import UI exposing (slider)
 
@@ -186,30 +187,76 @@ colorValDecoder =
 
 
 -- VIEW
--- viewLabel : ViewOptions -> Field -> Int -> Logic config -> Element (Msg config)
 
 
-viewLabel { hoveredLabel, onMouseMove, changedConfigForm } options field i logic =
+viewLabel :
+    { hoveredLabel : String -> Bool -> msg
+    , onMouseMove : Int -> msg
+    , changedConfigForm : String -> Field -> msg
+    }
+    -> ViewOptions
+    -> Field
+    -> Int
+    -> ConfigTypes.Logic config
+    -> Bool
+    -> Element msg
+viewLabel { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
     case field of
         StringField _ ->
             row
                 []
                 [ Element.text logic.label ]
 
-        IntField _ ->
+        IntField intField ->
             row
                 (List.map Element.htmlAttribute (resizeAttrs hoveredLabel logic))
                 [ Element.html <| slider onMouseMove [ Html.text logic.label ]
-
-                -- , Element.html <| powerEl options configForm logic
+                , makePowerEl changedConfigForm
+                    options
+                    logic.fieldName
+                    intField.power
+                    (IntField
+                        { intField
+                            | power = intField.power - 1 |> max 0
+                            , str = formatPoweredInt (intField.power - 1 |> max 0) intField.val
+                            , val = poweredInt (intField.power - 1 |> max 0) intField.val
+                        }
+                    )
+                    (IntField
+                        { intField
+                            | power = intField.power + 1
+                            , str = formatPoweredInt (intField.power + 1) intField.val
+                            , val = poweredInt (intField.power + 1) intField.val
+                        }
+                    )
+                    (intField.power <= 0)
+                    |> Misc.showIf isActive
                 ]
 
-        FloatField _ ->
+        FloatField floatField ->
             row
                 (List.map Element.htmlAttribute (resizeAttrs hoveredLabel logic))
                 [ Element.html <| slider onMouseMove [ Html.text logic.label ]
-
-                -- , Element.html <| powerEl options configForm logic
+                , makePowerEl changedConfigForm
+                    options
+                    logic.fieldName
+                    floatField.power
+                    (FloatField
+                        { floatField
+                            | power = floatField.power - 1
+                            , str = formatPoweredFloat (floatField.power - 1) floatField.val
+                            , val = poweredFloat (floatField.power - 1) floatField.val
+                        }
+                    )
+                    (FloatField
+                        { floatField
+                            | power = floatField.power + 1
+                            , str = formatPoweredFloat (floatField.power + 1) floatField.val
+                            , val = poweredFloat (floatField.power + 1) floatField.val
+                        }
+                    )
+                    False
+                    |> Misc.showIf isActive
                 ]
 
         BoolField _ ->
@@ -274,116 +321,68 @@ closeEl changedConfigForm options colorFieldData i fieldName =
             Element.none
 
 
+makePowerEl : (String -> Field -> msg) -> ViewOptions -> String -> Int -> Field -> Field -> Bool -> Element msg
+makePowerEl changedConfigForm options fieldName power newIncField newDecField isDownDisabled =
+    Element.html <|
+        Html.div
+            [ style "position" "absolute"
+            , style "top" "0px"
+            , style "right" "0"
+            , style "height" "100%"
+            , style "box-sizing" "border-box"
+            , style "display" "flex"
+            , style "align-items" "center"
+            , style "padding-left" (px (0.45 * inputFieldVertPadding options))
+            , style "font-size" (px (0.8 * toFloat options.fontSize))
+            , style "background" (Color.toCssString options.labelHighlightBgColor)
+            , style "background"
+                ([ "linear-gradient(to right,"
+                 , "transparent,"
+                 , Color.toCssString options.labelHighlightBgColor ++ " 10%,"
+                 , Color.toCssString options.labelHighlightBgColor
+                 ]
+                    |> String.join " "
+                )
+            , style "pointer-events" "none"
+            ]
+            [ Html.span
+                [ style "padding" "5px 0"
+                , style "pointer-events" "none"
+                , style "user-select" "none"
+                ]
+                -- label
+                [ Html.text (formattedPower power) ]
+            , Html.span
+                [ style "font-size" (0.8 * toFloat options.fontSize |> px)
+                , style "top" "1px"
+                , style "pointer-events" "all"
+                , Pointer.onWithOptions "pointerdown"
+                    { stopPropagation = True
+                    , preventDefault = True
+                    }
+                    (\_ -> changedConfigForm fieldName newIncField)
+                , if isDownDisabled then
+                    style "opacity" "0.4"
 
--- powerEl : ViewOptions -> ConfigForm -> Logic config -> Html (Msg config)
--- powerEl options (ConfigForm configForm) logic =
---     let
---         makePowerEl power newIncField newDecField isDownDisabled =
---             Html.div
---                 [ style "position" "absolute"
---                 , style "top" "0px"
---                 , style "right" "0"
---                 , style "height" "100%"
---                 , style "box-sizing" "border-box"
---                 , style "display" "flex"
---                 , style "align-items" "center"
---                 , style "padding-left" (px (0.45 * inputFieldVertPadding options))
---                 , style "font-size" (px (0.8 * toFloat options.fontSize))
---                 , style "background" (Color.toCssString options.labelHighlightBgColor)
---                 , style "background"
---                     ([ "linear-gradient(to right,"
---                      , "transparent,"
---                      , Color.toCssString options.labelHighlightBgColor ++ " 10%,"
---                      , Color.toCssString options.labelHighlightBgColor
---                      ]
---                         |> String.join " "
---                     )
---                 , style "pointer-events" "none"
---                 ]
---                 [ Html.span
---                     [ style "padding" "5px 0"
---                     , style "pointer-events" "none"
---                     , style "user-select" "none"
---                     ]
---                     -- label
---                     [ Html.text (formattedPower power) ]
---                 , Html.span
---                     [ style "font-size" (0.8 * toFloat options.fontSize |> px)
---                     , style "top" "1px"
---                     , style "pointer-events" "all"
---                     , Pointer.onWithOptions "pointerdown"
---                         { stopPropagation = True
---                         , preventDefault = True
---                         }
---                         (\_ -> ChangedConfigForm logic.fieldName newIncField)
---                     , if isDownDisabled then
---                         style "opacity" "0.4"
---                       else
---                         style "cursor" "pointer"
---                     ]
---                     -- down btn
---                     [ Html.text "↙️" ]
---                 , Html.span
---                     [ style "font-size" (0.8 * toFloat options.fontSize |> px)
---                     , style "top" "1px"
---                     , style "pointer-events" "all"
---                     , Pointer.onWithOptions "pointerdown"
---                         { stopPropagation = True
---                         , preventDefault = True
---                         }
---                         (\_ -> ChangedConfigForm logic.fieldName newDecField)
---                     , style "cursor" "pointer"
---                     ]
---                     -- up btn
---                     [ Html.text "↗️" ]
---                 ]
---         el =
---             case OrderedDict.get logic.fieldName configForm.fields of
---                 Just (IntField data) ->
---                     makePowerEl data.power
---                         (IntField
---                             { data
---                                 | power = data.power - 1 |> max 0
---                                 , str = formatPoweredInt (data.power - 1 |> max 0) data.val
---                                 , val = poweredInt (data.power - 1 |> max 0) data.val
---                             }
---                         )
---                         (IntField
---                             { data
---                                 | power = data.power + 1
---                                 , str = formatPoweredInt (data.power + 1) data.val
---                                 , val = poweredInt (data.power + 1) data.val
---                             }
---                         )
---                         (data.power <= 0)
---                 Just (FloatField data) ->
---                     makePowerEl data.power
---                         (FloatField
---                             { data
---                                 | power = data.power - 1
---                                 , str = formatPoweredFloat (data.power - 1) data.val
---                                 , val = poweredFloat (data.power - 1) data.val
---                             }
---                         )
---                         (FloatField
---                             { data
---                                 | power = data.power + 1
---                                 , str = formatPoweredFloat (data.power + 1) data.val
---                                 , val = poweredFloat (data.power + 1) data.val
---                             }
---                         )
---                         False
---                 _ ->
---                     Html.text ""
---     in
---     case configForm.activeField of
---         Just ( state, fieldName ) ->
---             if fieldName == logic.fieldName then
---                 el
---             else
---                 Html.text ""
---         Nothing ->
---             Html.text ""
+                  else
+                    style "cursor" "pointer"
+                ]
+                -- down btn
+                [ Html.text "↙️" ]
+            , Html.span
+                [ style "font-size" (0.8 * toFloat options.fontSize |> px)
+                , style "top" "1px"
+                , style "pointer-events" "all"
+                , Pointer.onWithOptions "pointerdown"
+                    { stopPropagation = True
+                    , preventDefault = True
+                    }
+                    (\_ -> changedConfigForm fieldName newDecField)
+                , style "cursor" "pointer"
+                ]
+                -- up btn
+                [ Html.text "↗️" ]
+            ]
 
 
 resizeAttrs : (String -> Bool -> msg) -> Logic config -> List (Html.Attribute msg)

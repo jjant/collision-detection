@@ -93,7 +93,6 @@ npm install --global elm elm-live@next chokidir
 
 -}
 
-import Html.Events exposing (custom)
 import Regex
 import Set exposing (Set)
 import Unwrap

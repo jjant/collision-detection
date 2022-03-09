@@ -142,7 +142,7 @@ update logics config (ConfigForm configForm) msg =
             let
                 newConfigForm =
                     case configForm.activeField of
-                        Just ( state, fieldName ) ->
+                        Just ( _, fieldName ) ->
                             { configForm
                                 | fields =
                                     configForm.fields
@@ -256,7 +256,7 @@ init options =
 -- view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
 
 
-view viewOptions logics ((ConfigForm configForm) as configFormType) =
+view viewOptions logics (ConfigForm configForm) =
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
             (logics
@@ -282,7 +282,7 @@ view viewOptions logics ((ConfigForm configForm) as configFormType) =
                                             []
                                    )
                             )
-                            [ ConfigForm.viewLabel { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm } viewOptions field i logic
+                            [ ConfigForm.viewLabel { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm } viewOptions field i logic (isActive configForm.activeField logic.fieldName)
                             , ConfigForm.viewChanger ChangedConfigForm viewOptions field i logic
                             ]
                     )
@@ -353,3 +353,13 @@ decodeFields logics json =
                         )
             )
         |> Dict.fromList
+
+
+isActive : Maybe ( x, String ) -> String -> Bool
+isActive activeField currentField =
+    case activeField of
+        Just ( _, fieldName ) ->
+            fieldName == currentField
+
+        Nothing ->
+            False

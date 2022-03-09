@@ -2,7 +2,6 @@ module Msg exposing (Msg(..))
 
 import Body exposing (Body)
 import Config exposing (Config)
-import ConfigForm
 import ConfigFormGeneric
 import Draggable
 import Fps

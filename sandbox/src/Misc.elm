@@ -1,11 +1,20 @@
-module Misc exposing (listIf, mouseDecoder, setTranslation, toElementColor, updateTransform, updateTranslation)
+module Misc exposing (listIf, mouseDecoder, setTranslation, showIf, toElementColor, updateTransform, updateTranslation)
 
 import Body exposing (Body)
 import Color
-import Element
+import Element exposing (Element)
 import Isometry exposing (Isometry)
 import Json.Decode as Decode exposing (Decoder)
 import Vec2 exposing (Vec2, vec2)
+
+
+showIf : Bool -> Element msg -> Element msg
+showIf b element =
+    if b then
+        element
+
+    else
+        Element.none
 
 
 listIf : Bool -> List a -> List a
