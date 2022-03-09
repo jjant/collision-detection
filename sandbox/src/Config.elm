@@ -4,10 +4,10 @@
 module Config exposing (Config, empty, logics)
 
 import Color exposing (Color)
+import ColorPicker
 import ConfigForm
 import ConfigForm.Custom
-import ConfigFormGeneric
-import ConfigTypes exposing (Field(..), Logic, LogicKind(..))
+import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Json.Encode as Encode exposing (Value)
 
 
@@ -112,3 +112,47 @@ type alias Defaults =
     , color : Color
     , vec2 : ConfigForm.Custom.Vec2
     }
+
+
+emptyField : Logic config -> config -> Field
+emptyField logic emptyConfig =
+    case logic.kind of
+        IntLogic { getter } ->
+            IntField
+                { val = getter emptyConfig
+                , str = getter emptyConfig |> String.fromInt
+                , power = 0
+                }
+
+        FloatLogic { getter } ->
+            FloatField
+                { val = getter emptyConfig
+                , str = getter emptyConfig |> String.fromFloat
+                , power = 0
+                }
+
+        StringLogic { getter } ->
+            StringField
+                { val = getter emptyConfig
+                }
+
+        BoolLogic { getter } ->
+            BoolField
+                { val = getter emptyConfig
+                }
+
+        ColorLogic { getter } ->
+            ColorField
+                { val = getter emptyConfig
+                , meta =
+                    ColorFieldMeta
+                        { state = ColorPicker.empty
+                        , isOpen = False
+                        }
+                }
+
+        SectionLogic _ ->
+            SectionField logic.fieldName
+
+        Vec2Logic lens ->
+            ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig

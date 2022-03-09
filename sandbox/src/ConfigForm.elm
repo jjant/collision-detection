@@ -155,47 +155,6 @@ init options =
     )
 
 
-emptyField : Logic config -> config -> Field
-emptyField logic emptyConfig =
-    case logic.kind of
-        IntLogic { getter } ->
-            IntField
-                { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromInt
-                , power = 0
-                }
-
-        FloatLogic { getter } ->
-            FloatField
-                { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromFloat
-                , power = 0
-                }
-
-        StringLogic { getter } ->
-            StringField
-                { val = getter emptyConfig
-                }
-
-        BoolLogic { getter } ->
-            BoolField
-                { val = getter emptyConfig
-                }
-
-        ColorLogic { getter } ->
-            ColorField
-                { val = getter emptyConfig
-                , meta =
-                    ColorFieldMeta
-                        { state = ColorPicker.empty
-                        , isOpen = False
-                        }
-                }
-
-        SectionLogic _ ->
-            SectionField logic.fieldName
-
-
 {-| Creates the logic for Int values
 -}
 int : String -> String -> (config -> Int) -> (Int -> config -> config) -> Logic config

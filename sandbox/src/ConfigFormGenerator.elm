@@ -93,6 +93,7 @@ npm install --global elm elm-live@next chokidir
 
 -}
 
+import Html.Events exposing (custom)
 import Regex
 import Set exposing (Set)
 import Unwrap
@@ -155,6 +156,7 @@ import ConfigForm.Custom
         , customLogics data
         , encodeField customKinds
         , defaults customKinds
+        , emptyField customKinds
         ]
             |> String.join "\n\n\n"
       )
@@ -175,10 +177,11 @@ module Config exposing (Config, empty, logics)
         imports =
             """
 import Color exposing (Color)
+import ColorPicker
 import ConfigForm
 import ConfigForm.Custom
 import ConfigFormGeneric
-import ConfigTypes exposing (Field(..), Logic, LogicKind(..))
+import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Json.Encode as Encode exposing (Value)
 """
     in
@@ -653,3 +656,58 @@ defaults customKinds =
                 |> String.join ""
            )
         ++ """    }"""
+
+
+emptyField : Set String -> String
+emptyField customKinds =
+    let
+        base =
+            """emptyField : Logic config -> config -> Field
+emptyField logic emptyConfig =
+    case logic.kind of
+        IntLogic { getter } ->
+            IntField
+                { val = getter emptyConfig
+                , str = getter emptyConfig |> String.fromInt
+                , power = 0
+                }
+
+        FloatLogic { getter } ->
+            FloatField
+                { val = getter emptyConfig
+                , str = getter emptyConfig |> String.fromFloat
+                , power = 0
+                }
+
+        StringLogic { getter } ->
+            StringField
+                { val = getter emptyConfig
+                }
+
+        BoolLogic { getter } ->
+            BoolField
+                { val = getter emptyConfig
+                }
+
+        ColorLogic { getter } ->
+            ColorField
+                { val = getter emptyConfig
+                , meta =
+                    ColorFieldMeta
+                        { state = ColorPicker.empty
+                        , isOpen = False
+                        }
+                }
+
+        SectionLogic _ ->
+            SectionField logic.fieldName
+
+"""
+
+        customKindCases =
+            customKinds
+                |> Set.map (\kind -> "        " ++ kind ++ "Logic lens ->\n" ++ "            " ++ "ConfigForm.Custom.empty" ++ kind ++ " { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig")
+                |> Set.toList
+                |> String.join "\n\n"
+    in
+    base ++ customKindCases

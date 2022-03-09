@@ -3466,6 +3466,20 @@ var $author$project$ConfigFormGenerator$empty = function (data) {
 		_List_fromArray(
 			[pre, middle, post]));
 };
+var $author$project$ConfigFormGenerator$emptyField = function (customKinds) {
+	var customKindCases = A2(
+		$elm$core$String$join,
+		'\n\n',
+		$elm$core$Set$toList(
+			A2(
+				$elm$core$Set$map,
+				function (kind) {
+					return '        ' + (kind + ('Logic lens ->\n' + ('            ' + ('ConfigForm.Custom.empty' + (kind + ' { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig')))));
+				},
+				customKinds)));
+	var base = 'emptyField : Logic config -> config -> Field\nemptyField logic emptyConfig =\n    case logic.kind of\n        IntLogic { getter } ->\n            IntField\n                { val = getter emptyConfig\n                , str = getter emptyConfig |> String.fromInt\n                , power = 0\n                }\n\n        FloatLogic { getter } ->\n            FloatField\n                { val = getter emptyConfig\n                , str = getter emptyConfig |> String.fromFloat\n                , power = 0\n                }\n\n        StringLogic { getter } ->\n            StringField\n                { val = getter emptyConfig\n                }\n\n        BoolLogic { getter } ->\n            BoolField\n                { val = getter emptyConfig\n                }\n\n        ColorLogic { getter } ->\n            ColorField\n                { val = getter emptyConfig\n                , meta =\n                    ColorFieldMeta\n                        { state = ColorPicker.empty\n                        , isOpen = False\n                        }\n                }\n\n        SectionLogic _ ->\n            SectionField logic.fieldName\n\n';
+	return _Utils_ap(base, customKindCases);
+};
 var $author$project$ConfigFormGenerator$encodeField = function (customKinds) {
 	var customKindCases = A2(
 		$elm$core$String$join,
@@ -3501,7 +3515,7 @@ var $author$project$ConfigFormGenerator$fieldTypes = function (data) {
 };
 var $author$project$ConfigFormGenerator$header = function () {
 	var moduleDeclaration = '\n-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule Config exposing (Config, empty, logics)\n';
-	var imports = '\nimport Color exposing (Color)\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (Field(..), Logic, LogicKind(..))\nimport Json.Encode as Encode exposing (Value)\n';
+	var imports = '\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))\nimport Json.Encode as Encode exposing (Value)\n';
 	return $elm$core$String$trim(
 		_Utils_ap(moduleDeclaration, imports));
 }();
@@ -3689,7 +3703,8 @@ var $author$project$ConfigFormGenerator$toFiles = function (data) {
 						$author$project$ConfigFormGenerator$logics(data),
 						$author$project$ConfigFormGenerator$customLogics(data),
 						$author$project$ConfigFormGenerator$encodeField(customKinds),
-						$author$project$ConfigFormGenerator$defaults(customKinds)
+						$author$project$ConfigFormGenerator$defaults(customKinds),
+						$author$project$ConfigFormGenerator$emptyField(customKinds)
 					])))
 		]);
 };
