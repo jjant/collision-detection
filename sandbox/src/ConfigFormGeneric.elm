@@ -1,7 +1,7 @@
 module ConfigFormGeneric exposing (..)
 
 import Config
-import ConfigForm
+import ConfigForm exposing (ViewOptions)
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
@@ -250,12 +250,7 @@ init options =
 
 {-| View the config form.
 -}
-
-
-
--- view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
-
-
+view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
 view viewOptions logics (ConfigForm configForm) =
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]

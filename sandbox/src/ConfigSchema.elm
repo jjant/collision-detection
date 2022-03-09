@@ -11,6 +11,7 @@ myConfigFields : List ( String, Kind )
 myConfigFields =
     [ ( "My Float", FloatKind "myFloat" )
     , ( "My Int", IntKind "myInt" )
+    , ( "My String", StringKind "myString" )
     , ( "Visualise", SectionKind )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )

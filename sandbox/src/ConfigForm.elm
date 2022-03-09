@@ -1,7 +1,7 @@
 module ConfigForm exposing
     ( viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
-    , colorValDecoder, encodeColor, formatPoweredFloat, formatPoweredInt, tuple2Encoder, viewChanger, viewLabel
+    , ViewOptions, colorValDecoder, encodeColor, formatPoweredFloat, formatPoweredInt, tuple2Encoder, viewChanger, viewLabel
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -51,7 +51,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import ConfigTypes exposing (ColorFieldData, ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
-import Element exposing (Element, centerX, centerY, column, el, fill, height, rgba255, row, spaceEvenly, spacingXY, width)
+import Element exposing (Element, centerX, centerY, el, fill, height, rgba255, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -63,7 +63,6 @@ import Html.Events.Extra.Pointer as Pointer
 import Json.Decode as JD
 import Json.Encode as JE
 import Misc
-import OrderedDict
 import Round
 import UI exposing (slider)
 
@@ -209,7 +208,7 @@ viewLabel { hoveredLabel, onMouseMove, changedConfigForm } options field i logic
 
         IntField intField ->
             row
-                (List.map Element.htmlAttribute (resizeAttrs hoveredLabel logic))
+                ([ width fill, Font.alignLeft ] ++ List.map Element.htmlAttribute (resizeAttrs hoveredLabel logic))
                 [ Element.html <| slider onMouseMove [ Html.text logic.label ]
                 , makePowerEl changedConfigForm
                     options

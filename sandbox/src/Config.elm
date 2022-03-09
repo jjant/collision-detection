@@ -16,6 +16,7 @@ import OrderedDict exposing (OrderedDict)
 type alias Config =
     { myFloat : Float
     , myInt : Int
+    , myString : String
     , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
@@ -27,6 +28,7 @@ empty : Defaults -> Config
 empty defaults =
     { myFloat = defaults.float
     , myInt = defaults.int
+    , myString = defaults.string
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
@@ -46,6 +48,11 @@ logics =
         "My Int"
         .myInt
         (\a c -> { c | myInt = a })
+    , ConfigForm.string
+        "myString"
+        "My String"
+        .myString
+        (\a c -> { c | myString = a })
     , ConfigForm.section
         "Visualise"
     , ConfigForm.bool
