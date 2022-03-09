@@ -1,7 +1,7 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (Logic, LogicKind(..), Field(..), ColorFieldMeta(..))
+module ConfigTypes exposing (ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker

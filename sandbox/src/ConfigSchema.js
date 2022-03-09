@@ -3072,26 +3072,42 @@ var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $elm$json$Json$Decode$succeed = _Json_succeed;
-var $author$project$ConfigFormGenerator$customTypeName = function (k) {
-	return 'ConfigForm.Custom.' + k;
-};
-var $elm$core$List$maybeCons = F3(
-	function (f, mx, xs) {
-		var _v0 = f(mx);
-		if (_v0.$ === 'Just') {
-			var x = _v0.a;
-			return A2($elm$core$List$cons, x, xs);
-		} else {
-			return xs;
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
 		}
 	});
-var $elm$core$List$filterMap = F2(
-	function (f, xs) {
+var $elm$core$Set$foldl = F3(
+	function (func, initialState, _v0) {
+		var dict = _v0.a;
 		return A3(
-			$elm$core$List$foldr,
-			$elm$core$List$maybeCons(f),
-			_List_Nil,
-			xs);
+			$elm$core$Dict$foldl,
+			F3(
+				function (key, _v1, state) {
+					return A2(func, key, state);
+				}),
+			initialState,
+			dict);
 	});
 var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
@@ -3217,6 +3233,57 @@ var $elm$core$Set$insert = F2(
 var $elm$core$Set$fromList = function (list) {
 	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
 };
+var $elm$core$Set$map = F2(
+	function (func, set) {
+		return $elm$core$Set$fromList(
+			A3(
+				$elm$core$Set$foldl,
+				F2(
+					function (x, xs) {
+						return A2(
+							$elm$core$List$cons,
+							func(x),
+							xs);
+					}),
+				_List_Nil,
+				set));
+	});
+var $author$project$ConfigFormGenerator$configFromFields = function (customKinds) {
+	var spacing = '                    ';
+	var customKindCases = A2(
+		$elm$core$String$join,
+		'\n\n',
+		$elm$core$Set$toList(
+			A2(
+				$elm$core$Set$map,
+				function (kind) {
+					return spacing + ('( ' + ('Just (' + ((kind + 'Field data') + (')' + (', ' + ((kind + 'Logic { setter }') + (' )' + (' ->\n' + (spacing + ('    ' + 'setter data.val newConfig'))))))))));
+				},
+				customKinds)));
+	var base = 'configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config\nconfigFromFields logics_ configForm config =\n    logics_\n        |> List.foldl\n            (\\logic newConfig ->\n                let\n                    maybeField =\n                        OrderedDict.get logic.fieldName configForm\n                in\n                case ( maybeField, logic.kind ) of\n                    ( Just (IntField data), IntLogic { setter } ) ->\n                        setter data.val newConfig\n\n                    ( Just (FloatField data), FloatLogic { setter } ) ->\n                        setter data.val newConfig\n\n                    ( Just (StringField data), StringLogic { setter } ) ->\n                        setter data.val newConfig\n\n                    ( Just (BoolField data), BoolLogic { setter } ) ->\n                        setter data.val newConfig\n\n                    ( Just (ColorField data), ColorLogic { setter } ) ->\n                        setter data.val newConfig\n\n' + (customKindCases + '\n\n                    _ ->\n                        newConfig\n            )\n            config\n\n');
+	return base;
+};
+var $author$project$ConfigFormGenerator$customTypeName = function (k) {
+	return 'ConfigForm.Custom.' + k;
+};
+var $elm$core$List$maybeCons = F3(
+	function (f, mx, xs) {
+		var _v0 = f(mx);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			return A2($elm$core$List$cons, x, xs);
+		} else {
+			return xs;
+		}
+	});
+var $elm$core$List$filterMap = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			$elm$core$List$maybeCons(f),
+			_List_Nil,
+			xs);
+	});
 var $author$project$ConfigFormGenerator$gatherCustomTypes = function (kinds) {
 	return $elm$core$Set$fromList(
 		A2(
@@ -3272,58 +3339,6 @@ var $author$project$ConfigFormGenerator$interpolate = F2(
 			function (_v0) {
 				return word;
 			});
-	});
-var $elm$core$Dict$foldl = F3(
-	function (func, acc, dict) {
-		foldl:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return acc;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var $temp$func = func,
-					$temp$acc = A3(
-					func,
-					key,
-					value,
-					A3($elm$core$Dict$foldl, func, acc, left)),
-					$temp$dict = right;
-				func = $temp$func;
-				acc = $temp$acc;
-				dict = $temp$dict;
-				continue foldl;
-			}
-		}
-	});
-var $elm$core$Set$foldl = F3(
-	function (func, initialState, _v0) {
-		var dict = _v0.a;
-		return A3(
-			$elm$core$Dict$foldl,
-			F3(
-				function (key, _v1, state) {
-					return A2(func, key, state);
-				}),
-			initialState,
-			dict);
-	});
-var $elm$core$Set$map = F2(
-	function (func, set) {
-		return $elm$core$Set$fromList(
-			A3(
-				$elm$core$Set$foldl,
-				F2(
-					function (x, xs) {
-						return A2(
-							$elm$core$List$cons,
-							func(x),
-							xs);
-					}),
-				_List_Nil,
-				set));
 	});
 var $elm$core$String$length = _String_length;
 var $elm$core$String$slice = _String_slice;
@@ -3474,7 +3489,7 @@ var $author$project$ConfigFormGenerator$emptyField = function (customKinds) {
 			A2(
 				$elm$core$Set$map,
 				function (kind) {
-					return '        ' + (kind + ('Logic lens ->\n' + ('            ' + ('ConfigForm.Custom.empty' + (kind + ' { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig')))));
+					return '        ' + (kind + ('Logic lens ->\n' + ('            ' + (kind + ('Field <| ConfigForm.Custom.empty' + (kind + ' { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig'))))));
 				},
 				customKinds)));
 	var base = 'emptyField : Logic config -> config -> Field\nemptyField logic emptyConfig =\n    case logic.kind of\n        IntLogic { getter } ->\n            IntField\n                { val = getter emptyConfig\n                , str = getter emptyConfig |> String.fromInt\n                , power = 0\n                }\n\n        FloatLogic { getter } ->\n            FloatField\n                { val = getter emptyConfig\n                , str = getter emptyConfig |> String.fromFloat\n                , power = 0\n                }\n\n        StringLogic { getter } ->\n            StringField\n                { val = getter emptyConfig\n                }\n\n        BoolLogic { getter } ->\n            BoolField\n                { val = getter emptyConfig\n                }\n\n        ColorLogic { getter } ->\n            ColorField\n                { val = getter emptyConfig\n                , meta =\n                    ColorFieldMeta\n                        { state = ColorPicker.empty\n                        , isOpen = False\n                        }\n                }\n\n        SectionLogic _ ->\n            SectionField logic.fieldName\n\n';
@@ -3514,8 +3529,8 @@ var $author$project$ConfigFormGenerator$fieldTypes = function (data) {
 			]));
 };
 var $author$project$ConfigFormGenerator$header = function () {
-	var moduleDeclaration = '\n-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule Config exposing (Config, empty, logics)\n';
-	var imports = '\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigFormGeneric\nimport ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))\nimport Json.Encode as Encode exposing (Value)\n';
+	var moduleDeclaration = '\n-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule Config exposing (Config, empty, emptyField, encodeField, logics, configFromFields)\n';
+	var imports = '\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm\nimport ConfigForm.Custom\nimport ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))\nimport Json.Encode as Encode exposing (Value)\nimport OrderedDict exposing (OrderedDict)\n';
 	return $elm$core$String$trim(
 		_Utils_ap(moduleDeclaration, imports));
 }();
@@ -3684,7 +3699,7 @@ var $author$project$ConfigFormGenerator$toFiles = function (data) {
 				'\n\n\n',
 				_List_fromArray(
 					[
-						'-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule ConfigTypes exposing (Logic, LogicKind(..), Field(..), ColorFieldMeta(..))\n\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm.Custom\n',
+						'-- GENERATED CODE, DO NOT EDIT BY HAND!\n\n\nmodule ConfigTypes exposing (ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))\n\nimport Color exposing (Color)\nimport ColorPicker\nimport ConfigForm.Custom\n',
 						'type alias Logic config =\n    { fieldName : String\n    , label : String\n    , kind : LogicKind config\n    }\n',
 						$author$project$ConfigFormGenerator$logicKindType(data),
 						'type alias Lens big small =\n    { getter : big -> small\n    , setter : small -> big -> big\n    }\n',
@@ -3704,7 +3719,8 @@ var $author$project$ConfigFormGenerator$toFiles = function (data) {
 						$author$project$ConfigFormGenerator$customLogics(data),
 						$author$project$ConfigFormGenerator$encodeField(customKinds),
 						$author$project$ConfigFormGenerator$defaults(customKinds),
-						$author$project$ConfigFormGenerator$emptyField(customKinds)
+						$author$project$ConfigFormGenerator$emptyField(customKinds),
+						$author$project$ConfigFormGenerator$configFromFields(customKinds)
 					])))
 		]);
 };

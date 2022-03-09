@@ -1,5 +1,5 @@
 module ConfigForm exposing
-    ( ConfigForm, init, InitOptions
+    ( init, InitOptions
     , Msg
     , update
     , encode
@@ -72,87 +72,6 @@ import Misc
 import OrderedDict exposing (OrderedDict)
 import Round
 import UI exposing (slider)
-
-
-{-| ConfigForm is the state of the config form. Keep it in your model along with the `config` record.
--}
-type ConfigForm
-    = ConfigForm
-        { fields : OrderedDict String Field
-        , fileFields : Dict String Field
-        , activeField : Maybe ( FieldState, String )
-        }
-
-
-type FieldState
-    = Hovering
-    | Dragging
-
-
-{-| InitOptions are used to initialize your config and ConfigForm.
-
-    { flags = flagsFromJavascript
-    , logics = Config.logics
-    , emptyConfig = Config.empty
-    }
-
-`Config` is your generated module that was made using [ ConfigFormGenerator](ConfigFormGenerator).
-
--}
-type alias InitOptions config =
-    { flags : JE.Value
-    , logics : List (ConfigTypes.Logic config)
-    , emptyConfig : config
-    }
-
-
-type alias Flags =
-    { file : JE.Value
-    , localStorage : JE.Value
-    }
-
-
-{-| `init` will create both a valid `Config` and `ConfigForm`.
--}
-init : InitOptions config -> ( config, ConfigForm )
-init options =
-    let
-        { file, localStorage } =
-            decodeFlags
-                options.flags
-
-        fileFields =
-            decodeFields
-                options.logics
-                file
-
-        localStorageFields =
-            decodeFields
-                options.logics
-                localStorage
-
-        mergedFields =
-            options.logics
-                |> List.map
-                    (\logic ->
-                        ( logic.fieldName
-                        , Dict.get logic.fieldName localStorageFields
-                            |> Maybe.withDefault
-                                (Dict.get logic.fieldName fileFields
-                                    |> Maybe.withDefault
-                                        (emptyField logic options.emptyConfig)
-                                )
-                        )
-                    )
-                |> OrderedDict.fromList
-    in
-    ( configFromFields options.logics mergedFields options.emptyConfig
-    , ConfigForm
-        { fields = mergedFields
-        , fileFields = fileFields
-        , activeField = Nothing
-        }
-    )
 
 
 {-| Creates the logic for Int values
@@ -229,15 +148,6 @@ type Msg config
     | MouseUp
 
 
-{-| Encodes the current Config (with some metadata) in your ConfigForm. Usually used for both localStorage and as a .json file.
--}
-encode : ConfigForm -> JE.Value
-encode (ConfigForm configForm) =
-    JE.object
-        [ ( "fields", encodeFields configForm.fields )
-        ]
-
-
 encodeColor : Color -> JE.Value
 encodeColor col =
     col
@@ -250,20 +160,6 @@ encodeColor col =
                     , ( "a", JE.float alpha )
                     ]
            )
-
-
-{-| Encodes the current data of your config form to be persisted, including meta-data. This is typically used to save to localStorage.
--}
-encodeFields : OrderedDict String Field -> JE.Value
-encodeFields fields =
-    fields
-        |> OrderedDict.toList
-        |> List.filterMap
-            (\( fieldName, field ) ->
-                encodeField field
-                    |> Maybe.map (\json -> ( fieldName, json ))
-            )
-        |> JE.object
 
 
 tuple2Encoder : (a -> JE.Value) -> (b -> JE.Value) -> ( a, b ) -> JE.Value
@@ -419,37 +315,6 @@ update logics config (ConfigForm configForm) msg =
             )
 
 
-configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config
-configFromFields logics configForm config =
-    logics
-        |> List.foldl
-            (\logic newConfig ->
-                let
-                    maybeField =
-                        OrderedDict.get logic.fieldName configForm
-                in
-                case ( maybeField, logic.kind ) of
-                    ( Just (IntField data), IntLogic { setter } ) ->
-                        setter data.val newConfig
-
-                    ( Just (FloatField data), FloatLogic { setter } ) ->
-                        setter data.val newConfig
-
-                    ( Just (StringField data), StringLogic { setter } ) ->
-                        setter data.val newConfig
-
-                    ( Just (BoolField data), BoolLogic { setter } ) ->
-                        setter data.val newConfig
-
-                    ( Just (ColorField data), ColorLogic { setter } ) ->
-                        setter data.val newConfig
-
-                    _ ->
-                        newConfig
-            )
-            config
-
-
 formatPoweredInt : Int -> Int -> String
 formatPoweredInt power val =
     Round.round -power (toFloat val)
@@ -468,20 +333,6 @@ poweredInt power val =
 poweredFloat : Int -> Float -> Float
 poweredFloat power val =
     Round.roundNum -power val
-
-
-decodeFields : List (Logic config) -> JE.Value -> Dict String Field
-decodeFields logics json =
-    logics
-        |> List.filterMap
-            (\logic ->
-                decodeField logic json
-                    |> Maybe.map
-                        (\field ->
-                            ( logic.fieldName, field )
-                        )
-            )
-        |> Dict.fromList
 
 
 decodeField : Logic config -> JE.Value -> Maybe Field
@@ -588,21 +439,6 @@ decodeField logic json =
 
 
 -- JSON encode/decoder stuff
-
-
-decodeFlags : JE.Value -> Flags
-decodeFlags json =
-    let
-        decoder =
-            JD.map2 Flags
-                (JD.field "file" JD.value)
-                (JD.field "localStorage" JD.value)
-    in
-    JD.decodeValue decoder json
-        |> Result.withDefault
-            { file = JE.object []
-            , localStorage = JE.object []
-            }
 
 
 decodeConfig : List (Logic config) -> config -> Flags -> config

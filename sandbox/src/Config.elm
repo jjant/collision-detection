@@ -1,7 +1,7 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, empty, logics)
+module Config exposing (Config, empty, emptyField, encodeField, logics, configFromFields)
 
 import Color exposing (Color)
 import ColorPicker
@@ -9,6 +9,7 @@ import ConfigForm
 import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Json.Encode as Encode exposing (Value)
+import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
@@ -155,4 +156,39 @@ emptyField logic emptyConfig =
             SectionField logic.fieldName
 
         Vec2Logic lens ->
-            ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig
+            Vec2Field <| ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig
+
+
+configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config
+configFromFields logics_ configForm config =
+    logics_
+        |> List.foldl
+            (\logic newConfig ->
+                let
+                    maybeField =
+                        OrderedDict.get logic.fieldName configForm
+                in
+                case ( maybeField, logic.kind ) of
+                    ( Just (IntField data), IntLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (FloatField data), FloatLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (StringField data), StringLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (BoolField data), BoolLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (ColorField data), ColorLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (Vec2Field data), Vec2Logic { setter } ) ->
+                        setter data.val newConfig
+
+                    _ ->
+                        newConfig
+            )
+            config
+

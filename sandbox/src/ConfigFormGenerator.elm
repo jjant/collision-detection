@@ -126,7 +126,7 @@ toFiles data =
       , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (Logic, LogicKind(..), Field(..), ColorFieldMeta(..))
+module ConfigTypes exposing (ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker
@@ -157,6 +157,7 @@ import ConfigForm.Custom
         , encodeField customKinds
         , defaults customKinds
         , emptyField customKinds
+        , configFromFields customKinds
         ]
             |> String.join "\n\n\n"
       )
@@ -171,7 +172,7 @@ header =
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, empty, logics)
+module Config exposing (Config, empty, emptyField, encodeField, logics, configFromFields)
 """
 
         imports =
@@ -180,9 +181,9 @@ import Color exposing (Color)
 import ColorPicker
 import ConfigForm
 import ConfigForm.Custom
-import ConfigFormGeneric
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Json.Encode as Encode exposing (Value)
+import OrderedDict exposing (OrderedDict)
 """
     in
     moduleDeclaration
@@ -706,8 +707,74 @@ emptyField logic emptyConfig =
 
         customKindCases =
             customKinds
-                |> Set.map (\kind -> "        " ++ kind ++ "Logic lens ->\n" ++ "            " ++ "ConfigForm.Custom.empty" ++ kind ++ " { fieldName = logic.fieldName, label = logic.label, lens = lens } emptyConfig")
+                |> Set.map (\kind -> "        " ++ kind ++ "Logic lens ->\n" ++ "            " ++ kind ++ "Field <| ConfigForm.Custom.empty" ++ kind ++ " { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig")
                 |> Set.toList
                 |> String.join "\n\n"
     in
     base ++ customKindCases
+
+
+configFromFields : Set String -> String
+configFromFields customKinds =
+    let
+        spacing =
+            "                    "
+
+        customKindCases =
+            customKinds
+                |> Set.map
+                    (\kind ->
+                        spacing
+                            ++ "( "
+                            ++ "Just ("
+                            ++ (kind ++ "Field data")
+                            ++ ")"
+                            ++ ", "
+                            ++ (kind ++ "Logic { setter }")
+                            ++ " )"
+                            ++ " ->\n"
+                            ++ spacing
+                            ++ "    "
+                            ++ "setter data.val newConfig"
+                    )
+                |> Set.toList
+                |> String.join "\n\n"
+
+        base =
+            """configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config
+configFromFields logics_ configForm config =
+    logics_
+        |> List.foldl
+            (\\logic newConfig ->
+                let
+                    maybeField =
+                        OrderedDict.get logic.fieldName configForm
+                in
+                case ( maybeField, logic.kind ) of
+                    ( Just (IntField data), IntLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (FloatField data), FloatLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (StringField data), StringLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (BoolField data), BoolLogic { setter } ) ->
+                        setter data.val newConfig
+
+                    ( Just (ColorField data), ColorLogic { setter } ) ->
+                        setter data.val newConfig
+
+"""
+                ++ customKindCases
+                ++ """
+
+                    _ ->
+                        newConfig
+            )
+            config
+
+"""
+    in
+    base
