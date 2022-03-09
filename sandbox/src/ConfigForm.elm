@@ -2,11 +2,10 @@ module ConfigForm exposing
     ( init, InitOptions
     , Msg
     , update
-    , encode
     , view
     , viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
-    , encodeColor, tuple2Encoder
+    , colorValDecoder, encodeColor, formatPoweredFloat, formatPoweredInt, tuple2Encoder
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -333,108 +332,6 @@ poweredInt power val =
 poweredFloat : Int -> Float -> Float
 poweredFloat power val =
     Round.roundNum -power val
-
-
-decodeField : Logic config -> JE.Value -> Maybe Field
-decodeField logic json =
-    case logic.kind of
-        IntLogic _ ->
-            let
-                decoder =
-                    JD.at [ "fields", logic.fieldName ]
-                        (JD.map2
-                            Tuple.pair
-                            (JD.index 0 JD.int)
-                            (JD.index 1 JD.int)
-                        )
-            in
-            case JD.decodeValue decoder json of
-                Ok ( val, power ) ->
-                    { val = val
-                    , str = formatPoweredInt power val
-                    , power = power
-                    }
-                        |> IntField
-                        |> Just
-
-                Err _ ->
-                    Nothing
-
-        FloatLogic _ ->
-            let
-                decoder =
-                    JD.at [ "fields", logic.fieldName ]
-                        (JD.map2 Tuple.pair
-                            (JD.index 0 JD.float)
-                            (JD.index 1 JD.int)
-                        )
-            in
-            case JD.decodeValue decoder json of
-                Ok ( val, power ) ->
-                    { val = val
-                    , str = formatPoweredFloat power val
-                    , power = power
-                    }
-                        |> FloatField
-                        |> Just
-
-                Err _ ->
-                    Nothing
-
-        StringLogic _ ->
-            let
-                decoder =
-                    JD.at [ "fields", logic.fieldName ] JD.string
-            in
-            case JD.decodeValue decoder json of
-                Ok val ->
-                    { val = val
-                    }
-                        |> StringField
-                        |> Just
-
-                Err _ ->
-                    Nothing
-
-        BoolLogic _ ->
-            let
-                decoder =
-                    JD.at [ "fields", logic.fieldName ] JD.bool
-            in
-            case JD.decodeValue decoder json of
-                Ok val ->
-                    { val = val
-                    }
-                        |> BoolField
-                        |> Just
-
-                Err _ ->
-                    Nothing
-
-        ColorLogic _ ->
-            let
-                decoder =
-                    JD.at [ "fields", logic.fieldName ] colorValDecoder
-            in
-            case JD.decodeValue decoder json of
-                Ok val ->
-                    { val = val
-                    , meta =
-                        ColorFieldMeta
-                            { state = ColorPicker.empty
-                            , isOpen = False
-                            }
-                    }
-                        |> ColorField
-                        |> Just
-
-                Err _ ->
-                    Nothing
-
-        SectionLogic _ ->
-            logic.fieldName
-                |> SectionField
-                |> Just
 
 
 

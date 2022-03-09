@@ -1,5 +1,6 @@
-module ConfigForm.Custom exposing (Vec2, Vec2Field, emptyVec2, encodeVec2)
+module ConfigForm.Custom exposing (Vec2, Vec2Field, decodeVec2Field, emptyVec2, encodeVec2)
 
+import Json.Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Vec2
 
@@ -21,3 +22,8 @@ encodeVec2 _ =
 emptyVec2 : { fieldName : String, label : String, getter : config -> Vec2 } -> config -> Vec2Field
 emptyVec2 { getter } emptyConfig =
     { val = getter emptyConfig }
+
+
+decodeVec2Field : Decoder a
+decodeVec2Field =
+    Debug.todo "TODO"

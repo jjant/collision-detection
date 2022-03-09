@@ -1,13 +1,14 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, empty, emptyField, encodeField, logics, configFromFields)
+module Config exposing (Config, decodeField, empty, emptyField, encodeField, logics, configFromFields)
 
 import Color exposing (Color)
 import ColorPicker
 import ConfigForm
 import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
 import OrderedDict exposing (OrderedDict)
 
@@ -192,3 +193,118 @@ configFromFields logics_ configForm config =
             )
             config
 
+
+
+
+decodeField : Logic config -> Decode.Value -> Maybe Field
+decodeField logic json =
+    case logic.kind of
+        IntLogic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ]
+                        (Decode.map2
+                            Tuple.pair
+                            (Decode.index 0 Decode.int)
+                            (Decode.index 1 Decode.int)
+                        )
+            in
+            case Decode.decodeValue decoder json of
+                Ok ( val, power ) ->
+                    { val = val
+                    , str = ConfigForm.formatPoweredInt power val
+                    , power = power
+                    }
+                        |> IntField
+                        |> Just
+
+                Err _ ->
+                    Nothing
+
+        FloatLogic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ]
+                        (Decode.map2 Tuple.pair
+                            (Decode.index 0 Decode.float)
+                            (Decode.index 1 Decode.int)
+                        )
+            in
+            case Decode.decodeValue decoder json of
+                Ok ( val, power ) ->
+                    { val = val
+                    , str = ConfigForm.formatPoweredFloat power val
+                    , power = power
+                    }
+                        |> FloatField
+                        |> Just
+
+                Err _ ->
+                    Nothing
+
+        StringLogic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ] Decode.string
+            in
+            case Decode.decodeValue decoder json of
+                Ok val ->
+                    { val = val
+                    }
+                        |> StringField
+                        |> Just
+
+                Err _ ->
+                    Nothing
+
+        BoolLogic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ] Decode.bool
+            in
+            case Decode.decodeValue decoder json of
+                Ok val ->
+                    { val = val
+                    }
+                        |> BoolField
+                        |> Just
+
+                Err _ ->
+                    Nothing
+
+        ColorLogic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.colorValDecoder
+            in
+            case Decode.decodeValue decoder json of
+                Ok val ->
+                    { val = val
+                    , meta =
+                        ColorFieldMeta
+                            { state = ColorPicker.empty
+                            , isOpen = False
+                            }
+                    }
+                        |> ColorField
+                        |> Just
+
+                Err _ ->
+                    Nothing
+
+        SectionLogic _ ->
+            logic.fieldName
+                |> SectionField
+                |> Just
+
+        Vec2Logic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.Custom.decodeVec2Field
+            in
+            case Decode.decodeValue decoder json of
+                Ok field ->
+                    Just <| Vec2Field field
+
+                Err _ ->
+                    Nothing
