@@ -1,5 +1,6 @@
 module Misc exposing
-    ( cursor
+    ( attrIf
+    , cursor
     , listIf
     , mouseDecoder
     , setTranslation
@@ -26,6 +27,15 @@ showIf b element =
 
     else
         Element.none
+
+
+attrIf : Bool -> Element.Attribute msg -> Element.Attribute msg
+attrIf b attr =
+    if b then
+        attr
+
+    else
+        Element.htmlAttribute (Html.Attributes.class "")
 
 
 listIf : Bool -> List a -> List a

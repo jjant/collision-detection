@@ -263,24 +263,11 @@ view viewOptions logics (ConfigForm configForm) =
                                     |> Unwrap.maybe
                         in
                         row
-                            ([ width fill
-                             , spaceEvenly
+                            [ width fill
+                            , spaceEvenly
 
-                             --  , Element.explain Debug.todo
-                             ]
-                                ++ (case configForm.activeField of
-                                        Just ( _, fieldName ) ->
-                                            if fieldName == logic.fieldName then
-                                                [ Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
-                                                ]
-
-                                            else
-                                                []
-
-                                        Nothing ->
-                                            []
-                                   )
-                            )
+                            --  , Element.explain Debug.todo
+                            ]
                             [ ConfigForm.viewField
                                 { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm }
                                 viewOptions

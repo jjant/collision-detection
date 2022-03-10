@@ -598,6 +598,7 @@ axis =
                                 , Render.text
                                     [ Svg.strokeWidth "1"
                                     , Svg.fontSize "15"
+                                    , Svg.fontWeight "100"
                                     ]
                                     { position = vec2 (i * tickDistance + 2) -20
                                     , text = String.fromFloat <| i * tickDistance
@@ -605,6 +606,7 @@ axis =
                                 , Render.text
                                     [ Svg.strokeWidth "1"
                                     , Svg.fontSize "15"
+                                    , Svg.fontWeight "100"
                                     ]
                                     { position = vec2 -35 (i * tickDistance + 5)
                                     , text = String.fromFloat <| i * tickDistance
