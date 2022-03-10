@@ -185,7 +185,7 @@ update msg model =
                     -- TODO: Make this not horribly slow
                     Array.indexedMap
                         (\idx body ->
-                            if Debug.log "" (Body.projectPoint worldSpaceMouse body).isInside then
+                            if (Body.projectPoint worldSpaceMouse body).isInside then
                                 idx
 
                             else
@@ -272,10 +272,9 @@ view model =
                         Nothing
 
         relIso =
-            Debug.log "iso" <|
-                Isometry.compose
-                    (Isometry.invert b1.transform)
-                    b2.transform
+            Isometry.compose
+                (Isometry.invert b1.transform)
+                b2.transform
 
         res =
             Body.gjkIntersection relIso

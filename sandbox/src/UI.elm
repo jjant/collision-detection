@@ -15,6 +15,10 @@ slider onMouseMove children =
             )
         , style "user-select" "none"
         , style "width" "100%"
+        , style "height" "100%"
         , style "display" "block"
+        , style "display" "flex"
+        , style "justify-content" "left"
+        , style "align-items" "center"
         ]
         children

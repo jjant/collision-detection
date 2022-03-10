@@ -1,8 +1,19 @@
-module Misc exposing (listIf, mouseDecoder, setTranslation, showIf, toElementColor, updateTransform, updateTranslation)
+module Misc exposing
+    ( cursor
+    , listIf
+    , mouseDecoder
+    , setTranslation
+    , showIf
+    , toElementColor
+    , updateTransform
+    , updateTranslation
+    , userSelect
+    )
 
 import Body exposing (Body)
 import Color
 import Element exposing (Element)
+import Html.Attributes
 import Isometry exposing (Isometry)
 import Json.Decode as Decode exposing (Decoder)
 import Vec2 exposing (Vec2, vec2)
@@ -55,3 +66,13 @@ toElementColor c =
             Color.toRgba c
     in
     Element.rgba red green blue alpha
+
+
+userSelect : String -> Element.Attribute msg
+userSelect value =
+    Element.htmlAttribute <| Html.Attributes.style "user-select" value
+
+
+cursor : String -> Element.Attribute msg
+cursor value =
+    Element.htmlAttribute <| Html.Attributes.style "cursor" value

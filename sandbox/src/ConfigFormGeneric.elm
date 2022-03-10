@@ -263,7 +263,11 @@ view viewOptions logics (ConfigForm configForm) =
                                     |> Unwrap.maybe
                         in
                         row
-                            ([ width fill, spaceEvenly ]
+                            ([ width fill
+                             , spaceEvenly
+
+                             --  , Element.explain Debug.todo
+                             ]
                                 ++ (case configForm.activeField of
                                         Just ( _, fieldName ) ->
                                             if fieldName == logic.fieldName then
@@ -277,8 +281,13 @@ view viewOptions logics (ConfigForm configForm) =
                                             []
                                    )
                             )
-                            [ ConfigForm.viewLabel { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm } viewOptions field i logic (isActive configForm.activeField logic.fieldName)
-                            , ConfigForm.viewChanger ChangedConfigForm viewOptions field i logic
+                            [ ConfigForm.viewField
+                                { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm }
+                                viewOptions
+                                field
+                                i
+                                logic
+                                (isActive configForm.activeField logic.fieldName)
                             ]
                     )
             )
