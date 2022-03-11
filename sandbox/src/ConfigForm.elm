@@ -51,7 +51,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import ConfigTypes exposing (ColorFieldData, ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
-import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, spacingXY, width)
+import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -392,6 +392,7 @@ viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic
                 [ width fill ]
                 [ Element.text logic.label
                 , closeEl changedConfigForm options colorField i logic.fieldName
+                , viewColorField changedConfigForm options colorField logic.fieldName
                 ]
 
         SectionField _ ->
@@ -561,175 +562,70 @@ incrementalAttrs changedConfigForm numToString wrapper fieldName data =
     ]
 
 
+viewColorField : (String -> Field -> msg) -> ViewOptions -> ColorFieldData -> String -> Element msg
+viewColorField changedConfigForm options data fieldName =
+    let
+        meta =
+            case data.meta of
+                ColorFieldMeta m ->
+                    m
 
--- viewChanger : (String -> Field -> msg) -> ViewOptions -> Field -> Int -> Logic config -> Element msg
--- viewChanger changedConfigForm options field i logic =
---     let
---         defaultAttrs =
---             [ style "width" (pxInt options.inputWidth)
---             , style "height" (px (inputFieldVertPadding options))
---             ]
---         tabAttrs =
---             [ Html.Attributes.tabindex (1 + i)
---             ]
---         incrementalAttrs strToNum wrapper data =
---             [ Html.Events.on "keydown"
---                 (Decode.map
---                     (\key ->
---                         let
---                             maybeNewNum =
---                                 case key of
---                                     38 ->
---                                         Just <| data.val + 1
---                                     40 ->
---                                         Just <| data.val - 1
---                                     _ ->
---                                         Nothing
---                         in
---                         changedConfigForm logic.fieldName
---                             (wrapper
---                                 (case maybeNewNum of
---                                     Just newNum ->
---                                         { data
---                                             | val = newNum
---                                             , str = strToNum newNum
---                                         }
---                                     Nothing ->
---                                         data
---                                 )
---                             )
---                     )
---                     Html.Events.keyCode
---                 )
---             , style "font-variant-numeric" "tabular-nums"
---             ]
---     in
---     case field of
---         StringField data ->
---             Element.none
---         BoolField _ ->
---             Element.none
---         IntField data ->
---             Element.html <|
---                 Html.td []
---                     [ textInputHelper
---                         { label = logic.label
---                         , valStr = data.str
---                         , attrs =
---                             defaultAttrs
---                                 ++ tabAttrs
---                                 ++ incrementalAttrs String.fromInt IntField data
---                                 ++ (if String.toInt data.str == Nothing then
---                                         [ style "background" "1,0,0,0.3)" ]
---                                     else
---                                         []
---                                    )
---                         , setterMsg =
---                             \newStr ->
---                                 changedConfigForm
---                                     logic.fieldName
---                                 <|
---                                     IntField
---                                         { data
---                                             | str = newStr
---                                             , val =
---                                                 case String.toInt newStr of
---                                                     Just num ->
---                                                         num
---                                                     Nothing ->
---                                                         data.val
---                                         }
---                         }
---                     ]
---         FloatField data ->
---             Element.html <|
---                 Html.td []
---                     [ textInputHelper
---                         { label = logic.label
---                         , valStr = data.str
---                         , attrs =
---                             defaultAttrs
---                                 ++ tabAttrs
---                                 ++ incrementalAttrs String.fromFloat FloatField data
---                                 ++ (if String.toFloat data.str == Nothing then
---                                         [ style "background" "rgba(1,0,0,0.3)" ]
---                                     else
---                                         []
---                                    )
---                         , setterMsg =
---                             \newStr ->
---                                 changedConfigForm logic.fieldName <|
---                                     FloatField
---                                         { data
---                                             | str = newStr
---                                             , val =
---                                                 case String.toFloat newStr of
---                                                     Just num ->
---                                                         num
---                                                     Nothing ->
---                                                         data.val
---                                         }
---                         }
---                     ]
---         ColorField data ->
---             let
---                 meta =
---                     case data.meta of
---                         ColorFieldMeta m ->
---                             m
---             in
---             row [ width fill ]
---                 [ Element.html <|
---                     if meta.isOpen then
---                         ColorPicker.view data.val meta.state
---                             |> Html.map
---                                 (\pickerMsg ->
---                                     let
---                                         ( newPickerState, newColor ) =
---                                             ColorPicker.update
---                                                 pickerMsg
---                                                 data.val
---                                                 meta.state
---                                     in
---                                     changedConfigForm logic.fieldName
---                                         (ColorField
---                                             { data
---                                                 | val = newColor |> Maybe.withDefault data.val
---                                                 , meta =
---                                                     ColorFieldMeta
---                                                         { state = newPickerState
---                                                         , isOpen = meta.isOpen
---                                                         }
---                                             }
---                                         )
---                                 )
---                     else
---                         Html.div
---                             (defaultAttrs
---                                 ++ [ style "background" (Color.toCssString data.val)
---                                    , style "width" "100%"
---                                    , style "border" "1px solid rgba(0,0,0,0.3)"
---                                    , style "border-radius" "3px"
---                                    , style "box-sizing" "border-box"
---                                    , Html.Events.onMouseDown
---                                         (changedConfigForm
---                                             logic.fieldName
---                                             (ColorField
---                                                 { data
---                                                     | meta =
---                                                         ColorFieldMeta
---                                                             { state = meta.state
---                                                             , isOpen = True
---                                                             }
---                                                 }
---                                             )
---                                         )
---                                    ]
---                             )
---                             []
---                 ]
---         SectionField _ ->
---             Element.none
+        defaultAttrs =
+            [ style "width" (pxInt options.inputWidth)
+            , style "height" (px (inputFieldVertPadding options))
+            ]
+    in
+    row [ width fill ]
+        [ Element.html <|
+            if meta.isOpen then
+                ColorPicker.view data.val meta.state
+                    |> Html.map
+                        (\pickerMsg ->
+                            let
+                                ( newPickerState, newColor ) =
+                                    ColorPicker.update
+                                        pickerMsg
+                                        data.val
+                                        meta.state
+                            in
+                            changedConfigForm fieldName
+                                (ColorField
+                                    { data
+                                        | val = newColor |> Maybe.withDefault data.val
+                                        , meta =
+                                            ColorFieldMeta
+                                                { state = newPickerState
+                                                , isOpen = meta.isOpen
+                                                }
+                                    }
+                                )
+                        )
+
+            else
+                Html.div
+                    (defaultAttrs
+                        ++ [ style "background" (Color.toCssString data.val)
+                           , style "width" "100%"
+                           , style "border" "1px solid rgba(0,0,0,0.3)"
+                           , style "border-radius" "3px"
+                           , style "box-sizing" "border-box"
+                           , Html.Events.onMouseDown
+                                (changedConfigForm
+                                    fieldName
+                                    (ColorField
+                                        { data
+                                            | meta =
+                                                ColorFieldMeta
+                                                    { state = meta.state
+                                                    , isOpen = True
+                                                    }
+                                        }
+                                    )
+                                )
+                           ]
+                    )
+                    []
+        ]
 
 
 textInputHelper :

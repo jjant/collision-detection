@@ -1,1 +1,16 @@
-{}
+{
+  "fields": {
+    "myFloat": [33, 1],
+    "myInt": [-147, 0],
+    "myString": "",
+    "showSupportPoints": false,
+    "showPointProjections": true,
+    "showContactPoints": false,
+    "backgroundColor": {
+      "r": 0.12549019607843137,
+      "g": 0.1450980392156863,
+      "b": 0.19215686274509805,
+      "a": 1
+    }
+  }
+}

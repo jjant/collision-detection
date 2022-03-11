@@ -172,7 +172,7 @@ header =
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, decodeField, empty, emptyField, encodeField, logics, configFromFields)
+module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics)
 """
 
         imports =

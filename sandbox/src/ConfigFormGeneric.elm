@@ -5,13 +5,11 @@ import ConfigForm exposing (ViewOptions)
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
-import Element.Background as Background
 import Element.Font as Font
 import Html
 import Html.Attributes
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Misc
 import OrderedDict exposing (OrderedDict)
 import Unwrap
 
@@ -211,13 +209,10 @@ init : InitOptions config -> ( config, ConfigForm )
 init options =
     let
         { file, localStorage } =
-            decodeFlags
-                options.flags
+            decodeFlags options.flags
 
         fileFields =
-            decodeFields
-                options.logics
-                file
+            decodeFields options.logics file
 
         localStorageFields =
             decodeFields

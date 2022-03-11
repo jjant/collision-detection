@@ -305,20 +305,12 @@ view model =
                 ]
                 [ Hierarchy.list SelectBody model.selectedBody model.bodies
                 , column
-                    -- some nice styles to render it on the right side of the viewport
-                    [ --     Html.Attributes.style "padding" "12px"
-                      Background.color (rgb255 51 60 78)
+                    [ Background.color (rgb255 51 60 78)
                     , width fill
                     , Border.color (rgb255 26 30 41)
                     , Border.width 2
                     , padding 5
                     , Font.color (rgb255 192 195 201)
-
-                    -- , Html.Attributes.style "border" "1px solid #444"
-                    -- , Html.Attributes.style "height" "calc(100% - 80px)"
-                    -- , style "margin-left" "32px"
-                    -- , style "display" "flex"
-                    -- , style "flex-direction" "column"
                     ]
                     [ ConfigFormGeneric.view
                         ConfigForm.viewOptions
