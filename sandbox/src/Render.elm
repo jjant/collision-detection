@@ -6,6 +6,7 @@ module Render exposing
     , gizmo
     , group
     , line
+    , none
     , polygon
     , rectangle
     , render
@@ -42,7 +43,7 @@ render onClick attrs children toScreen =
 
 none : Renderable msg
 none =
-    Renderable (\_ -> Svg.g [] [])
+    group [] []
 
 
 vector : List (Svg.Attribute msg) -> { base : Vec2, vector : Vec2 } -> Renderable msg

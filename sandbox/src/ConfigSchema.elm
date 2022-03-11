@@ -1,27 +1,39 @@
-module ConfigSchema exposing (myConfigFields)
+port module ConfigSchema exposing (main)
 
 import ConfigFormGenerator exposing (Kind(..))
-import Html exposing (Html)
+import Platform
+
+
+port generateFile : ( String, String ) -> Cmd msg
 
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "Visualise", SectionKind )
+    [ ( "My Float", FloatKind "myFloat" )
+    , ( "My Int", IntKind "myInt" )
+    , ( "My String", StringKind "myString" )
+    , ( "Visualise", SectionKind )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
     , ( "Background color", ColorKind "backgroundColor" )
+    , ( "Custom Kinds", SectionKind )
+    , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
 
 
-main : Html msg
+main : Program {} {} {}
 main =
     let
-        generatedElmCode =
-            ConfigFormGenerator.toFile myConfigFields
-
-        _ =
-            Debug.log generatedElmCode ""
+        generateElmCode =
+            ConfigFormGenerator.toFiles myConfigFields
+                |> List.map (Tuple.mapFirst ((++) "./src/"))
+                |> List.map generateFile
+                |> Cmd.batch
     in
-    Html.text ""
+    Platform.worker
+        { init = \_ -> ( {}, generateElmCode )
+        , update = \_ _ -> ( {}, Cmd.none )
+        , subscriptions = \_ -> Sub.none
+        }

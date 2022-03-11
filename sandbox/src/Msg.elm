@@ -2,7 +2,7 @@ module Msg exposing (Msg(..))
 
 import Body exposing (Body)
 import Config exposing (Config)
-import ConfigForm
+import ConfigFormGeneric
 import Draggable
 import Fps
 import Keys
@@ -10,7 +10,7 @@ import Vec2 exposing (Vec2)
 
 
 type Msg
-    = ConfigFormMsg (ConfigForm.Msg Config)
+    = ConfigFormMsg (ConfigFormGeneric.Msg Config)
     | MouseMove Vec2
     | MouseClick Vec2
     | KeysMsg Keys.Msg

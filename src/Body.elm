@@ -198,21 +198,12 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
 support : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Vec2 -> Vec2
 support pos12 g1 g2 dir =
     let
-        _ =
-            Debug.log "dir" dir
-
         support1 =
-            Debug.log "support1" (g1 dir)
+            g1 dir
 
         support2 =
-            Debug.log "support2"
-                (Isometry.apply pos12
-                    (g2 (Vec2.negate (Isometry.vectorApplyInverse pos12 dir)))
-                )
-
-        -- support2: { x = 40, y = 45 }
-        -- support1: { x = 100, y = 50 }
-        -- dir: { x = 0, y = 1 }
+            Isometry.apply pos12
+                (g2 (Vec2.negate (Isometry.vectorApplyInverse pos12 dir)))
     in
     Vec2.sub support1 support2
 

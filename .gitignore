@@ -5,3 +5,4 @@ dist
 dist-ssr
 *.local
 ~tmp
+sandbox/src/ConfigSchema.js

@@ -4,11 +4,11 @@ import Array exposing (Array)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
-import Camera exposing (Camera, tick)
-import Circle
+import Camera exposing (Camera)
 import Color
 import Config exposing (Config)
-import ConfigForm exposing (ConfigForm)
+import ConfigForm
+import ConfigFormGeneric exposing (ConfigForm)
 import Draggable
 import Element
     exposing
@@ -19,8 +19,6 @@ import Element
         , height
         , padding
         , paddingXY
-        , px
-        , rgb
         , rgb255
         , row
         , spacing
@@ -32,8 +30,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Fps
 import Hierarchy
-import Html as Html exposing (Html, div)
-import Html.Attributes exposing (style)
+import Html as Html exposing (Html)
+import Html.Attributes
 import Html.Events exposing (..)
 import Isometry
 import Json.Decode as Decode
@@ -42,7 +40,6 @@ import Keys exposing (Keys)
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
-import Rectangle
 import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
@@ -79,7 +76,7 @@ init elmConfigUiFlags =
         -- Initialize your config and configForm,
         -- passing in defaults for any empty config fields
         ( config, configForm ) =
-            ConfigForm.init
+            ConfigFormGeneric.init
                 { flags = elmConfigUiFlags
                 , logics = Config.logics
                 , emptyConfig =
@@ -89,6 +86,7 @@ init elmConfigUiFlags =
                         , string = "SORRY IM NEW HERE"
                         , bool = True
                         , color = Color.rgb255 32 37 49 -- hot pink!
+                        , vec2 = vec2 -3 -1234
                         }
                 }
 
@@ -159,7 +157,7 @@ update msg model =
         ConfigFormMsg configFormMsg ->
             let
                 ( newConfig, newConfigForm ) =
-                    ConfigForm.update
+                    ConfigFormGeneric.update
                         Config.logics
                         model.config
                         model.configForm
@@ -184,7 +182,7 @@ update msg model =
                     -- TODO: Make this not horribly slow
                     Array.indexedMap
                         (\idx body ->
-                            if Debug.log "" (Body.projectPoint worldSpaceMouse body).isInside then
+                            if (Body.projectPoint worldSpaceMouse body).isInside then
                                 idx
 
                             else
@@ -271,10 +269,9 @@ view model =
                         Nothing
 
         relIso =
-            Debug.log "iso" <|
-                Isometry.compose
-                    (Isometry.invert b1.transform)
-                    b2.transform
+            Isometry.compose
+                (Isometry.invert b1.transform)
+                b2.transform
 
         res =
             Body.gjkIntersection relIso
@@ -305,22 +302,14 @@ view model =
                 ]
                 [ Hierarchy.list SelectBody model.selectedBody model.bodies
                 , column
-                    -- some nice styles to render it on the right side of the viewport
-                    [ --     Html.Attributes.style "padding" "12px"
-                      Background.color (rgb255 51 60 78)
+                    [ Background.color (rgb255 51 60 78)
                     , width fill
                     , Border.color (rgb255 26 30 41)
                     , Border.width 2
                     , padding 5
                     , Font.color (rgb255 192 195 201)
-
-                    -- , Html.Attributes.style "border" "1px solid #444"
-                    -- , Html.Attributes.style "height" "calc(100% - 80px)"
-                    -- , style "margin-left" "32px"
-                    -- , style "display" "flex"
-                    -- , style "flex-direction" "column"
                     ]
-                    [ ConfigForm.view
+                    [ ConfigFormGeneric.view
                         ConfigForm.viewOptions
                         Config.logics
                         model.configForm
@@ -331,7 +320,7 @@ view model =
                     -- Then the next time a new user loads your app, they'll see your updated config.
                     , Element.html <|
                         Html.textarea []
-                            [ ConfigForm.encode model.configForm
+                            [ ConfigFormGeneric.encode model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]
@@ -598,6 +587,7 @@ axis =
                                 , Render.text
                                     [ Svg.strokeWidth "1"
                                     , Svg.fontSize "15"
+                                    , Svg.fontWeight "100"
                                     ]
                                     { position = vec2 (i * tickDistance + 2) -20
                                     , text = String.fromFloat <| i * tickDistance
@@ -605,6 +595,7 @@ axis =
                                 , Render.text
                                     [ Svg.strokeWidth "1"
                                     , Svg.fontSize "15"
+                                    , Svg.fontWeight "100"
                                     ]
                                     { position = vec2 -35 (i * tickDistance + 5)
                                     , text = String.fromFloat <| i * tickDistance

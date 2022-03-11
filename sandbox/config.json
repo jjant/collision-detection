@@ -1,1 +1,23 @@
-{}
+{
+  "fields": {
+    "myFloat": [423, 1],
+    "myInt": [164, 0],
+    "myString": "",
+    "showSupportPoints": false,
+    "showPointProjections": true,
+    "showContactPoints": false,
+    "backgroundColor": {
+      "r": 0.12549019607843137,
+      "g": 0.1450980392156863,
+      "b": 0.19215686274509805,
+      "a": 1
+    },
+    "myKind": {
+      "val": {
+        "x": 120,
+        "y": 42
+      },
+      "power": 1
+    }
+  }
+}
