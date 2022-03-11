@@ -50,7 +50,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormUI exposing (ViewOptions, inputFieldVertPadding, makePowerEl, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
+import ConfigFormUI exposing (ViewOptions, inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
 import ConfigTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), FloatFieldData, IntFieldData, Logic, LogicKind(..), StringFieldData)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, width)
 import Element.Background as Background
@@ -209,16 +209,15 @@ viewStringField { changedConfigForm, label, fieldName, stringField } =
 
 viewIntField :
     { hoveredLabel : String -> Bool -> msg
+    , changedConfigForm : IntFieldData -> msg
     , fieldName : String
     , intField : IntFieldData
-    , onMouseMove : Int -> msg
     , label : String
     , isActive : Bool
-    , changedConfigForm : String -> Field -> msg
     , options : ViewOptions
     }
     -> Element msg
-viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, changedConfigForm, options } =
+viewIntField { hoveredLabel, fieldName, intField, label, isActive, changedConfigForm, options } =
     row ([ width fill, Font.alignLeft ] ++ resizeAttrs (hoveredLabel fieldName))
         [ row
             [ width fill
@@ -229,25 +228,20 @@ viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, 
             , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
                 |> Misc.attrIf isActive
             ]
-            [ Element.el [ width fill, height fill ] (Element.html <| slider onMouseMove [ Html.text label ])
+            [ Element.el [ width fill, height fill ]
+                (Element.html <| slider (\dx -> changedConfigForm { intField | val = moveInt dx intField }) [ Html.text label ])
             , makePowerEl
-                (changedConfigForm fieldName)
+                changedConfigForm
                 options
                 intField.power
-                (IntField
-                    { intField
-                        | power = intField.power - 1 |> max 0
-                        , str = formatPoweredInt (intField.power - 1 |> max 0) intField.val
-                        , val = poweredInt (intField.power - 1 |> max 0) intField.val
-                    }
-                )
-                (IntField
-                    { intField
-                        | power = intField.power + 1
-                        , str = formatPoweredInt (intField.power + 1) intField.val
-                        , val = poweredInt (intField.power + 1) intField.val
-                    }
-                )
+                { intField
+                    | power = intField.power - 1 |> max 0
+                    , val = poweredInt (intField.power - 1 |> max 0) intField.val
+                }
+                { intField
+                    | power = intField.power + 1
+                    , val = poweredInt (intField.power + 1) intField.val
+                }
                 (intField.power <= 0)
                 |> Misc.showIf isActive
             ]
@@ -258,23 +252,21 @@ viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, 
                 )
             ]
             (textInputHelper
-                (Font.center :: incrementalAttrs changedConfigForm String.fromInt IntField fieldName intField)
+                (Font.center :: incrementalAttrs changedConfigForm intField)
                 { label = Input.labelHidden fieldName
-                , valStr = intField.str
+                , valStr = formatPoweredInt intField.power intField.val
                 , onChange =
                     \newStr ->
-                        changedConfigForm fieldName <|
-                            IntField
-                                { intField
-                                    | str = newStr
-                                    , val =
-                                        case String.toInt newStr of
-                                            Just num ->
-                                                num
+                        changedConfigForm
+                            { intField
+                                | val =
+                                    case String.toInt newStr of
+                                        Just num ->
+                                            num
 
-                                            Nothing ->
-                                                intField.val
-                                }
+                                        Nothing ->
+                                            intField.val
+                            }
                 }
             )
         ]
@@ -300,8 +292,7 @@ viewColorField { label, changedConfigForm, options, colorField, fieldName, index
 
 viewFloatField :
     { hoveredLabel : String -> Bool -> msg
-    , onMouseMove : Int -> msg
-    , changedConfigForm : String -> Field -> msg
+    , changedConfigForm : FloatFieldData -> msg
     , options : ViewOptions
     , fieldName : String
     , label : String
@@ -309,7 +300,7 @@ viewFloatField :
     , isActive : Bool
     }
     -> Element msg
-viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldName, label, floatField, isActive } =
+viewFloatField { hoveredLabel, changedConfigForm, options, fieldName, label, floatField, isActive } =
     row (width fill :: resizeAttrs (hoveredLabel fieldName))
         [ Element.row
             [ width fill
@@ -320,25 +311,19 @@ viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldNam
             , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
                 |> Misc.attrIf isActive
             ]
-            [ Element.html <| slider onMouseMove [ Html.text label ]
+            [ Element.html <| slider (\dx -> changedConfigForm { floatField | val = moveFloat dx floatField }) [ Html.text label ]
             , makePowerEl
-                (changedConfigForm fieldName)
+                changedConfigForm
                 options
                 floatField.power
-                (FloatField
-                    { floatField
-                        | power = floatField.power - 1
-                        , str = formatPoweredFloat (floatField.power - 1) floatField.val
-                        , val = poweredFloat (floatField.power - 1) floatField.val
-                    }
-                )
-                (FloatField
-                    { floatField
-                        | power = floatField.power + 1
-                        , str = formatPoweredFloat (floatField.power + 1) floatField.val
-                        , val = poweredFloat (floatField.power + 1) floatField.val
-                    }
-                )
+                { floatField
+                    | power = floatField.power - 1
+                    , val = poweredFloat (floatField.power - 1) floatField.val
+                }
+                { floatField
+                    | power = floatField.power + 1
+                    , val = poweredFloat (floatField.power + 1) floatField.val
+                }
                 False
                 |> Misc.showIf isActive
             ]
@@ -349,23 +334,21 @@ viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldNam
                 )
             ]
             (textInputHelper
-                (Font.center :: incrementalAttrs changedConfigForm String.fromFloat FloatField fieldName floatField)
+                (Font.center :: incrementalAttrs changedConfigForm floatField)
                 { label = Input.labelHidden fieldName
-                , valStr = floatField.str
+                , valStr = formatPoweredFloat floatField.power floatField.val
                 , onChange =
                     \newStr ->
-                        changedConfigForm fieldName <|
-                            FloatField
-                                { floatField
-                                    | str = newStr
-                                    , val =
-                                        case String.toFloat newStr of
-                                            Just num ->
-                                                num
+                        changedConfigForm
+                            { floatField
+                                | val =
+                                    case String.toFloat newStr of
+                                        Just num ->
+                                            num
 
-                                            Nothing ->
-                                                floatField.val
-                                }
+                                        Nothing ->
+                                            floatField.val
+                            }
                 }
             )
         ]
@@ -465,8 +448,11 @@ closeEl changedConfigForm options colorFieldData i fieldName =
             Element.none
 
 
-incrementalAttrs : (String -> Field -> msg) -> (number -> String) -> ({ r | val : number, str : String } -> Field) -> String -> { r | val : number, str : String } -> List (Element.Attribute msg)
-incrementalAttrs changedConfigForm numToString wrapper fieldName data =
+incrementalAttrs :
+    ({ r | val : number } -> msg)
+    -> { r | val : number }
+    -> List (Element.Attribute msg)
+incrementalAttrs changedConfigForm data =
     [ Element.htmlAttribute <|
         Html.Events.on "keydown"
             (Decode.map
@@ -483,18 +469,13 @@ incrementalAttrs changedConfigForm numToString wrapper fieldName data =
                                 _ ->
                                     Nothing
                     in
-                    changedConfigForm fieldName
-                        (wrapper
-                            (case maybeNewNum of
-                                Just newNum ->
-                                    { data
-                                        | val = newNum
-                                        , str = numToString newNum
-                                    }
+                    changedConfigForm
+                        (case maybeNewNum of
+                            Just newNum ->
+                                { data | val = newNum }
 
-                                Nothing ->
-                                    data
-                            )
+                            Nothing ->
+                                data
                         )
                 )
                 (Decode.field "key" Decode.string)

@@ -1,7 +1,6 @@
 module ConfigFormGeneric exposing (..)
 
 import Config
-import ConfigForm
 import ConfigFormUI exposing (ViewOptions)
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
@@ -44,7 +43,6 @@ type Msg config
     = ChangedConfigForm String Field
     | ClickedPointerLockLabel String
     | HoveredLabel String Bool
-    | MouseMove Int
     | MouseUp
 
 
@@ -145,58 +143,6 @@ update logics config (ConfigForm configForm) msg =
                 }
             )
 
-        MouseMove num ->
-            let
-                newConfigForm =
-                    case configForm.activeField of
-                        Just ( _, fieldName ) ->
-                            { configForm
-                                | fields =
-                                    configForm.fields
-                                        |> OrderedDict.update fieldName
-                                            (\maybeField ->
-                                                -- TODO: Make this work properly
-                                                case maybeField of
-                                                    Just (IntField data) ->
-                                                        let
-                                                            newVal =
-                                                                data.val
-                                                                    + (num * (10 ^ data.power))
-                                                        in
-                                                        Just
-                                                            (IntField
-                                                                { data
-                                                                    | val = newVal
-                                                                    , str = ConfigForm.formatPoweredInt data.power newVal
-                                                                }
-                                                            )
-
-                                                    Just (FloatField data) ->
-                                                        let
-                                                            newVal =
-                                                                data.val
-                                                                    + toFloat (num * (10 ^ data.power))
-                                                        in
-                                                        Just
-                                                            (FloatField
-                                                                { data | val = newVal, str = ConfigForm.formatPoweredFloat data.power newVal }
-                                                            )
-
-                                                    _ ->
-                                                        Nothing
-                                            )
-                            }
-
-                        Nothing ->
-                            configForm
-
-                newConfig =
-                    Config.configFromFields logics newConfigForm.fields config
-            in
-            ( newConfig
-            , ConfigForm newConfigForm
-            )
-
         MouseUp ->
             ( config
             , ConfigForm
@@ -268,21 +214,15 @@ view viewOptions logics (ConfigForm configForm) =
                     (\i logic ->
                         let
                             field =
-                                case OrderedDict.get logic.fieldName configForm.fields of
-                                    Just a ->
-                                        a
-
-                                    Nothing ->
-                                        Debug.todo logic.fieldName
+                                OrderedDict.get logic.fieldName configForm.fields
+                                    |> Unwrap.maybe
                         in
                         row
                             [ width fill
                             , spaceEvenly
-
-                            --  , Element.explain Debug.todo
                             ]
                             [ Config.viewField
-                                { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm }
+                                { hoveredLabel = HoveredLabel, changedConfigForm = ChangedConfigForm }
                                 viewOptions
                                 field
                                 i

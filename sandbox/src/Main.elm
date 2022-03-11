@@ -4,8 +4,7 @@ import Array exposing (Array)
 import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
-import Camera exposing (Camera, tick)
-import Circle
+import Camera exposing (Camera)
 import Color
 import Config exposing (Config)
 import ConfigForm
@@ -20,8 +19,6 @@ import Element
         , height
         , padding
         , paddingXY
-        , px
-        , rgb
         , rgb255
         , row
         , spacing
@@ -33,8 +30,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Fps
 import Hierarchy
-import Html as Html exposing (Html, div)
-import Html.Attributes exposing (style)
+import Html as Html exposing (Html)
+import Html.Attributes
 import Html.Events exposing (..)
 import Isometry
 import Json.Decode as Decode
@@ -43,7 +40,6 @@ import Keys exposing (Keys)
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
-import Rectangle
 import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg

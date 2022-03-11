@@ -46,14 +46,12 @@ type Field
 
 type alias IntFieldData =
     { val : Int
-    , str : String
     , power : Int
     }
 
 
 type alias FloatFieldData =
     { val : Float
-    , str : String
     , power : Int
     }
 

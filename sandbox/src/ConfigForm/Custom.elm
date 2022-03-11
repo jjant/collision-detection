@@ -7,7 +7,7 @@ module ConfigForm.Custom exposing
     , viewVec2Field
     )
 
-import ConfigFormUI exposing (ViewOptions, makePowerEl, poweredFloat, resizeAttrs, textInputHelper)
+import ConfigFormUI exposing (ViewOptions, makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
 import Element exposing (Element, fill, height, paddingXY, rgb255, row, width)
 import Element.Background as Background
 import Element.Font as Font
@@ -64,7 +64,6 @@ emptyVec2 { getter } emptyConfig =
 
 viewVec2Field :
     { hoveredLabel : Bool -> msg
-    , onMouseMove : Int -> msg
     , changedConfigForm : Vec2Field -> msg
     , label : String
     , fieldName : String
@@ -74,7 +73,7 @@ viewVec2Field :
     , isActive : Bool
     }
     -> Element msg
-viewVec2Field { hoveredLabel, onMouseMove, changedConfigForm, options, fieldName, label, field, isActive } =
+viewVec2Field { hoveredLabel, changedConfigForm, options, fieldName, label, field, isActive } =
     row
         (width fill :: resizeAttrs hoveredLabel)
         [ Element.row
@@ -86,7 +85,7 @@ viewVec2Field { hoveredLabel, onMouseMove, changedConfigForm, options, fieldName
             , Background.color (Misc.toElementColor options.labelHighlightBgColor)
                 |> Misc.attrIf isActive
             ]
-            [ Element.html <| slider onMouseMove [ Html.text label ]
+            [ Element.html <| slider (\i -> changedConfigForm { field | val = vec2 (moveFloat i { val = field.val.x, power = field.power }) field.val.y }) [ Html.text label ]
             , makePowerEl
                 changedConfigForm
                 options

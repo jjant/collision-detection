@@ -1,9 +1,8 @@
 {
   "fields": {
-    "myFloat": [33, 1],
-    "myInt": [-147, 0],
+    "myFloat": [423, 1],
+    "myInt": [164, 0],
     "myString": "",
-    "myKind": { "val": { "x": 99, "y": 88 }, "power": 1 },
     "showSupportPoints": false,
     "showPointProjections": true,
     "showContactPoints": false,
@@ -12,6 +11,13 @@
       "g": 0.1450980392156863,
       "b": 0.19215686274509805,
       "a": 1
+    },
+    "myKind": {
+      "val": {
+        "x": 120,
+        "y": 42
+      },
+      "power": 1
     }
   }
 }

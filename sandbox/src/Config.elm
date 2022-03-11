@@ -5,9 +5,9 @@ module Config exposing (Config, configFromFields, decodeField, empty, emptyField
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewSectionField, viewStringField)
-import ConfigForm.Custom
 import ConfigFormUI exposing (ViewOptions)
+import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Element exposing (Element)
 import Json.Decode as Decode
@@ -147,14 +147,12 @@ emptyField logic emptyConfig =
         IntLogic { getter } ->
             IntField
                 { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromInt
                 , power = 0
                 }
 
         FloatLogic { getter } ->
             FloatField
                 { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromFloat
                 , power = 0
                 }
 
@@ -219,6 +217,8 @@ configFromFields logics_ configForm config =
             config
 
 
+
+
 decodeField : Logic config -> Decode.Value -> Maybe Field
 decodeField logic json =
     case logic.kind of
@@ -235,7 +235,6 @@ decodeField logic json =
             case Decode.decodeValue decoder json of
                 Ok ( val, power ) ->
                     { val = val
-                    , str = ConfigForm.formatPoweredInt power val
                     , power = power
                     }
                         |> IntField
@@ -256,7 +255,6 @@ decodeField logic json =
             case Decode.decodeValue decoder json of
                 Ok ( val, power ) ->
                     { val = val
-                    , str = ConfigForm.formatPoweredFloat power val
                     , power = power
                     }
                         |> FloatField
@@ -330,12 +328,11 @@ decodeField logic json =
                     Just <| Vec2Field field
 
                 Err _ ->
-                    Debug.todo logic.fieldName
+                    Nothing
 
 
 viewField :
     { hoveredLabel : String -> Bool -> msg
-    , onMouseMove : Int -> msg
     , changedConfigForm : String -> Field -> msg
     }
     -> ViewOptions
@@ -344,7 +341,7 @@ viewField :
     -> ConfigTypes.Logic config
     -> Bool
     -> Element msg
-viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
+viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
     case field of
         StringField stringField ->
             viewStringField
@@ -357,20 +354,18 @@ viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic
         IntField intField ->
             viewIntField
                 { hoveredLabel = hoveredLabel
+                , changedConfigForm = \f -> changedConfigForm logic.fieldName (IntField f)
                 , fieldName = logic.fieldName
                 , label = logic.label
                 , intField = intField
-                , onMouseMove = onMouseMove
                 , isActive = isActive
-                , changedConfigForm = changedConfigForm
                 , options = options
                 }
 
         FloatField floatField ->
             viewFloatField
                 { hoveredLabel = hoveredLabel
-                , onMouseMove = onMouseMove
-                , changedConfigForm = changedConfigForm
+                , changedConfigForm = \f -> changedConfigForm logic.fieldName (FloatField f)
                 , options = options
                 , fieldName = logic.fieldName
                 , label = logic.label
@@ -406,7 +401,6 @@ viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic
         Vec2Field field_ ->
             ConfigForm.Custom.viewVec2Field
                 { hoveredLabel = hoveredLabel logic.fieldName
-                , onMouseMove = onMouseMove
                 , changedConfigForm = \f -> changedConfigForm logic.fieldName (Vec2Field f)
                 , label = logic.label
                 , fieldName = logic.fieldName

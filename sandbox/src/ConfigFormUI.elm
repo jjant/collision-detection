@@ -3,6 +3,8 @@ module ConfigFormUI exposing
     , formattedPower
     , inputFieldVertPadding
     , makePowerEl
+    , moveFloat
+    , moveInt
     , poweredFloat
     , px
     , pxInt
@@ -152,3 +154,13 @@ resizeAttrs hoveredLabel =
     --, Html.Events.onMouseDown (ClickedPointerLockLabel fieldName)
     , Misc.cursor "ew-resize"
     ]
+
+
+moveFloat : Int -> { r | val : Float, power : Int } -> Float
+moveFloat num field =
+    field.val + toFloat (num * (10 ^ field.power))
+
+
+moveInt : Int -> { r | val : Int, power : Int } -> Int
+moveInt num field =
+    field.val + (num * (10 ^ field.power))

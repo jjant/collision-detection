@@ -568,14 +568,12 @@ fieldTypes data =
            )
     , """type alias IntFieldData =
     { val : Int
-    , str : String
     , power : Int
     }
 
 
 type alias FloatFieldData =
     { val : Float
-    , str : String
     , power : Int
     }
 
@@ -673,14 +671,12 @@ emptyField logic emptyConfig =
         IntLogic { getter } ->
             IntField
                 { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromInt
                 , power = 0
                 }
 
         FloatLogic { getter } ->
             FloatField
                 { val = getter emptyConfig
-                , str = getter emptyConfig |> String.fromFloat
                 , power = 0
                 }
 
@@ -823,7 +819,6 @@ decodeField logic json =
             case Decode.decodeValue decoder json of
                 Ok ( val, power ) ->
                     { val = val
-                    , str = ConfigForm.formatPoweredInt power val
                     , power = power
                     }
                         |> IntField
@@ -844,7 +839,6 @@ decodeField logic json =
             case Decode.decodeValue decoder json of
                 Ok ( val, power ) ->
                     { val = val
-                    , str = ConfigForm.formatPoweredFloat power val
                     , power = power
                     }
                         |> FloatField
@@ -920,7 +914,6 @@ viewField customKinds =
         args =
             """
                 { hoveredLabel = hoveredLabel logic.fieldName
-                , onMouseMove = onMouseMove
                 , changedConfigForm = \\f -> changedConfigForm logic.fieldName (Vec2Field f)
                 , label = logic.label
                 , fieldName = logic.fieldName
@@ -939,7 +932,6 @@ viewField customKinds =
     in
     """viewField :
     { hoveredLabel : String -> Bool -> msg
-    , onMouseMove : Int -> msg
     , changedConfigForm : String -> Field -> msg
     }
     -> ViewOptions
@@ -948,7 +940,7 @@ viewField customKinds =
     -> ConfigTypes.Logic config
     -> Bool
     -> Element msg
-viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
+viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
     case field of
         StringField stringField ->
             viewStringField
@@ -961,20 +953,18 @@ viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic
         IntField intField ->
             viewIntField
                 { hoveredLabel = hoveredLabel
+                , changedConfigForm = \\f -> changedConfigForm logic.fieldName (IntField f)
                 , fieldName = logic.fieldName
                 , label = logic.label
                 , intField = intField
-                , onMouseMove = onMouseMove
                 , isActive = isActive
-                , changedConfigForm = changedConfigForm
                 , options = options
                 }
 
         FloatField floatField ->
             viewFloatField
                 { hoveredLabel = hoveredLabel
-                , onMouseMove = onMouseMove
-                , changedConfigForm = changedConfigForm
+                , changedConfigForm = \\f -> changedConfigForm logic.fieldName (FloatField f)
                 , options = options
                 , fieldName = logic.fieldName
                 , label = logic.label
