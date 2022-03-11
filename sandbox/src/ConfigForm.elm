@@ -50,7 +50,7 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigTypes exposing (ColorFieldData, ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), FloatFieldData, IntFieldData, Logic, LogicKind(..), StringFieldData)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -189,6 +189,102 @@ colorValDecoder =
 -- VIEW
 
 
+viewStringField : { changedConfigForm : String -> Field -> msg, label : String, fieldName : String, stringField : StringFieldData } -> Element msg
+viewStringField { changedConfigForm, label, fieldName, stringField } =
+    row [ width fill, spaceEvenly ]
+        [ textInputHelper
+            []
+            { label =
+                Input.labelLeft
+                    [ width fill
+                    , height fill
+                    , Font.alignLeft
+                    , Misc.userSelect "none"
+                    , Element.pointer
+                    ]
+                    (Element.el [ width fill, centerY ]
+                        (Element.text label)
+                    )
+            , valStr = stringField.val
+            , onChange =
+                \newStr ->
+                    changedConfigForm fieldName (StringField { stringField | val = newStr })
+            }
+        ]
+
+
+viewIntField : { hoveredLabel : String -> Bool -> msg, fieldName : String, intField : IntFieldData, onMouseMove : Int -> msg, label : String, isActive : Bool, changedConfigForm : String -> Field -> msg, options : ViewOptions } -> Element msg
+viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, changedConfigForm, options } =
+    row ([ width fill, Font.alignLeft ] ++ resizeAttrs hoveredLabel fieldName)
+        [ row
+            [ width fill
+            , height fill
+            , paddingXY 5 0
+            , Font.color (rgb255 33 33 33)
+                |> Misc.attrIf isActive
+            , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
+                |> Misc.attrIf isActive
+            ]
+            [ Element.el [ width fill, height fill ] (Element.html <| slider onMouseMove [ Html.text label ])
+            , makePowerEl changedConfigForm
+                options
+                fieldName
+                intField.power
+                (IntField
+                    { intField
+                        | power = intField.power - 1 |> max 0
+                        , str = formatPoweredInt (intField.power - 1 |> max 0) intField.val
+                        , val = poweredInt (intField.power - 1 |> max 0) intField.val
+                    }
+                )
+                (IntField
+                    { intField
+                        | power = intField.power + 1
+                        , str = formatPoweredInt (intField.power + 1) intField.val
+                        , val = poweredInt (intField.power + 1) intField.val
+                    }
+                )
+                (intField.power <= 0)
+                |> Misc.showIf isActive
+            ]
+        , Element.el
+            [ width
+                (fill
+                    |> Element.maximum 100
+                )
+            ]
+            (textInputHelper
+                (Font.center :: incrementalAttrs changedConfigForm String.fromInt IntField fieldName intField)
+                { label = Input.labelHidden fieldName
+                , valStr = intField.str
+                , onChange =
+                    \newStr ->
+                        changedConfigForm fieldName <|
+                            IntField
+                                { intField
+                                    | str = newStr
+                                    , val =
+                                        case String.toInt newStr of
+                                            Just num ->
+                                                num
+
+                                            Nothing ->
+                                                intField.val
+                                }
+                }
+            )
+        ]
+
+
+viewColorField { label, changedConfigForm, options, colorField, fieldName, index } =
+    row
+        [ width fill ]
+        [ Element.text label
+        , closeEl changedConfigForm options colorField index fieldName
+        , viewColorPicker changedConfigForm options colorField fieldName
+        ]
+
+
 viewField :
     { hoveredLabel : String -> Bool -> msg
     , onMouseMove : Int -> msg
@@ -201,211 +297,181 @@ viewField :
     -> Bool
     -> Element msg
 viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
+    case field of
+        StringField stringField ->
+            viewStringField
+                { changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , stringField = stringField
+                }
+
+        IntField intField ->
+            viewIntField
+                { hoveredLabel = hoveredLabel
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , intField = intField
+                , onMouseMove = onMouseMove
+                , isActive = isActive
+                , changedConfigForm = changedConfigForm
+                , options = options
+                }
+
+        FloatField floatField ->
+            viewFloatField
+                { hoveredLabel = hoveredLabel
+                , onMouseMove = onMouseMove
+                , changedConfigForm = changedConfigForm
+                , options = options
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , floatField = floatField
+                , isActive = isActive
+                }
+
+        BoolField boolField ->
+            viewBoolField
+                { options = options
+                , changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , boolField = boolField
+                }
+
+        ColorField colorField ->
+            viewColorField
+                { changedConfigForm = changedConfigForm
+                , label = logic.label
+                , fieldName = logic.fieldName
+                , options = options
+                , colorField = colorField
+                , index = i
+                }
+
+        SectionField _ ->
+            viewSectionField
+                { options = options
+                , label = logic.label
+                }
+
+
+viewFloatField : { hoveredLabel : String -> Bool -> msg, onMouseMove : Int -> msg, changedConfigForm : String -> Field -> msg, options : ViewOptions, fieldName : String, label : String, floatField : FloatFieldData, isActive : Bool } -> Element msg
+viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldName, label, floatField, isActive } =
+    row (width fill :: resizeAttrs hoveredLabel fieldName)
+        [ Element.row
+            [ width fill
+            , height fill
+            , paddingXY 5 0
+            , Font.color (rgb255 33 33 33)
+                |> Misc.attrIf isActive
+            , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
+                |> Misc.attrIf isActive
+            ]
+            [ Element.html <| slider onMouseMove [ Html.text label ]
+            , makePowerEl changedConfigForm
+                options
+                fieldName
+                floatField.power
+                (FloatField
+                    { floatField
+                        | power = floatField.power - 1
+                        , str = formatPoweredFloat (floatField.power - 1) floatField.val
+                        , val = poweredFloat (floatField.power - 1) floatField.val
+                    }
+                )
+                (FloatField
+                    { floatField
+                        | power = floatField.power + 1
+                        , str = formatPoweredFloat (floatField.power + 1) floatField.val
+                        , val = poweredFloat (floatField.power + 1) floatField.val
+                    }
+                )
+                False
+                |> Misc.showIf isActive
+            ]
+        , Element.el
+            [ width
+                (fill
+                    |> Element.maximum 100
+                )
+            ]
+            (textInputHelper
+                (Font.center :: incrementalAttrs changedConfigForm String.fromFloat FloatField fieldName floatField)
+                { label = Input.labelHidden fieldName
+                , valStr = floatField.str
+                , onChange =
+                    \newStr ->
+                        changedConfigForm fieldName <|
+                            FloatField
+                                { floatField
+                                    | str = newStr
+                                    , val =
+                                        case String.toFloat newStr of
+                                            Just num ->
+                                                num
+
+                                            Nothing ->
+                                                floatField.val
+                                }
+                }
+            )
+        ]
+
+
+viewBoolField : { options : ViewOptions, changedConfigForm : String -> Field -> msg, fieldName : String, label : String, boolField : BoolFieldData } -> Element msg
+viewBoolField { options, changedConfigForm, fieldName, label, boolField } =
     let
         defaultAttrs =
             [ style "width" (px (inputFieldVertPadding options))
-
-            -- style "width" (pxInt options.inputWidth)
             , style "height" (px (inputFieldVertPadding options))
             ]
     in
-    case field of
-        StringField stringField ->
-            row [ width fill, spaceEvenly ]
-                [ textInputHelper
-                    []
-                    { label =
-                        Input.labelLeft
-                            [ width fill
-                            , height fill
-                            , Font.alignLeft
-                            , Misc.userSelect "none"
-                            , Element.pointer
-                            ]
-                            (Element.el [ width fill, centerY ]
-                                (Element.text logic.label)
+    row
+        [ width fill
+        , spaceEvenly
+        , centerY
+        ]
+        [ Input.checkbox
+            [ width fill ]
+            { checked = boolField.val
+            , icon =
+                \b ->
+                    Element.html <|
+                        Html.input
+                            (defaultAttrs
+                                ++ [ Html.Attributes.type_ "checkbox"
+                                   , Html.Attributes.checked b
+                                   , Html.Attributes.style "margin-left" "auto"
+                                   , Html.Attributes.style "cursor" "pointer"
+                                   ]
                             )
-                    , valStr = stringField.val
-                    , onChange =
-                        \newStr ->
-                            changedConfigForm logic.fieldName (StringField { stringField | val = newStr })
-                    }
-                ]
-
-        IntField intField ->
-            row ([ width fill, Font.alignLeft ] ++ resizeAttrs hoveredLabel logic)
-                [ row
-                    [ width fill
-                    , height fill
-                    , paddingXY 5 0
-                    , Font.color (rgb255 33 33 33)
-                        |> Misc.attrIf isActive
-                    , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
-                        |> Misc.attrIf isActive
+                            []
+            , onChange = \newBool -> changedConfigForm fieldName (BoolField { boolField | val = newBool })
+            , label =
+                Input.labelLeft
+                    [ Font.alignLeft
+                    , width fill
+                    , centerY
+                    , Misc.userSelect "none"
                     ]
-                    [ Element.el [ width fill, height fill ] (Element.html <| slider onMouseMove [ Html.text logic.label ])
-                    , makePowerEl changedConfigForm
-                        options
-                        logic.fieldName
-                        intField.power
-                        (IntField
-                            { intField
-                                | power = intField.power - 1 |> max 0
-                                , str = formatPoweredInt (intField.power - 1 |> max 0) intField.val
-                                , val = poweredInt (intField.power - 1 |> max 0) intField.val
-                            }
-                        )
-                        (IntField
-                            { intField
-                                | power = intField.power + 1
-                                , str = formatPoweredInt (intField.power + 1) intField.val
-                                , val = poweredInt (intField.power + 1) intField.val
-                            }
-                        )
-                        (intField.power <= 0)
-                        |> Misc.showIf isActive
-                    ]
-                , Element.el
-                    [ width
-                        (fill
-                            |> Element.maximum 100
-                        )
-                    ]
-                    (textInputHelper
-                        (Font.center :: incrementalAttrs changedConfigForm String.fromInt IntField logic.fieldName intField)
-                        { label = Input.labelHidden logic.fieldName
-                        , valStr = intField.str
-                        , onChange =
-                            \newStr ->
-                                changedConfigForm logic.fieldName <|
-                                    IntField
-                                        { intField
-                                            | str = newStr
-                                            , val =
-                                                case String.toInt newStr of
-                                                    Just num ->
-                                                        num
+                    (Element.text label)
+            }
+        ]
 
-                                                    Nothing ->
-                                                        intField.val
-                                        }
-                        }
-                    )
-                ]
 
-        FloatField floatField ->
-            row (width fill :: resizeAttrs hoveredLabel logic)
-                [ Element.row
-                    [ width fill
-                    , height fill
-                    , paddingXY 5 0
-                    , Font.color (rgb255 33 33 33)
-                        |> Misc.attrIf isActive
-                    , Background.color (Misc.toElementColor viewOptions.labelHighlightBgColor)
-                        |> Misc.attrIf isActive
-                    ]
-                    [ Element.html <| slider onMouseMove [ Html.text logic.label ]
-                    , makePowerEl changedConfigForm
-                        options
-                        logic.fieldName
-                        floatField.power
-                        (FloatField
-                            { floatField
-                                | power = floatField.power - 1
-                                , str = formatPoweredFloat (floatField.power - 1) floatField.val
-                                , val = poweredFloat (floatField.power - 1) floatField.val
-                            }
-                        )
-                        (FloatField
-                            { floatField
-                                | power = floatField.power + 1
-                                , str = formatPoweredFloat (floatField.power + 1) floatField.val
-                                , val = poweredFloat (floatField.power + 1) floatField.val
-                            }
-                        )
-                        False
-                        |> Misc.showIf isActive
-                    ]
-                , Element.el
-                    [ width
-                        (fill
-                            |> Element.maximum 100
-                        )
-                    ]
-                    (textInputHelper
-                        (Font.center :: incrementalAttrs changedConfigForm String.fromFloat FloatField logic.fieldName floatField)
-                        { label = Input.labelHidden logic.fieldName
-                        , valStr = floatField.str
-                        , onChange =
-                            \newStr ->
-                                changedConfigForm logic.fieldName <|
-                                    FloatField
-                                        { floatField
-                                            | str = newStr
-                                            , val =
-                                                case String.toFloat newStr of
-                                                    Just num ->
-                                                        num
-
-                                                    Nothing ->
-                                                        floatField.val
-                                        }
-                        }
-                    )
-                ]
-
-        BoolField ({ val } as boolField) ->
-            row
-                [ width fill
-                , spaceEvenly
-                , centerY
-                ]
-                [ Input.checkbox
-                    [ width fill ]
-                    { checked = val
-                    , icon =
-                        \b ->
-                            Element.html <|
-                                Html.input
-                                    (defaultAttrs
-                                        ++ [ Html.Attributes.type_ "checkbox"
-                                           , Html.Attributes.checked b
-                                           , Html.Attributes.style "margin-left" "auto"
-                                           , Html.Attributes.style "cursor" "pointer"
-                                           ]
-                                    )
-                                    []
-                    , onChange = \newBool -> changedConfigForm logic.fieldName (BoolField { boolField | val = newBool })
-                    , label =
-                        Input.labelLeft
-                            [ Font.alignLeft
-                            , width fill
-                            , centerY
-                            , Misc.userSelect "none"
-                            ]
-                            (Element.text logic.label)
-                    }
-                ]
-
-        ColorField colorField ->
-            row
-                [ width fill ]
-                [ Element.text logic.label
-                , closeEl changedConfigForm options colorField i logic.fieldName
-                , viewColorField changedConfigForm options colorField logic.fieldName
-                ]
-
-        SectionField _ ->
-            row
-                [ Font.bold
-                , paddingEach
-                    { top = options.sectionSpacing
-                    , right = 0
-                    , bottom = 5
-                    , left = 0
-                    }
-                ]
-                [ Element.text logic.label ]
+viewSectionField : { options : ViewOptions, label : String } -> Element msg
+viewSectionField { options, label } =
+    row
+        [ Font.bold
+        , paddingEach
+            { top = options.sectionSpacing
+            , right = 0
+            , bottom = 5
+            , left = 0
+            }
+        ]
+        [ Element.text label ]
 
 
 closeEl : (String -> Field -> msg) -> { r | fontSize : Int } -> ColorFieldData -> Int -> String -> Element msg
@@ -509,12 +575,12 @@ makePowerEl changedConfigForm options fieldName power newIncField newDecField is
                 ]
 
 
-resizeAttrs : (String -> Bool -> msg) -> Logic config -> List (Element.Attribute msg)
-resizeAttrs hoveredLabel logic =
-    [ Events.onMouseEnter (hoveredLabel logic.fieldName True)
-    , Events.onMouseLeave (hoveredLabel logic.fieldName False)
+resizeAttrs : (String -> Bool -> msg) -> String -> List (Element.Attribute msg)
+resizeAttrs hoveredLabel fieldName =
+    [ Events.onMouseEnter (hoveredLabel fieldName True)
+    , Events.onMouseLeave (hoveredLabel fieldName False)
 
-    --, Html.Events.onMouseDown (ClickedPointerLockLabel logic.fieldName)
+    --, Html.Events.onMouseDown (ClickedPointerLockLabel fieldName)
     , Misc.cursor "ew-resize"
     ]
 
@@ -562,8 +628,8 @@ incrementalAttrs changedConfigForm numToString wrapper fieldName data =
     ]
 
 
-viewColorField : (String -> Field -> msg) -> ViewOptions -> ColorFieldData -> String -> Element msg
-viewColorField changedConfigForm options data fieldName =
+viewColorPicker : (String -> Field -> msg) -> ViewOptions -> ColorFieldData -> String -> Element msg
+viewColorPicker changedConfigForm options data fieldName =
     let
         meta =
             case data.meta of
