@@ -90,6 +90,7 @@ init elmConfigUiFlags =
                         , string = "SORRY IM NEW HERE"
                         , bool = True
                         , color = Color.rgb255 32 37 49 -- hot pink!
+                        , vec2 = vec2 -3 -1234
                         }
                 }
 

@@ -158,6 +158,7 @@ import ConfigForm.Custom
         , emptyField customKinds
         , configFromFields customKinds
         , decodeField customKinds
+        , viewField customKinds
         ]
             |> String.join "\n\n\n"
       )
@@ -172,16 +173,18 @@ header =
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics)
+module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 """
 
         imports =
             """
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm
+import ConfigFormUI exposing (ViewOptions)
+import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
 import OrderedDict exposing (OrderedDict)
@@ -519,7 +522,7 @@ customLogics kinds =
                         kind ++ "Logic"
 
                     templateStr =
-                        """$funcName : String -> String -> (config -> $typeName) -> ($typeName -> config -> config) -> Logic logicKind
+                        """$funcName : String -> String -> (config -> $typeName) -> ($typeName -> config -> config) -> Logic config
 $funcName fieldName label getter setter =
     { fieldName = fieldName
     , label = label
@@ -906,3 +909,103 @@ decodeField logic json =
                 |> Just
 
 """ ++ customKindCases
+
+
+viewField : Set String -> String
+viewField customKinds =
+    let
+        spacing =
+            "        "
+
+        args =
+            """
+                { hoveredLabel = hoveredLabel logic.fieldName
+                , onMouseMove = onMouseMove
+                , changedConfigForm = \\f -> changedConfigForm logic.fieldName (Vec2Field f)
+                , label = logic.label
+                , fieldName = logic.fieldName
+                , options = options
+                , field = field_
+                , index = i
+                , isActive = isActive
+                }
+"""
+
+        customKindCases =
+            customKinds
+                |> Set.map (\kind -> spacing ++ kind ++ "Field field_ ->\n" ++ spacing ++ "    " ++ "ConfigForm.Custom.view" ++ kind ++ "Field" ++ args)
+                |> Set.toList
+                |> String.join "\n\n"
+    in
+    """viewField :
+    { hoveredLabel : String -> Bool -> msg
+    , onMouseMove : Int -> msg
+    , changedConfigForm : String -> Field -> msg
+    }
+    -> ViewOptions
+    -> Field
+    -> Int
+    -> ConfigTypes.Logic config
+    -> Bool
+    -> Element msg
+viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
+    case field of
+        StringField stringField ->
+            viewStringField
+                { changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , stringField = stringField
+                }
+
+        IntField intField ->
+            viewIntField
+                { hoveredLabel = hoveredLabel
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , intField = intField
+                , onMouseMove = onMouseMove
+                , isActive = isActive
+                , changedConfigForm = changedConfigForm
+                , options = options
+                }
+
+        FloatField floatField ->
+            viewFloatField
+                { hoveredLabel = hoveredLabel
+                , onMouseMove = onMouseMove
+                , changedConfigForm = changedConfigForm
+                , options = options
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , floatField = floatField
+                , isActive = isActive
+                }
+
+        BoolField boolField ->
+            viewBoolField
+                { options = options
+                , changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , boolField = boolField
+                }
+
+        ColorField colorField ->
+            viewColorField
+                { changedConfigForm = changedConfigForm
+                , label = logic.label
+                , fieldName = logic.fieldName
+                , options = options
+                , colorField = colorField
+                , index = i
+                }
+
+        SectionField _ ->
+            viewSectionField
+                { options = options
+                , label = logic.label
+                }
+
+"""
+        ++ customKindCases

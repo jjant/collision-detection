@@ -1,7 +1,8 @@
 module ConfigFormGeneric exposing (..)
 
 import Config
-import ConfigForm exposing (ViewOptions)
+import ConfigForm
+import ConfigFormUI exposing (ViewOptions)
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
@@ -97,8 +98,16 @@ type ConfigForm
 -}
 update : List (ConfigTypes.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
 update logics config (ConfigForm configForm) msg =
+    let
+        _ =
+            Debug.log "msg" msg
+    in
     case msg of
         ChangedConfigForm fieldName field ->
+            let
+                _ =
+                    Debug.log fieldName field
+            in
             let
                 newConfigForm =
                     configForm.fields
@@ -146,6 +155,7 @@ update logics config (ConfigForm configForm) msg =
                                     configForm.fields
                                         |> OrderedDict.update fieldName
                                             (\maybeField ->
+                                                -- TODO: Make this work properly
                                                 case maybeField of
                                                     Just (IntField data) ->
                                                         let
@@ -247,6 +257,10 @@ init options =
 -}
 view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
 view viewOptions logics (ConfigForm configForm) =
+    let
+        _ =
+            Debug.log "" configForm.fields
+    in
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
             (logics
@@ -254,8 +268,12 @@ view viewOptions logics (ConfigForm configForm) =
                     (\i logic ->
                         let
                             field =
-                                OrderedDict.get logic.fieldName configForm.fields
-                                    |> Unwrap.maybe
+                                case OrderedDict.get logic.fieldName configForm.fields of
+                                    Just a ->
+                                        a
+
+                                    Nothing ->
+                                        Debug.todo logic.fieldName
                         in
                         row
                             [ width fill
@@ -263,7 +281,7 @@ view viewOptions logics (ConfigForm configForm) =
 
                             --  , Element.explain Debug.todo
                             ]
-                            [ ConfigForm.viewField
+                            [ Config.viewField
                                 { hoveredLabel = HoveredLabel, onMouseMove = MouseMove, changedConfigForm = ChangedConfigForm }
                                 viewOptions
                                 field

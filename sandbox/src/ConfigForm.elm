@@ -1,7 +1,7 @@
 module ConfigForm exposing
     ( viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
     , int, float, string, bool, color, section
-    , ViewOptions, colorValDecoder, encodeColor, formatPoweredFloat, formatPoweredInt, tuple2Encoder, viewField
+    , colorValDecoder, encodeColor, formatPoweredFloat, formatPoweredInt, tuple2Encoder, viewBoolField, viewColorField, viewFloatField, viewIntField, viewSectionField, viewStringField
     )
 
 {-| Note: The `config` in the following type signatures is a record of all your config values, like...
@@ -50,17 +50,16 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 
 import Color exposing (Color)
 import ColorPicker
+import ConfigFormUI exposing (ViewOptions, inputFieldVertPadding, makePowerEl, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
 import ConfigTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), FloatFieldData, IntFieldData, Logic, LogicKind(..), StringFieldData)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, width)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes exposing (style)
 import Html.Events
-import Html.Events.Extra.Pointer as Pointer
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as JE
 import Misc
@@ -167,11 +166,6 @@ poweredInt power val =
     round <| Round.roundNum -power (toFloat val)
 
 
-poweredFloat : Int -> Float -> Float
-poweredFloat power val =
-    Round.roundNum -power val
-
-
 
 -- JSON encode/decoder stuff
 
@@ -213,9 +207,19 @@ viewStringField { changedConfigForm, label, fieldName, stringField } =
         ]
 
 
-viewIntField : { hoveredLabel : String -> Bool -> msg, fieldName : String, intField : IntFieldData, onMouseMove : Int -> msg, label : String, isActive : Bool, changedConfigForm : String -> Field -> msg, options : ViewOptions } -> Element msg
+viewIntField :
+    { hoveredLabel : String -> Bool -> msg
+    , fieldName : String
+    , intField : IntFieldData
+    , onMouseMove : Int -> msg
+    , label : String
+    , isActive : Bool
+    , changedConfigForm : String -> Field -> msg
+    , options : ViewOptions
+    }
+    -> Element msg
 viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, changedConfigForm, options } =
-    row ([ width fill, Font.alignLeft ] ++ resizeAttrs hoveredLabel fieldName)
+    row ([ width fill, Font.alignLeft ] ++ resizeAttrs (hoveredLabel fieldName))
         [ row
             [ width fill
             , height fill
@@ -226,9 +230,9 @@ viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, 
                 |> Misc.attrIf isActive
             ]
             [ Element.el [ width fill, height fill ] (Element.html <| slider onMouseMove [ Html.text label ])
-            , makePowerEl changedConfigForm
+            , makePowerEl
+                (changedConfigForm fieldName)
                 options
-                fieldName
                 intField.power
                 (IntField
                     { intField
@@ -276,6 +280,15 @@ viewIntField { hoveredLabel, fieldName, intField, onMouseMove, label, isActive, 
         ]
 
 
+viewColorField :
+    { label : String
+    , changedConfigForm : String -> Field -> msg
+    , options : ViewOptions
+    , colorField : ColorFieldData
+    , fieldName : String
+    , index : Int
+    }
+    -> Element msg
 viewColorField { label, changedConfigForm, options, colorField, fieldName, index } =
     row
         [ width fill ]
@@ -285,80 +298,19 @@ viewColorField { label, changedConfigForm, options, colorField, fieldName, index
         ]
 
 
-viewField :
+viewFloatField :
     { hoveredLabel : String -> Bool -> msg
     , onMouseMove : Int -> msg
     , changedConfigForm : String -> Field -> msg
+    , options : ViewOptions
+    , fieldName : String
+    , label : String
+    , floatField : FloatFieldData
+    , isActive : Bool
     }
-    -> ViewOptions
-    -> Field
-    -> Int
-    -> ConfigTypes.Logic config
-    -> Bool
     -> Element msg
-viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
-    case field of
-        StringField stringField ->
-            viewStringField
-                { changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
-                , label = logic.label
-                , stringField = stringField
-                }
-
-        IntField intField ->
-            viewIntField
-                { hoveredLabel = hoveredLabel
-                , fieldName = logic.fieldName
-                , label = logic.label
-                , intField = intField
-                , onMouseMove = onMouseMove
-                , isActive = isActive
-                , changedConfigForm = changedConfigForm
-                , options = options
-                }
-
-        FloatField floatField ->
-            viewFloatField
-                { hoveredLabel = hoveredLabel
-                , onMouseMove = onMouseMove
-                , changedConfigForm = changedConfigForm
-                , options = options
-                , fieldName = logic.fieldName
-                , label = logic.label
-                , floatField = floatField
-                , isActive = isActive
-                }
-
-        BoolField boolField ->
-            viewBoolField
-                { options = options
-                , changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
-                , label = logic.label
-                , boolField = boolField
-                }
-
-        ColorField colorField ->
-            viewColorField
-                { changedConfigForm = changedConfigForm
-                , label = logic.label
-                , fieldName = logic.fieldName
-                , options = options
-                , colorField = colorField
-                , index = i
-                }
-
-        SectionField _ ->
-            viewSectionField
-                { options = options
-                , label = logic.label
-                }
-
-
-viewFloatField : { hoveredLabel : String -> Bool -> msg, onMouseMove : Int -> msg, changedConfigForm : String -> Field -> msg, options : ViewOptions, fieldName : String, label : String, floatField : FloatFieldData, isActive : Bool } -> Element msg
 viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldName, label, floatField, isActive } =
-    row (width fill :: resizeAttrs hoveredLabel fieldName)
+    row (width fill :: resizeAttrs (hoveredLabel fieldName))
         [ Element.row
             [ width fill
             , height fill
@@ -369,9 +321,9 @@ viewFloatField { hoveredLabel, onMouseMove, changedConfigForm, options, fieldNam
                 |> Misc.attrIf isActive
             ]
             [ Element.html <| slider onMouseMove [ Html.text label ]
-            , makePowerEl changedConfigForm
+            , makePowerEl
+                (changedConfigForm fieldName)
                 options
-                fieldName
                 floatField.power
                 (FloatField
                     { floatField
@@ -513,83 +465,6 @@ closeEl changedConfigForm options colorFieldData i fieldName =
             Element.none
 
 
-makePowerEl : (String -> Field -> msg) -> ViewOptions -> String -> Int -> Field -> Field -> Bool -> Element msg
-makePowerEl changedConfigForm options fieldName power newIncField newDecField isDownDisabled =
-    Element.el [ Element.alignRight ] <|
-        Element.html <|
-            Html.div
-                [ style "height" "100%"
-                , style "box-sizing" "border-box"
-                , style "display" "flex"
-                , style "align-items" "center"
-                , style "padding-left" (px (0.45 * inputFieldVertPadding options))
-                , style "font-size" (px (0.8 * toFloat options.fontSize))
-                , style "background" (Color.toCssString options.labelHighlightBgColor)
-                , style "background"
-                    ([ "linear-gradient(to right,"
-                     , "transparent,"
-                     , Color.toCssString options.labelHighlightBgColor ++ " 10%,"
-                     , Color.toCssString options.labelHighlightBgColor
-                     ]
-                        |> String.join " "
-                    )
-                , style "pointer-events" "none"
-                ]
-                [ Html.span
-                    [ style "padding" "5px 0"
-                    , style "pointer-events" "none"
-                    , style "user-select" "none"
-                    ]
-                    -- label
-                    [ Html.text (formattedPower power) ]
-                , Html.span
-                    [ style "font-size" (0.8 * toFloat options.fontSize |> px)
-                    , style "top" "1px"
-                    , style "pointer-events" "all"
-                    , Pointer.onWithOptions "pointerdown"
-                        { stopPropagation = True
-                        , preventDefault = True
-                        }
-                        (\_ -> changedConfigForm fieldName newIncField)
-                    , if isDownDisabled then
-                        style "opacity" "0.4"
-
-                      else
-                        style "cursor" "pointer"
-                    ]
-                    -- down btn
-                    [ Html.text "↙️" ]
-                , Html.span
-                    [ style "font-size" (0.8 * toFloat options.fontSize |> px)
-                    , style "top" "1px"
-                    , style "pointer-events" "all"
-                    , Pointer.onWithOptions "pointerdown"
-                        { stopPropagation = True
-                        , preventDefault = True
-                        }
-                        (\_ -> changedConfigForm fieldName newDecField)
-                    , style "cursor" "pointer"
-                    ]
-                    -- up btn
-                    [ Html.text "↗️" ]
-                ]
-
-
-resizeAttrs : (String -> Bool -> msg) -> String -> List (Element.Attribute msg)
-resizeAttrs hoveredLabel fieldName =
-    [ Events.onMouseEnter (hoveredLabel fieldName True)
-    , Events.onMouseLeave (hoveredLabel fieldName False)
-
-    --, Html.Events.onMouseDown (ClickedPointerLockLabel fieldName)
-    , Misc.cursor "ew-resize"
-    ]
-
-
-inputFieldVertPadding : ViewOptions -> Float
-inputFieldVertPadding options =
-    toFloat options.fontSize * options.inputSpacing
-
-
 incrementalAttrs : (String -> Field -> msg) -> (number -> String) -> ({ r | val : number, str : String } -> Field) -> String -> { r | val : number, str : String } -> List (Element.Attribute msg)
 incrementalAttrs changedConfigForm numToString wrapper fieldName data =
     [ Element.htmlAttribute <|
@@ -694,37 +569,8 @@ viewColorPicker changedConfigForm options data fieldName =
         ]
 
 
-textInputHelper :
-    List (Element.Attribute msg)
-    ->
-        { label : Input.Label msg
-        , valStr : String
-        , onChange : String -> msg
-        }
-    -> Element msg
-textInputHelper attrs { label, valStr, onChange } =
-    Input.text (Background.color (rgb255 60 72 85) :: attrs)
-        { onChange = onChange
-        , placeholder = Nothing
-        , text = valStr
-        , label = label
-        }
-
-
 
 -- VIEW OPTIONS
-
-
-{-| Options for viewing the config form.
--}
-type alias ViewOptions =
-    { fontSize : Int
-    , rowSpacing : Int
-    , inputWidth : Int
-    , inputSpacing : Float
-    , labelHighlightBgColor : Color
-    , sectionSpacing : Int
-    }
 
 
 {-| Default options for viewing the config form.
@@ -780,30 +626,3 @@ withLabelHighlightBgColor val options =
 withSectionSpacing : Int -> ViewOptions -> ViewOptions
 withSectionSpacing val options =
     { options | sectionSpacing = val }
-
-
-
--- MISC INTERNAL
-
-
-px : Float -> String
-px num =
-    String.fromFloat num ++ "px"
-
-
-pxInt : Int -> String
-pxInt num =
-    String.fromInt num ++ "px"
-
-
-formattedPower : Int -> String
-formattedPower power =
-    let
-        numStr =
-            if power >= 0 then
-                String.fromInt (10 ^ power)
-
-            else
-                "0." ++ String.repeat (-1 - power) "0" ++ "1"
-    in
-    "x" ++ numStr

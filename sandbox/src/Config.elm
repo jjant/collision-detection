@@ -1,13 +1,15 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics)
+module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm
+import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewSectionField, viewStringField)
 import ConfigForm.Custom
+import ConfigFormUI exposing (ViewOptions)
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
 import OrderedDict exposing (OrderedDict)
@@ -21,6 +23,7 @@ type alias Config =
     , showPointProjections : Bool
     , showContactPoints : Bool
     , backgroundColor : Color
+    , myKind : ConfigForm.Custom.Vec2
     }
 
 
@@ -33,6 +36,7 @@ empty defaults =
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
+    , myKind = defaults.vec2
     }
 
 
@@ -77,10 +81,22 @@ logics =
         "Background color"
         .backgroundColor
         (\a c -> { c | backgroundColor = a })
+    , ConfigForm.section
+        "Custom Kinds"
+    , vec2
+        "myKind"
+        "My custom thing"
+        .myKind
+        (\a c -> { c | myKind = a })
     ]
 
 
-
+vec2 : String -> String -> (config -> ConfigForm.Custom.Vec2) -> (ConfigForm.Custom.Vec2 -> config -> config) -> Logic config
+vec2 fieldName label getter setter =
+    { fieldName = fieldName
+    , label = label
+    , kind = Vec2Logic { getter = getter, setter = setter }
+    }
 
 
 encodeField : Field -> Maybe Value
@@ -111,7 +127,8 @@ encodeField field =
         SectionField _ ->
             Nothing
 
-
+        Vec2Field data ->
+            ConfigForm.Custom.encodeVec2 data
 
 
 type alias Defaults =
@@ -120,6 +137,7 @@ type alias Defaults =
     , string : String
     , bool : Bool
     , color : Color
+    , vec2 : ConfigForm.Custom.Vec2
     }
 
 
@@ -163,7 +181,8 @@ emptyField logic emptyConfig =
         SectionLogic _ ->
             SectionField logic.fieldName
 
-
+        Vec2Logic lens ->
+            Vec2Field <| ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig
 
 
 configFromFields : List (Logic config) -> OrderedDict String Field -> config -> config
@@ -191,14 +210,13 @@ configFromFields logics_ configForm config =
                     ( Just (ColorField data), ColorLogic { setter } ) ->
                         setter data.val newConfig
 
-
+                    ( Just (Vec2Field data), Vec2Logic { setter } ) ->
+                        setter data.val newConfig
 
                     _ ->
                         newConfig
             )
             config
-
-
 
 
 decodeField : Logic config -> Decode.Value -> Maybe Field
@@ -302,3 +320,98 @@ decodeField logic json =
                 |> SectionField
                 |> Just
 
+        Vec2Logic _ ->
+            let
+                decoder =
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.Custom.decodeVec2Field
+            in
+            case Decode.decodeValue decoder json of
+                Ok field ->
+                    Just <| Vec2Field field
+
+                Err _ ->
+                    Debug.todo logic.fieldName
+
+
+viewField :
+    { hoveredLabel : String -> Bool -> msg
+    , onMouseMove : Int -> msg
+    , changedConfigForm : String -> Field -> msg
+    }
+    -> ViewOptions
+    -> Field
+    -> Int
+    -> ConfigTypes.Logic config
+    -> Bool
+    -> Element msg
+viewField { hoveredLabel, onMouseMove, changedConfigForm } options field i logic isActive =
+    case field of
+        StringField stringField ->
+            viewStringField
+                { changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , stringField = stringField
+                }
+
+        IntField intField ->
+            viewIntField
+                { hoveredLabel = hoveredLabel
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , intField = intField
+                , onMouseMove = onMouseMove
+                , isActive = isActive
+                , changedConfigForm = changedConfigForm
+                , options = options
+                }
+
+        FloatField floatField ->
+            viewFloatField
+                { hoveredLabel = hoveredLabel
+                , onMouseMove = onMouseMove
+                , changedConfigForm = changedConfigForm
+                , options = options
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , floatField = floatField
+                , isActive = isActive
+                }
+
+        BoolField boolField ->
+            viewBoolField
+                { options = options
+                , changedConfigForm = changedConfigForm
+                , fieldName = logic.fieldName
+                , label = logic.label
+                , boolField = boolField
+                }
+
+        ColorField colorField ->
+            viewColorField
+                { changedConfigForm = changedConfigForm
+                , label = logic.label
+                , fieldName = logic.fieldName
+                , options = options
+                , colorField = colorField
+                , index = i
+                }
+
+        SectionField _ ->
+            viewSectionField
+                { options = options
+                , label = logic.label
+                }
+
+        Vec2Field field_ ->
+            ConfigForm.Custom.viewVec2Field
+                { hoveredLabel = hoveredLabel logic.fieldName
+                , onMouseMove = onMouseMove
+                , changedConfigForm = \f -> changedConfigForm logic.fieldName (Vec2Field f)
+                , label = logic.label
+                , fieldName = logic.fieldName
+                , options = options
+                , field = field_
+                , index = i
+                , isActive = isActive
+                }

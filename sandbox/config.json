@@ -3,6 +3,7 @@
     "myFloat": [33, 1],
     "myInt": [-147, 0],
     "myString": "",
+    "myKind": { "val": { "x": 99, "y": 88 }, "power": 1 },
     "showSupportPoints": false,
     "showPointProjections": true,
     "showContactPoints": false,
