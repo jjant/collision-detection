@@ -52,7 +52,7 @@ import Color exposing (Color)
 import ColorPicker
 import ConfigFormUI exposing (ViewOptions, inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
 import ConfigTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), FloatFieldData, IntFieldData, Logic, LogicKind(..), StringFieldData)
-import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, width)
+import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, spacing, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -283,10 +283,15 @@ viewColorField :
     -> Element msg
 viewColorField { label, changedConfigForm, options, colorField, fieldName, index } =
     row
-        [ width fill ]
+        [ width fill
+        , height (Element.px 30)
+        , spacing 100
+        ]
         [ Element.text label
-        , closeEl changedConfigForm options colorField index fieldName
-        , viewColorPicker changedConfigForm options colorField fieldName
+        , row [ width fill, height fill ]
+            [ closeEl changedConfigForm options colorField index fieldName
+            , viewColorPicker changedConfigForm options colorField fieldName
+            ]
         ]
 
 
@@ -497,7 +502,11 @@ viewColorPicker changedConfigForm options data fieldName =
             , style "height" (px (inputFieldVertPadding options))
             ]
     in
-    row [ width fill ]
+    row
+        [ width fill
+        , height fill
+        , Element.htmlAttribute <| style "z-index" "2"
+        ]
         [ Element.html <|
             if meta.isOpen then
                 ColorPicker.view data.val meta.state
@@ -528,6 +537,7 @@ viewColorPicker changedConfigForm options data fieldName =
                     (defaultAttrs
                         ++ [ style "background" (Color.toCssString data.val)
                            , style "width" "100%"
+                           , style "height" "100%"
                            , style "border" "1px solid rgba(0,0,0,0.3)"
                            , style "border-radius" "3px"
                            , style "box-sizing" "border-box"
