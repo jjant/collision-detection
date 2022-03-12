@@ -16,6 +16,7 @@ module Render exposing
 
 import AABB exposing (AABB)
 import Body exposing (Body, Shape(..))
+import Html.Attributes
 import Isometry exposing (Isometry)
 import Json.Decode as Decode
 import Mat3 exposing (Mat3)
@@ -34,7 +35,7 @@ render : (Vec2 -> msg) -> List (Svg.Attribute msg) -> List (Renderable msg) -> M
 render onClick attrs children toScreen =
     Svg.svg
         ([ Svg.Events.on "click" (Decode.map onClick mouseDecoder)
-         , Svg.Attributes.style "background: white"
+         , Html.Attributes.style "background" "white"
          ]
             ++ attrs
         )

@@ -23,6 +23,7 @@ type alias Config =
     , showPointProjections : Bool
     , showContactPoints : Bool
     , backgroundColor : Color
+    , sceneBackground : Color
     , myKind : ConfigForm.Custom.Vec2
     }
 
@@ -36,6 +37,7 @@ empty defaults =
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
+    , sceneBackground = defaults.color
     , myKind = defaults.vec2
     }
 
@@ -78,9 +80,14 @@ logics =
         "Editor UI"
     , ConfigForm.color
         "backgroundColor"
-        "Background color"
+        "Editor background"
         .backgroundColor
         (\a c -> { c | backgroundColor = a })
+    , ConfigForm.color
+        "sceneBackground"
+        "Scene background"
+        .sceneBackground
+        (\a c -> { c | sceneBackground = a })
     , ConfigForm.section
         "Custom Kinds"
     , vec2

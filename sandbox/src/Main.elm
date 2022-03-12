@@ -340,6 +340,7 @@ view model =
                         [ Html.Attributes.width (round model.viewportSize.x)
                         , Html.Attributes.height (round model.viewportSize.y)
                         , Html.Attributes.style "border" "1px solid blue"
+                        , Html.Attributes.style "background" (Color.toCssString model.config.sceneBackground)
                         , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
                         ]
                         (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody

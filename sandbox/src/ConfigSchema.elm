@@ -17,7 +17,8 @@ myConfigFields =
     , ( "Point projections", BoolKind "showPointProjections" )
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "Editor UI", SectionKind )
-    , ( "Background color", ColorKind "backgroundColor" )
+    , ( "Editor background", ColorKind "backgroundColor" )
+    , ( "Scene background", ColorKind "sceneBackground" )
     , ( "Custom Kinds", SectionKind )
     , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]
