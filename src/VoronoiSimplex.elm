@@ -3,7 +3,6 @@ module VoronoiSimplex exposing
     , Simplex(..)
     , VoronoiSimplex
     , append
-    , doSimplex
     , new
     )
 
@@ -33,11 +32,11 @@ new =
 
 
 type IncompleteSimplex
-    = One { a : Vec2 }
+    = One { a : CSOPoint }
     | Simplex Simplex
 
 
-append : Vec2 -> IncompleteSimplex -> Simplex
+append : CSOPoint -> IncompleteSimplex -> Simplex
 append p s =
     case s of
         One { a } ->
@@ -51,15 +50,5 @@ append p s =
 
 
 type Simplex
-    = Two { a : Vec2, b : Vec2 }
-    | Three { a : Vec2, b : Vec2, c : Vec2 }
-
-
-doSimplex : Simplex -> ( Simplex, Vec2 )
-doSimplex simplex =
-    case simplex of
-        Two { a, b } ->
-            Debug.todo ""
-
-        Three { a, b, c } ->
-            Debug.todo "branch 'Three _' not implemented"
+    = Two { a : CSOPoint, b : CSOPoint }
+    | Three { a : CSOPoint, b : CSOPoint, c : CSOPoint }

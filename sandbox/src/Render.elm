@@ -7,6 +7,7 @@ module Render exposing
     , group
     , line
     , none
+    , point
     , polygon
     , rectangle
     , render
@@ -182,6 +183,29 @@ rectangle_ attrs { transform, halfExtents } toScreen =
 circle : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Renderable msg
 circle attrs circ =
     Renderable (circle_ attrs circ)
+
+
+point : List (Svg.Attribute msg) -> Vec2 -> Renderable msg
+point attrs position =
+    Renderable
+        (\toScreen ->
+            let
+                screenPosition =
+                    Mat3.transformPoint toScreen position
+
+                screenRadius =
+                    -- Points have a fixed screen radius
+                    5
+            in
+            Svg.circle
+                ([ Svg.Attributes.cx (String.fromFloat screenPosition.x)
+                 , Svg.Attributes.cy (String.fromFloat screenPosition.y)
+                 , Svg.Attributes.r (String.fromFloat screenRadius)
+                 ]
+                    ++ attrs
+                )
+                []
+        )
 
 
 circle_ : List (Svg.Attribute msg) -> { position : Vec2, radius : Float } -> Mat3 -> Svg msg

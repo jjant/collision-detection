@@ -6,6 +6,8 @@ import Vec2 exposing (Vec2)
 type alias CSOPoint =
     { point : Vec2
     , orig1 : Vec2
+
+    -- For the moment, both points (orig1, orig2) are in body1's local space.
     , orig2 : Vec2
     }
 

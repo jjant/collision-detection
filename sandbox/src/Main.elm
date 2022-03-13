@@ -363,7 +363,22 @@ view model =
                                             [ Svg.stroke "black"
                                             , Svg.fill "none"
                                             ]
-                                            [ a, b, c ]
+                                            [ a.point, b.point, c.point ]
+                                        , Render.group [ Svg.fill "purple" ]
+                                            [ Render.point [] a.point
+                                            , Render.point [] (Isometry.apply b1.transform a.orig1)
+                                            , Render.point [] (Isometry.apply b1.transform a.orig2)
+                                            ]
+                                        , Render.group [ Svg.fill "green" ]
+                                            [ Render.point [] b.point
+                                            , Render.point [] (Isometry.apply b1.transform b.orig1)
+                                            , Render.point [] (Isometry.apply b1.transform b.orig2)
+                                            ]
+                                        , Render.group [ Svg.fill "yellow" ]
+                                            [ Render.point [] c.point
+                                            , Render.point [] (Isometry.apply b1.transform c.orig1)
+                                            , Render.point [] (Isometry.apply b1.transform c.orig2)
+                                            ]
                                         ]
 
                                     _ ->

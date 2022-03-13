@@ -1,6 +1,7 @@
 module Body exposing (Body, Shape(..), contact, gjkIntersection, localSupportPoint, projectPoint, supportPoint)
 
 import Array exposing (Array)
+import CSOPoint exposing (CSOPoint)
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
 import Isometry exposing (Isometry)
@@ -169,7 +170,7 @@ gjkIntersection pos12 g1 g2 =
         a =
             support pos12 g1 g2 initialAxis
     in
-    gjkIntersectionHelp pos12 g1 g2 (One { a = a }) (Vec2.negate a)
+    gjkIntersectionHelp pos12 g1 g2 (One { a = a }) (Vec2.negate a.point)
 
 
 type Polytope a
@@ -262,7 +263,7 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
         a =
             support pos12 g1 g2 dir
     in
-    if Vec2.dot a dir < 0 then
+    if Vec2.dot a.point dir < 0 then
         Err "not found"
 
     else
@@ -281,7 +282,7 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
                 gjkIntersectionHelp pos12 g1 g2 (Simplex newSimplex) newDir
 
 
-support : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Vec2 -> Vec2
+support : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Vec2 -> CSOPoint
 support pos12 g1 g2 dir =
     let
         support1 =
@@ -291,31 +292,30 @@ support pos12 g1 g2 dir =
             Isometry.apply pos12
                 (g2 (Vec2.negate (Isometry.vectorApplyInverse pos12 dir)))
     in
-    Vec2.sub support1 support2
-
-
-
--- |> (\_ -> Debug.todo "crash")
+    { point = Vec2.sub support1 support2
+    , orig1 = support1
+    , orig2 = support2
+    }
 
 
 doSimplex : Simplex -> Result ( Simplex, Vec2 ) Simplex
 doSimplex simplex =
     case simplex of
-        Two { a, b } ->
-            Err (lineCase a b)
+        Two line ->
+            Err (lineCase line)
 
-        Three { a, b, c } ->
-            triangleCase a b c
+        Three triangle ->
+            triangleCase triangle
 
 
-lineCase : Vec2 -> Vec2 -> ( Simplex, Vec2 )
-lineCase a b =
+lineCase : { a : CSOPoint, b : CSOPoint } -> ( Simplex, Vec2 )
+lineCase { a, b } =
     let
         ab =
-            Vec2.sub b a
+            Vec2.sub b.point a.point
 
         ao =
-            Vec2.negate a
+            Vec2.negate a.point
 
         perp =
             tripleProduct ab ao ab
@@ -323,17 +323,17 @@ lineCase a b =
     ( Two { a = a, b = b }, perp )
 
 
-triangleCase : Vec2 -> Vec2 -> Vec2 -> Result ( Simplex, Vec2 ) Simplex
-triangleCase a b c =
+triangleCase : { a : CSOPoint, b : CSOPoint, c : CSOPoint } -> Result ( Simplex, Vec2 ) Simplex
+triangleCase { a, b, c } =
     let
         ab =
-            Vec2.sub b a
+            Vec2.sub b.point a.point
 
         ac =
-            Vec2.sub c a
+            Vec2.sub c.point a.point
 
         ao =
-            Vec2.negate a
+            Vec2.negate a.point
 
         abPerp =
             tripleProduct ac ab ab
