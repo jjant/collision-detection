@@ -349,7 +349,7 @@ view model =
                                 [ Svg.stroke
                                     (case res of
                                         Ok _ ->
-                                            "magenta"
+                                            Color.toCssString model.config.collidingBodiesOutline
 
                                         Err _ ->
                                             "black"

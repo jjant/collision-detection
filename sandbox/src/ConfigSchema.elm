@@ -19,6 +19,7 @@ myConfigFields =
     , ( "Editor UI", SectionKind )
     , ( "Editor background", ColorKind "backgroundColor" )
     , ( "Scene background", ColorKind "sceneBackground" )
+    , ( "Colliding bodies outline", ColorKind "collidingBodiesOutline" )
     , ( "Custom Kinds", SectionKind )
     , ( "My custom thing", CustomKind { fieldName = "myKind", logicName = "Vec2" } )
     ]

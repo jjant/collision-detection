@@ -24,6 +24,7 @@ type alias Config =
     , showContactPoints : Bool
     , backgroundColor : Color
     , sceneBackground : Color
+    , collidingBodiesOutline : Color
     , myKind : ConfigForm.Custom.Vec2
     }
 
@@ -38,6 +39,7 @@ empty defaults =
     , showContactPoints = defaults.bool
     , backgroundColor = defaults.color
     , sceneBackground = defaults.color
+    , collidingBodiesOutline = defaults.color
     , myKind = defaults.vec2
     }
 
@@ -88,6 +90,11 @@ logics =
         "Scene background"
         .sceneBackground
         (\a c -> { c | sceneBackground = a })
+    , ConfigForm.color
+        "collidingBodiesOutline"
+        "Colliding bodies outline"
+        .collidingBodiesOutline
+        (\a c -> { c | collidingBodiesOutline = a })
     , ConfigForm.section
         "Custom Kinds"
     , vec2
