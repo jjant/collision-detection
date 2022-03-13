@@ -1,11 +1,13 @@
 module Body exposing (Body, Shape(..), contact, gjkIntersection, localSupportPoint, projectPoint, supportPoint)
 
+import Array exposing (Array)
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
 import Isometry exposing (Isometry)
 import Rectangle exposing (Rectangle)
+import Unwrap
 import Vec2 exposing (Vec2, point, vec2)
-import Vec3 exposing (Vec3)
+import Vec3
 import VoronoiSimplex exposing (IncompleteSimplex(..), Simplex(..), VoronoiSimplex, append)
 
 
@@ -168,6 +170,90 @@ gjkIntersection pos12 g1 g2 =
             support pos12 g1 g2 initialAxis
     in
     gjkIntersectionHelp pos12 g1 g2 (One { a = a }) (Vec2.negate a)
+
+
+type Polytope a
+    = Polytope a a a (Array a)
+
+
+get : Int -> Polytope a -> Maybe a
+get index (Polytope a0 a1 a2 rest) =
+    case index of
+        0 ->
+            Just a0
+
+        1 ->
+            Just a1
+
+        2 ->
+            Just a2
+
+        _ ->
+            Array.get (index - 2) rest
+
+
+length : Polytope a -> Int
+length (Polytope _ _ _ rest) =
+    3 + Array.length rest
+
+
+{-| WIP. This should probably return the collision normal, penetration depth, and maybe also the closest points between the two bodies.
+
+I _think_ these points are the ones that effectively generated the normal, but not sure yet.
+
+-}
+epa : Polytope Vec2 -> Isometry -> LocalSupportMap -> LocalSupportMap -> Result String Simplex
+epa gjkSimplex pos12 g1 g2 =
+    let
+        len =
+            length gjkSimplex
+
+        minIndex =
+            0
+    in
+    -- TODO: Can I assume polytope is counter-clockwise order??
+    --
+    -- I don't think so, I think the triangle from GJK may be arbitrarily winded.
+    -- I'm not sure, so might as well cover both cases in doFace.
+    List.range 0 (len - 1)
+        |> List.map
+            (\i ->
+                ( i
+                , get i gjkSimplex
+                    |> Unwrap.maybe
+                , get (modBy len i) gjkSimplex
+                    |> Unwrap.maybe
+                )
+            )
+        |> List.map (\( index, vertexI, vertexJ ) -> ( index, doFace vertexI vertexJ ))
+        |> (\_ -> Debug.todo "")
+
+
+{-| Takes an edge (two contiguous vertices) from the polytope (inside the Minkowski difference),
+and returns the out-facing normal.
+-}
+doFace : Vec2 -> Vec2 -> { normal : Vec2, distance : Float }
+doFace vertexI vertexJ =
+    let
+        iToJ =
+            Vec2.sub vertexJ vertexI
+
+        tentativeNormal =
+            vec2 iToJ.y -iToJ.x
+                |> Vec2.normalize
+
+        tentativeDistance =
+            Vec2.dot tentativeNormal vertexI
+    in
+    if tentativeDistance < 0 then
+        { normal = Vec2.scale -1 tentativeNormal
+        , distance = -tentativeDistance
+        }
+
+    else
+        { normal = tentativeNormal
+        , distance = tentativeDistance
+        }
 
 
 gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> Result String Simplex
