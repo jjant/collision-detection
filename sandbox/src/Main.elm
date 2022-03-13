@@ -591,7 +591,7 @@ axis =
                             Render.group [] []
 
                         else
-                            Render.group [ Svg.stroke "black" ]
+                            Render.group [ Svg.stroke "black", Html.Attributes.style "user-select" "none" ]
                                 [ Render.line []
                                     { from = vec2 (i * tickDistance) -10
                                     , to = vec2 (i * tickDistance) 10

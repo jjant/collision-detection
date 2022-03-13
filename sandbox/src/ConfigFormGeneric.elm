@@ -96,16 +96,8 @@ type ConfigForm
 -}
 update : List (ConfigTypes.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
 update logics config (ConfigForm configForm) msg =
-    let
-        _ =
-            Debug.log "msg" msg
-    in
     case msg of
         ChangedConfigForm fieldName field ->
-            let
-                _ =
-                    Debug.log fieldName field
-            in
             let
                 newConfigForm =
                     configForm.fields
@@ -203,10 +195,6 @@ init options =
 -}
 view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
 view viewOptions logics (ConfigForm configForm) =
-    let
-        _ =
-            Debug.log "" configForm.fields
-    in
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
             (logics
