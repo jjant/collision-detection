@@ -34,7 +34,7 @@ import Hierarchy
 import Html as Html exposing (Html)
 import Html.Attributes
 import Html.Events exposing (..)
-import Isometry
+import Isometry exposing (Isometry)
 import Json.Decode as Decode
 import Json.Encode
 import Keys exposing (Keys)
@@ -47,7 +47,7 @@ import Svg.Attributes as Svg
 import Unwrap
 import Vec2 exposing (Vec2, vec2)
 import Vec3 exposing (vec3)
-import VoronoiSimplex exposing (Simplex(..))
+import VoronoiSimplex exposing (IncompleteSimplex(..), Simplex(..))
 
 
 type alias Flags =
@@ -281,17 +281,13 @@ view model =
 
         polytope : Maybe (Polytope CSOPoint)
         polytope =
-            res
-                |> Result.toMaybe
-                |> Maybe.andThen
-                    (\v ->
-                        case v of
-                            Three { a, b, c } ->
-                                Just ( a, b, c )
+            (case res.simplex of
+                Simplex (Three { a, b, c }) ->
+                    Just ( a, b, c )
 
-                            _ ->
-                                Nothing
-                    )
+                _ ->
+                    Nothing
+            )
                 |> Maybe.map
                     (\( a, b, c ) ->
                         Body.epa (Polytope a b c Array.empty)
@@ -369,39 +365,19 @@ view model =
                             :: axis
                             :: renderBodies
                                 [ Svg.stroke
-                                    (case res of
-                                        Ok _ ->
+                                    (case res.colliding of
+                                        True ->
                                             Color.toCssString model.config.collidingBodiesOutline
 
-                                        Err _ ->
+                                        False ->
                                             "black"
                                     )
                                 ]
                                 model.bodies
                             :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
-                            ++ (case res of
-                                    Ok (Three { a, b, c }) ->
-                                        [ Render.polygon
-                                            [ Svg.stroke "black"
-                                            , Svg.strokeWidth "5"
-                                            , Svg.fill "none"
-                                            ]
-                                            [ a.point, b.point, c.point ]
-                                        , Render.group [ Svg.fill "purple" ]
-                                            [ Render.point [] a.point
-                                            , Render.point [] (Isometry.apply b1.transform a.orig1)
-                                            , Render.point [] (Isometry.apply b1.transform a.orig2)
-                                            ]
-                                        , Render.group [ Svg.fill "green" ]
-                                            [ Render.point [] b.point
-                                            , Render.point [] (Isometry.apply b1.transform b.orig1)
-                                            , Render.point [] (Isometry.apply b1.transform b.orig2)
-                                            ]
-                                        , Render.group [ Svg.fill "yellow" ]
-                                            [ Render.point [] c.point
-                                            , Render.point [] (Isometry.apply b1.transform c.orig1)
-                                            , Render.point [] (Isometry.apply b1.transform c.orig2)
-                                            ]
+                            ++ (case res.simplex of
+                                    Simplex simplex ->
+                                        [ renderSimplex b1.transform simplex
                                         ]
 
                                     _ ->
@@ -655,4 +631,41 @@ axis =
                                 ]
                     )
             )
+        ]
+
+
+renderSimplex : Isometry -> Simplex -> Renderable msg
+renderSimplex transform simplex =
+    let
+        points =
+            case simplex of
+                Two { a, b } ->
+                    [ a, b ]
+
+                Three { a, b, c } ->
+                    [ a, b, c ]
+
+        numPoints =
+            List.length points
+
+        color i =
+            Color.hsl (toFloat i / toFloat numPoints) 1 0.5
+    in
+    Render.group []
+        [ Render.polygon
+            [ Svg.stroke "black"
+            , Svg.strokeWidth "5"
+            , Svg.fill "none"
+            ]
+            (List.map .point points)
+        , Render.group [] <|
+            List.indexedMap
+                (\index p ->
+                    Render.group [ Svg.fill (Color.toCssString (color index)) ]
+                        [ Render.point [] p.point
+                        , Render.point [] (Isometry.apply transform p.orig1)
+                        , Render.point [] (Isometry.apply transform p.orig2)
+                        ]
+                )
+                points
         ]

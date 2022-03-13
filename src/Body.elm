@@ -172,7 +172,7 @@ type alias LocalSupportMap =
     Vec2 -> Vec2
 
 
-gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> Result String Simplex
+gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> { colliding : Bool, simplex : IncompleteSimplex }
 gjkIntersection pos12 g1 g2 =
     let
         initialAxis =
@@ -318,28 +318,25 @@ doFace vertexI vertexJ =
         }
 
 
-gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> Result String Simplex
+gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> { colliding : Bool, simplex : IncompleteSimplex }
 gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
     let
         a =
             support pos12 g1 g2 dir
     in
     if Vec2.dot a.point dir < 0 then
-        Err "not found"
+        { colliding = False, simplex = incompleteSimplex }
 
     else
         let
             s =
                 append a incompleteSimplex
-
-            res =
-                doSimplex s
         in
-        case res of
-            Ok endSimplex ->
-                Ok endSimplex
+        case doSimplex s of
+            Done endSimplex ->
+                { colliding = True, simplex = Simplex endSimplex }
 
-            Err ( newSimplex, newDir ) ->
+            KeepLooking newSimplex newDir ->
                 gjkIntersectionHelp pos12 g1 g2 (Simplex newSimplex) newDir
 
 
@@ -359,11 +356,20 @@ support pos12 g1 g2 dir =
     }
 
 
-doSimplex : Simplex -> Result ( Simplex, Vec2 ) Simplex
+type DoSimplexResult
+    = KeepLooking Simplex Vec2
+    | Done Simplex
+
+
+doSimplex : Simplex -> DoSimplexResult
 doSimplex simplex =
     case simplex of
         Two line ->
-            Err (lineCase line)
+            let
+                ( newSimplex, newSearchDirection ) =
+                    lineCase line
+            in
+            KeepLooking newSimplex newSearchDirection
 
         Three triangle ->
             triangleCase triangle
@@ -384,7 +390,7 @@ lineCase { a, b } =
     ( Two { a = a, b = b }, perp )
 
 
-triangleCase : { a : CSOPoint, b : CSOPoint, c : CSOPoint } -> Result ( Simplex, Vec2 ) Simplex
+triangleCase : { a : CSOPoint, b : CSOPoint, c : CSOPoint } -> DoSimplexResult
 triangleCase { a, b, c } =
     let
         ab =
@@ -403,16 +409,13 @@ triangleCase { a, b, c } =
             tripleProduct ab ac ac
     in
     if Vec2.dot abPerp ao > 0 then
-        -- Err = Keep looking
-        Err ( Two { a = a, b = b }, abPerp )
+        KeepLooking (Two { a = a, b = b }) abPerp
 
     else if Vec2.dot acPerp ao > 0 then
-        -- Err = Keep looking
-        Err ( Two { a = a, b = c }, acPerp )
+        KeepLooking (Two { a = a, b = c }) acPerp
 
     else
-        -- Ok = Done
-        Ok (Three { a = a, b = b, c = c })
+        Done (Three { a = a, b = b, c = c })
 
 
 tripleProduct : Vec2 -> Vec2 -> Vec2 -> Vec2
