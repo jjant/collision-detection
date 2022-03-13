@@ -7,7 +7,6 @@ module VoronoiSimplex exposing
     )
 
 import CSOPoint exposing (CSOPoint)
-import Vec2 exposing (Vec2)
 
 
 type alias VoronoiSimplex =

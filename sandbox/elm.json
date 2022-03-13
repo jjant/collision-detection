@@ -14,6 +14,8 @@
             "elm/json": "1.1.3",
             "elm/regex": "1.0.0",
             "elm/svg": "1.0.1",
+            "elm-community/array-extra": "2.4.0",
+            "elm-community/list-extra": "8.5.2",
             "j-maas/elm-ordered-containers": "1.0.0",
             "jjant/elm-fps": "1.0.0",
             "jjant/linear-algebra": "1.0.0",

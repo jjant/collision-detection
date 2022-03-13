@@ -1,9 +1,10 @@
 module Main exposing (main)
 
 import Array exposing (Array)
-import Body exposing (Body, Shape(..))
+import Body exposing (Body, Polytope(..), Shape(..))
 import Browser
 import Browser.Events
+import CSOPoint exposing (CSOPoint)
 import Camera exposing (Camera)
 import Color
 import Config exposing (Config)
@@ -268,15 +269,36 @@ view model =
                     _ ->
                         Nothing
 
-        relIso =
+        pos12 =
             Isometry.compose
                 (Isometry.invert b1.transform)
                 b2.transform
 
         res =
-            Body.gjkIntersection relIso
+            Body.gjkIntersection pos12
                 (Body.localSupportPoint b1.shape)
                 (Body.localSupportPoint b2.shape)
+
+        polytope : Maybe (Polytope CSOPoint)
+        polytope =
+            res
+                |> Result.toMaybe
+                |> Maybe.andThen
+                    (\v ->
+                        case v of
+                            Three { a, b, c } ->
+                                Just ( a, b, c )
+
+                            _ ->
+                                Nothing
+                    )
+                |> Maybe.map
+                    (\( a, b, c ) ->
+                        Body.epa (Polytope a b c Array.empty)
+                            pos12
+                            (Body.localSupportPoint b1.shape)
+                            (Body.localSupportPoint b2.shape)
+                    )
 
         mouseBody : Body
         mouseBody =
@@ -361,6 +383,7 @@ view model =
                                     Ok (Three { a, b, c }) ->
                                         [ Render.polygon
                                             [ Svg.stroke "black"
+                                            , Svg.strokeWidth "5"
                                             , Svg.fill "none"
                                             ]
                                             [ a.point, b.point, c.point ]
@@ -379,6 +402,19 @@ view model =
                                             , Render.point [] (Isometry.apply b1.transform c.orig1)
                                             , Render.point [] (Isometry.apply b1.transform c.orig2)
                                             ]
+                                        ]
+
+                                    _ ->
+                                        []
+                               )
+                            ++ (case polytope of
+                                    Just (Polytope a b c rest) ->
+                                        [ Render.polygon
+                                            [ Svg.stroke "red"
+                                            , Svg.fill "none"
+                                            , Svg.strokeWidth "3"
+                                            ]
+                                            (List.map .point (a :: b :: c :: Array.toList rest))
                                         ]
 
                                     _ ->

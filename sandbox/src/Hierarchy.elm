@@ -91,7 +91,6 @@ bodyInput id =
 
                 Selected ->
                     [ Border.color (rgb255 230 230 230)
-                    , Border.width 1
                     , Background.color (rgba255 200 200 200 0.15)
                     ]
     in
@@ -102,6 +101,10 @@ bodyInput id =
                  , width fill
                  , Font.alignLeft
                  , paddingXY 2 4
+                 , Border.width 1
+
+                 -- Add transparent border so that when items are selected they don't get shifted
+                 , Border.color (rgba 0 0 0 0)
                  ]
                     ++ styles optionState
                 )

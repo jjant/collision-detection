@@ -1,10 +1,22 @@
-module Body exposing (Body, Shape(..), contact, gjkIntersection, localSupportPoint, projectPoint, supportPoint)
+module Body exposing
+    ( Body
+    , Polytope(..)
+    , Shape(..)
+    , contact
+    , epa
+    , gjkIntersection
+    , localSupportPoint
+    , projectPoint
+    , supportPoint
+    )
 
 import Array exposing (Array)
+import Array.Extra
 import CSOPoint exposing (CSOPoint)
 import Circle exposing (Circle, PointProjection)
 import Contact exposing (Contact)
 import Isometry exposing (Isometry)
+import List.Extra
 import Rectangle exposing (Rectangle)
 import Unwrap
 import Vec2 exposing (Vec2, point, vec2)
@@ -203,7 +215,7 @@ length (Polytope _ _ _ rest) =
 I _think_ these points are the ones that effectively generated the normal, but not sure yet.
 
 -}
-epa : Polytope Vec2 -> Isometry -> LocalSupportMap -> LocalSupportMap -> Result String Simplex
+epa : Polytope CSOPoint -> Isometry -> LocalSupportMap -> LocalSupportMap -> Polytope CSOPoint
 epa gjkSimplex pos12 g1 g2 =
     let
         len =
@@ -211,23 +223,72 @@ epa gjkSimplex pos12 g1 g2 =
 
         minIndex =
             0
+
+        faceNormals : List { index : Int, normal : Vec2, distance : Float }
+        faceNormals =
+            List.range 0 (len - 1)
+                |> List.map
+                    (\i ->
+                        ( i
+                        , get i gjkSimplex
+                            |> Unwrap.maybe
+                        , get (modBy len i) gjkSimplex
+                            |> Unwrap.maybe
+                        )
+                    )
+                |> List.map
+                    (\( index, vertexI, vertexJ ) ->
+                        let
+                            { normal, distance } =
+                                doFace vertexI.point vertexJ.point
+                        in
+                        { index = index, normal = normal, distance = distance }
+                    )
+
+        minFace : { index : Int, normal : Vec2, distance : Float }
+        minFace =
+            faceNormals
+                |> List.Extra.minimumBy (\{ distance } -> distance)
+                |> Unwrap.maybe
+
+        minNormalSupport =
+            support pos12 g1 g2 minFace.normal
+
+        minDistance =
+            Vec2.dot minFace.normal minNormalSupport.point
+
+        { done, polytope } =
+            if abs (minDistance - minFace.distance) > 0.001 then
+                { done = False, polytope = insert minFace.index minNormalSupport gjkSimplex }
+
+            else
+                { done = True, polytope = gjkSimplex }
     in
     -- TODO: Can I assume polytope is counter-clockwise order??
     --
     -- I don't think so, I think the triangle from GJK may be arbitrarily winded.
     -- I'm not sure, so might as well cover both cases in doFace.
-    List.range 0 (len - 1)
-        |> List.map
-            (\i ->
-                ( i
-                , get i gjkSimplex
-                    |> Unwrap.maybe
-                , get (modBy len i) gjkSimplex
-                    |> Unwrap.maybe
-                )
-            )
-        |> List.map (\( index, vertexI, vertexJ ) -> ( index, doFace vertexI vertexJ ))
-        |> (\_ -> Debug.todo "")
+    if done then
+        polytope
+
+    else
+        epa polytope pos12 g1 g2
+
+
+insert : Int -> a -> Polytope a -> Polytope a
+insert index point (Polytope first second third rest) =
+    case index of
+        0 ->
+            Polytope point first second (Array.Extra.insertAt 0 third rest)
+
+        1 ->
+            Polytope first point second (Array.Extra.insertAt 0 third rest)
+
+        2 ->
+            Polytope first second point (Array.Extra.insertAt 0 third rest)
+
+        _ ->
+            Polytope first second third (Array.Extra.insertAt (index - 3) third rest)
 
 
 {-| Takes an edge (two contiguous vertices) from the polytope (inside the Minkowski difference),
