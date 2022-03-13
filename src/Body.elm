@@ -258,6 +258,7 @@ epa gjkSimplex pos12 g1 g2 =
 
         minNormalSupport =
             support pos12 g1 g2 minFace.normal
+                |> Debug.log "support point"
 
         minDistance =
             Vec2.dot minFace.normal minNormalSupport.point
@@ -284,20 +285,32 @@ epa gjkSimplex pos12 g1 g2 =
         epa polytope pos12 g1 g2
 
 
+{-| Inserts AFTER index
+
+index 3:
+
+                    |-- Array indices --|
+                    0   1   2   3
+        a   b   c   d | e   f   g
+        0   1   2   3 ^ 4   5   6
+                      |
+                      | insert here
+
+-}
 insert : Int -> a -> Polytope a -> Polytope a
 insert index point (Polytope first second third rest) =
     case index of
         0 ->
-            Polytope point first second (Array.Extra.insertAt 0 third rest)
-
-        1 ->
             Polytope first point second (Array.Extra.insertAt 0 third rest)
 
-        2 ->
+        1 ->
             Polytope first second point (Array.Extra.insertAt 0 third rest)
 
+        2 ->
+            Polytope first second third (Array.Extra.insertAt 0 point rest)
+
         _ ->
-            Polytope first second third (Array.Extra.insertAt (index - 3) third rest)
+            Polytope first second third (Array.Extra.insertAt (index - 2) third rest)
 
 
 {-| Takes an edge (two contiguous vertices) from the polytope (inside the Minkowski difference),

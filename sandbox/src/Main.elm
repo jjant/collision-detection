@@ -395,16 +395,10 @@ view model =
                                             ]
                                        )
                                 )
-                            ++ listIf model.config.showEpaPolytope
+                            ++ listIf (model.config.showEpaPolytope && res.colliding)
                                 (case polytope of
-                                    Just (Polytope a b c rest) ->
-                                        [ Render.polygon
-                                            [ Svg.stroke "red"
-                                            , Svg.fill "none"
-                                            , Svg.strokeWidth "3"
-                                            ]
-                                            (List.map .point (a :: b :: c :: Array.toList rest))
-                                        ]
+                                    Just polytope_ ->
+                                        [ renderPolytope polytope_ ]
 
                                     _ ->
                                         []
@@ -555,7 +549,7 @@ world =
     Array.fromList
         [ { transform =
                 { translation = vec2 0 0
-                , rotation = 0
+                , rotation = pi / 5
                 }
           , shape = Body.Rectangle { halfExtents = vec2 100 50 }
 
@@ -668,9 +662,38 @@ renderSimplex transform simplex =
                 (\index p ->
                     Render.group [ Svg.fill (Color.toCssString (color index)) ]
                         [ Render.point [] p.point
+                        , Render.text []
+                            { position = p.point
+                            , text = String.fromInt index
+                            }
                         , Render.point [] (Isometry.apply transform p.orig1)
                         , Render.point [] (Isometry.apply transform p.orig2)
                         ]
+                )
+                points
+        ]
+
+
+renderPolytope : Polytope CSOPoint -> Renderable msg
+renderPolytope (Polytope a b c rest) =
+    let
+        points =
+            a :: b :: c :: Array.toList rest
+    in
+    Render.group []
+        [ Render.polygon
+            [ Svg.stroke "red"
+            , Svg.fill "none"
+            , Svg.strokeWidth "3"
+            ]
+            (List.map .point points)
+        , Render.group [] <|
+            List.indexedMap
+                (\index { point } ->
+                    Render.text []
+                        { position = point
+                        , text = String.fromInt index
+                        }
                 )
                 points
         ]
