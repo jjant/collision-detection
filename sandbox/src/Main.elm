@@ -10,6 +10,7 @@ import Color
 import Config exposing (Config)
 import ConfigForm
 import ConfigFormGeneric exposing (ConfigForm)
+import ConvexHull
 import Draggable
 import Element
     exposing
@@ -38,9 +39,11 @@ import Isometry exposing (Isometry)
 import Json.Decode as Decode
 import Json.Encode
 import Keys exposing (Keys)
+import List.Extra
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
+import Rectangle exposing (Rectangle)
 import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
@@ -254,7 +257,7 @@ view model =
         getRect b =
             Unwrap.maybe <|
                 case b.shape of
-                    Rectangle rect ->
+                    Body.Rectangle rect ->
                         Just rect
 
                     _ ->
@@ -282,7 +285,7 @@ view model =
         polytope : Maybe (Polytope CSOPoint)
         polytope =
             (case res.simplex of
-                Simplex (Three { a, b, c }) ->
+                Three { a, b, c } ->
                     Just ( a, b, c )
 
                 _ ->
@@ -375,15 +378,25 @@ view model =
                                 ]
                                 model.bodies
                             :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
-                            ++ (case res.simplex of
-                                    Simplex simplex ->
-                                        [ renderSimplex b1.transform simplex
-                                        ]
-
-                                    _ ->
-                                        []
-                               )
-                            ++ (case polytope of
+                            ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
+                            ++ listIf model.config.showMinkowskiDifference
+                                (minkowskiDifference pos12 (getRect b1) (getRect b2)
+                                    -- |> List.map (Isometry.apply b1.transform)
+                                    |> ConvexHull.convexHull
+                                    |> (\points ->
+                                            [ Render.polygon
+                                                [ Svg.stroke "lightgreen"
+                                                , Svg.fill "none"
+                                                , Svg.strokeWidth "2"
+                                                ]
+                                                points
+                                            , Render.group [ Svg.fill "lightgreen" ]
+                                                (List.map (Render.point []) points)
+                                            ]
+                                       )
+                                )
+                            ++ listIf model.config.showEpaPolytope
+                                (case polytope of
                                     Just (Polytope a b c rest) ->
                                         [ Render.polygon
                                             [ Svg.stroke "red"
@@ -395,7 +408,7 @@ view model =
 
                                     _ ->
                                         []
-                               )
+                                )
                             ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                             ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                             ++ (selectedBody model
@@ -544,7 +557,7 @@ world =
                 { translation = vec2 0 0
                 , rotation = 0
                 }
-          , shape = Rectangle { halfExtents = vec2 100 50 }
+          , shape = Body.Rectangle { halfExtents = vec2 100 50 }
 
           --   , shape = Circle { radius = 50 }
           }
@@ -552,15 +565,7 @@ world =
                 { translation = vec2 0 75
                 , rotation = 0
                 }
-          , shape = Rectangle { halfExtents = vec2 40 30 }
-
-          --   , shape = Circle { radius = 50 }
-          }
-        , { transform =
-                { translation = vec2 150 150
-                , rotation = 0.0
-                }
-          , shape = Rectangle { halfExtents = vec2 30 40 }
+          , shape = Body.Rectangle { halfExtents = vec2 40 30 }
 
           --   , shape = Circle { radius = 50 }
           }
@@ -575,7 +580,7 @@ gridWorld =
                 { translation = vec2 (toFloat (i // 5) * 75) (toFloat (modBy 5 i) * 75)
                 , rotation = 0
                 }
-            , shape = Rectangle { halfExtents = vec2 25 25 }
+            , shape = Body.Rectangle { halfExtents = vec2 25 25 }
             }
 
 
@@ -654,7 +659,7 @@ renderSimplex transform simplex =
     Render.group []
         [ Render.polygon
             [ Svg.stroke "black"
-            , Svg.strokeWidth "5"
+            , Svg.strokeWidth "9"
             , Svg.fill "none"
             ]
             (List.map .point points)
@@ -669,3 +674,29 @@ renderSimplex transform simplex =
                 )
                 points
         ]
+
+
+minkowskiDifference : Isometry -> Rectangle -> Rectangle -> List Vec2
+minkowskiDifference pos12 rect1 rect2 =
+    let
+        points1 =
+            rectPoints Isometry.identity rect1
+
+        points2 =
+            rectPoints pos12 rect2
+    in
+    List.Extra.lift2 (\p1 p2 -> Vec2.sub p1 p2) points1 points2
+
+
+rectPoints : Isometry -> Rectangle -> List Vec2
+rectPoints iso { halfExtents } =
+    -- Counter-clockwise order
+    let
+        localPoints =
+            [ vec2 -halfExtents.x -halfExtents.y
+            , vec2 halfExtents.x -halfExtents.y
+            , vec2 halfExtents.x halfExtents.y
+            , vec2 -halfExtents.x halfExtents.y
+            ]
+    in
+    List.map (Isometry.apply iso) localPoints

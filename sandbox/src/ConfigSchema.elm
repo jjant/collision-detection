@@ -9,13 +9,13 @@ port generateFile : ( String, String ) -> Cmd msg
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "My Float", FloatKind "myFloat" )
-    , ( "My Int", IntKind "myInt" )
-    , ( "My String", StringKind "myString" )
-    , ( "Visualise", SectionKind )
+    [ ( "Visualise", SectionKind )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
     , ( "Contact points", BoolKind "showContactPoints" )
+    , ( "GJK Simplex", BoolKind "showGjkSimplex" )
+    , ( "EPA Polytope", BoolKind "showEpaPolytope" )
+    , ( "Minkowski difference", BoolKind "showMinkowskiDifference" )
     , ( "Editor UI", SectionKind )
     , ( "Editor background", ColorKind "backgroundColor" )
     , ( "Scene background", ColorKind "sceneBackground" )

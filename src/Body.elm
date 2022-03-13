@@ -172,7 +172,7 @@ type alias LocalSupportMap =
     Vec2 -> Vec2
 
 
-gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> { colliding : Bool, simplex : IncompleteSimplex }
+gjkIntersection : Isometry -> LocalSupportMap -> LocalSupportMap -> { colliding : Bool, simplex : Simplex }
 gjkIntersection pos12 g1 g2 =
     let
         initialAxis =
@@ -202,7 +202,16 @@ get index (Polytope a0 a1 a2 rest) =
             Just a2
 
         _ ->
-            Array.get (index - 2) rest
+            Array.get (index - 3) rest
+
+
+getUnsafe msg index p =
+    case get index p of
+        Just a ->
+            a
+
+        Nothing ->
+            Debug.todo msg
 
 
 length : Polytope a -> Int
@@ -221,19 +230,14 @@ epa gjkSimplex pos12 g1 g2 =
         len =
             length gjkSimplex
 
-        minIndex =
-            0
-
         faceNormals : List { index : Int, normal : Vec2, distance : Float }
         faceNormals =
             List.range 0 (len - 1)
                 |> List.map
                     (\i ->
                         ( i
-                        , get i gjkSimplex
-                            |> Unwrap.maybe
-                        , get (modBy len i) gjkSimplex
-                            |> Unwrap.maybe
+                        , getUnsafe "i" i gjkSimplex
+                        , getUnsafe "i + 1" (modBy len (i + 1)) gjkSimplex
                         )
                     )
                 |> List.map
@@ -250,6 +254,7 @@ epa gjkSimplex pos12 g1 g2 =
             faceNormals
                 |> List.Extra.minimumBy (\{ distance } -> distance)
                 |> Unwrap.maybe
+                |> Debug.log "min face"
 
         minNormalSupport =
             support pos12 g1 g2 minFace.normal
@@ -272,6 +277,10 @@ epa gjkSimplex pos12 g1 g2 =
         polytope
 
     else
+        let
+            _ =
+                Debug.log "KEEP LOOKING" ()
+        in
         epa polytope pos12 g1 g2
 
 
@@ -318,14 +327,22 @@ doFace vertexI vertexJ =
         }
 
 
-gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> { colliding : Bool, simplex : IncompleteSimplex }
+gjkIntersectionHelp : Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> IncompleteSimplex -> Vec2 -> { colliding : Bool, simplex : Simplex }
 gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
     let
         a =
             support pos12 g1 g2 dir
     in
     if Vec2.dot a.point dir < 0 then
-        { colliding = False, simplex = incompleteSimplex }
+        { colliding = False
+
+        -- Which should I return here?
+        -- I think it might not matter because adding this point to the simplex still returns
+        -- something that basically looks like a line here.
+        --
+        -- , simplex = incompleteSimplex
+        , simplex = append a incompleteSimplex
+        }
 
     else
         let
@@ -334,7 +351,7 @@ gjkIntersectionHelp pos12 g1 g2 incompleteSimplex dir =
         in
         case doSimplex s of
             Done endSimplex ->
-                { colliding = True, simplex = Simplex endSimplex }
+                { colliding = True, simplex = endSimplex }
 
             KeepLooking newSimplex newDir ->
                 gjkIntersectionHelp pos12 g1 g2 (Simplex newSimplex) newDir

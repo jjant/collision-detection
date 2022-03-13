@@ -16,12 +16,12 @@ import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
-    { myFloat : Float
-    , myInt : Int
-    , myString : String
-    , showSupportPoints : Bool
+    { showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
+    , showGjkSimplex : Bool
+    , showEpaPolytope : Bool
+    , showMinkowskiDifference : Bool
     , backgroundColor : Color
     , sceneBackground : Color
     , collidingBodiesOutline : Color
@@ -31,12 +31,12 @@ type alias Config =
 
 empty : Defaults -> Config
 empty defaults =
-    { myFloat = defaults.float
-    , myInt = defaults.int
-    , myString = defaults.string
-    , showSupportPoints = defaults.bool
+    { showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
+    , showGjkSimplex = defaults.bool
+    , showEpaPolytope = defaults.bool
+    , showMinkowskiDifference = defaults.bool
     , backgroundColor = defaults.color
     , sceneBackground = defaults.color
     , collidingBodiesOutline = defaults.color
@@ -46,22 +46,7 @@ empty defaults =
 
 logics : List (Logic Config)
 logics =
-    [ ConfigForm.float
-        "myFloat"
-        "My Float"
-        .myFloat
-        (\a c -> { c | myFloat = a })
-    , ConfigForm.int
-        "myInt"
-        "My Int"
-        .myInt
-        (\a c -> { c | myInt = a })
-    , ConfigForm.string
-        "myString"
-        "My String"
-        .myString
-        (\a c -> { c | myString = a })
-    , ConfigForm.section
+    [ ConfigForm.section
         "Visualise"
     , ConfigForm.bool
         "showSupportPoints"
@@ -78,6 +63,21 @@ logics =
         "Contact points"
         .showContactPoints
         (\a c -> { c | showContactPoints = a })
+    , ConfigForm.bool
+        "showGjkSimplex"
+        "GJK Simplex"
+        .showGjkSimplex
+        (\a c -> { c | showGjkSimplex = a })
+    , ConfigForm.bool
+        "showEpaPolytope"
+        "EPA Polytope"
+        .showEpaPolytope
+        (\a c -> { c | showEpaPolytope = a })
+    , ConfigForm.bool
+        "showMinkowskiDifference"
+        "Minkowski difference"
+        .showMinkowskiDifference
+        (\a c -> { c | showMinkowskiDifference = a })
     , ConfigForm.section
         "Editor UI"
     , ConfigForm.color
