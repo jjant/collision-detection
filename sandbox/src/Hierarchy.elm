@@ -127,7 +127,7 @@ view onChange maybeBody =
             |> Maybe.map
                 (\body ->
                     [ vec2Input "Translation" (\translation -> onChange <| setTranslation translation body) body.transform.translation
-                    , floatInput "Rotation" (\deltaRotation -> onChange <| updateTransform (\t -> { t | rotation = t.rotation + deltaRotation }) body) body.transform.rotation
+                    , floatInput "Rotation" (\deltaRotation -> onChange <| updateTransform (\t -> { t | rotation = t.rotation + deltaRotation / 100 }) body) body.transform.rotation
                     , shapeRadio (\newShapeKind -> onChange (setShapeKind newShapeKind body)) body.shape
                     , shapeInput (\newShape -> onChange (setShape newShape body)) body.shape
                     ]

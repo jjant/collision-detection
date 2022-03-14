@@ -208,6 +208,7 @@ get index (Polytope a0 a1 a2 rest) =
             Array.get (index - 3) rest
 
 
+getUnsafe : String -> Int -> Polytope a -> a
 getUnsafe msg index p =
     case get index p of
         Just a ->
@@ -259,6 +260,7 @@ epaBestNormal polytope =
     minFace
 
 
+updatePolytope : { r | normal : Vec2, distance : Float, index : Int } -> Isometry -> (Vec2 -> Vec2) -> (Vec2 -> Vec2) -> Polytope CSOPoint -> { done : Bool, newPolytope : Polytope CSOPoint }
 updatePolytope face pos12 g1 g2 polytope =
     let
         supportPoint_ =

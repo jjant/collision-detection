@@ -57,5 +57,11 @@ innerLoop j points numPoints endpoint pointOnHull =
             innerLoop (j + 1) points numPoints endpoint pointOnHull
 
 
+isOnTheLeftEpsilon =
+    -- 0.0001
+    0
+
+
+isOnTheLeft : Vec2 -> Vec2 -> Vec2 -> Bool
 isOnTheLeft pointOnHull endpoint point =
-    Vec2.cross (Vec2.sub endpoint pointOnHull) (Vec2.sub point pointOnHull) < 0
+    Vec2.cross (Vec2.sub endpoint pointOnHull) (Vec2.sub point pointOnHull) < -isOnTheLeftEpsilon

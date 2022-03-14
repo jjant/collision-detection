@@ -439,8 +439,7 @@ view model =
                                 ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
                                 ++ listIf model.config.showMinkowskiDifference
                                     (minkowskiDifference pos12 (getRect b1) (getRect b2)
-                                        -- |> List.map (Isometry.apply b1.transform)
-                                        |> ConvexHull.convexHull
+                                        |> List.map (Isometry.vectorApply b1.transform)
                                         |> (\points ->
                                                 [ Render.polygon
                                                     [ Svg.stroke "lightgreen"
@@ -743,12 +742,20 @@ renderSimplex : Isometry -> Simplex -> Renderable msg
 renderSimplex transform simplex =
     let
         points =
-            case simplex of
+            (case simplex of
                 Two { a, b } ->
                     [ a, b ]
 
                 Three { a, b, c } ->
                     [ a, b, c ]
+            )
+                |> List.map
+                    (\{ point, orig1, orig2 } ->
+                        { point = Isometry.vectorApply transform point
+                        , orig1 = Isometry.apply transform orig1
+                        , orig2 = Isometry.apply transform orig2
+                        }
+                    )
 
         numPoints =
             List.length points
@@ -772,8 +779,8 @@ renderSimplex transform simplex =
                             { position = p.point
                             , text = String.fromInt index
                             }
-                        , Render.point [] (Isometry.apply transform p.orig1)
-                        , Render.point [] (Isometry.apply transform p.orig2)
+                        , Render.point [] p.orig1
+                        , Render.point [] p.orig2
                         ]
                 )
                 points
@@ -815,6 +822,7 @@ minkowskiDifference pos12 rect1 rect2 =
             rectPoints pos12 rect2
     in
     List.Extra.lift2 (\p1 p2 -> Vec2.sub p1 p2) points1 points2
+        |> ConvexHull.convexHull
 
 
 rectPoints : Isometry -> Rectangle -> List Vec2
