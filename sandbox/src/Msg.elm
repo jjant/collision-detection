@@ -20,3 +20,4 @@ type Msg
     | SelectBody Int
     | DragMsg (Draggable.Msg ())
     | OnDragBy Vec2
+    | UpdatePolytope

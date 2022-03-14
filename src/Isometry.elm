@@ -34,14 +34,6 @@ compose second first =
     }
 
 
-
--- compose : Isometry -> Isometry -> Isometry
--- compose second first =
---     first
---         |> appendRotation second.rotation
---         |> appendTranslation second.translation
-
-
 appendRotation : Float -> Isometry -> Isometry
 appendRotation angle { rotation, translation } =
     { translation = translation

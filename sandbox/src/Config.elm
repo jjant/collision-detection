@@ -21,6 +21,7 @@ type alias Config =
     , showContactPoints : Bool
     , showGjkSimplex : Bool
     , showEpaPolytope : Bool
+    , showStepByStepEpa : Bool
     , showMinkowskiDifference : Bool
     , backgroundColor : Color
     , sceneBackground : Color
@@ -36,6 +37,7 @@ empty defaults =
     , showContactPoints = defaults.bool
     , showGjkSimplex = defaults.bool
     , showEpaPolytope = defaults.bool
+    , showStepByStepEpa = defaults.bool
     , showMinkowskiDifference = defaults.bool
     , backgroundColor = defaults.color
     , sceneBackground = defaults.color
@@ -73,6 +75,11 @@ logics =
         "EPA Polytope"
         .showEpaPolytope
         (\a c -> { c | showEpaPolytope = a })
+    , ConfigForm.bool
+        "showStepByStepEpa"
+        "EPA Step by Step"
+        .showStepByStepEpa
+        (\a c -> { c | showStepByStepEpa = a })
     , ConfigForm.bool
         "showMinkowskiDifference"
         "Minkowski difference"

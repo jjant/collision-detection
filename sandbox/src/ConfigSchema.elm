@@ -15,6 +15,7 @@ myConfigFields =
     , ( "Contact points", BoolKind "showContactPoints" )
     , ( "GJK Simplex", BoolKind "showGjkSimplex" )
     , ( "EPA Polytope", BoolKind "showEpaPolytope" )
+    , ( "EPA Step by Step", BoolKind "showStepByStepEpa" )
     , ( "Minkowski difference", BoolKind "showMinkowskiDifference" )
     , ( "Editor UI", SectionKind )
     , ( "Editor background", ColorKind "backgroundColor" )

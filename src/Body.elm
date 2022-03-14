@@ -4,10 +4,13 @@ module Body exposing
     , Shape(..)
     , contact
     , epa
+    , epaBestNormal
     , gjkIntersection
     , localSupportPoint
     , projectPoint
+    , support
     , supportPoint
+    , updatePolytope
     )
 
 import Array exposing (Array)
@@ -219,25 +222,19 @@ length (Polytope _ _ _ rest) =
     3 + Array.length rest
 
 
-{-| WIP. This should probably return the collision normal, penetration depth, and maybe also the closest points between the two bodies.
-
-I _think_ these points are the ones that effectively generated the normal, but not sure yet.
-
--}
-epa : Polytope CSOPoint -> Isometry -> LocalSupportMap -> LocalSupportMap -> Polytope CSOPoint
-epa gjkSimplex pos12 g1 g2 =
+epaBestNormal : Polytope CSOPoint -> { index : Int, origin : Vec2, normal : Vec2, distance : Float }
+epaBestNormal polytope =
     let
         len =
-            length gjkSimplex
+            length polytope
 
-        faceNormals : List { index : Int, normal : Vec2, distance : Float }
         faceNormals =
             List.range 0 (len - 1)
                 |> List.map
                     (\i ->
                         ( i
-                        , getUnsafe "i" i gjkSimplex
-                        , getUnsafe "i + 1" (modBy len (i + 1)) gjkSimplex
+                        , getUnsafe "i" i polytope
+                        , getUnsafe "i + 1" (modBy len (i + 1)) polytope
                         )
                     )
                 |> List.map
@@ -246,43 +243,69 @@ epa gjkSimplex pos12 g1 g2 =
                             { normal, distance } =
                                 doFace vertexI.point vertexJ.point
                         in
-                        { index = index, normal = normal, distance = distance }
+                        { index = index
+                        , origin = Vec2.midpoint vertexI.point vertexJ.point
+                        , normal = normal
+                        , distance = distance
+                        }
                     )
 
-        minFace : { index : Int, normal : Vec2, distance : Float }
+        minFace : { index : Int, origin : Vec2, normal : Vec2, distance : Float }
         minFace =
             faceNormals
                 |> List.Extra.minimumBy (\{ distance } -> distance)
                 |> Unwrap.maybe
-                |> Debug.log "min face"
+    in
+    minFace
 
-        minNormalSupport =
-            support pos12 g1 g2 minFace.normal
-                |> Debug.log "support point"
+
+updatePolytope face pos12 g1 g2 polytope =
+    let
+        supportPoint_ =
+            support pos12 g1 g2 face.normal
+                |> Debug.log "sup"
 
         minDistance =
-            Vec2.dot minFace.normal minNormalSupport.point
+            Vec2.dot face.normal supportPoint_.point
+    in
+    if abs (minDistance - face.distance) > 0.001 then
+        let
+            _ =
+                Debug.log "Added the point" ()
+        in
+        { done = False, newPolytope = insertAfter face.index supportPoint_ polytope }
 
-        { done, polytope } =
-            if abs (minDistance - minFace.distance) > 0.001 then
-                { done = False, polytope = insert minFace.index minNormalSupport gjkSimplex }
+    else
+        let
+            _ =
+                Debug.log "Didn't add the point" ()
+        in
+        { done = True, newPolytope = polytope }
 
-            else
-                { done = True, polytope = gjkSimplex }
+
+{-| WIP. This should probably return the collision normal, penetration depth, and maybe also the closest points between the two bodies.
+
+I _think_ these points are the ones that effectively generated the normal, but not sure yet.
+
+-}
+epa : Polytope CSOPoint -> Isometry -> LocalSupportMap -> LocalSupportMap -> Polytope CSOPoint
+epa polytope pos12 g1 g2 =
+    let
+        minFace =
+            epaBestNormal polytope
+
+        { done, newPolytope } =
+            updatePolytope minFace pos12 g1 g2 polytope
     in
     -- TODO: Can I assume polytope is counter-clockwise order??
     --
     -- I don't think so, I think the triangle from GJK may be arbitrarily winded.
     -- I'm not sure, so might as well cover both cases in doFace.
     if done then
-        polytope
+        newPolytope
 
     else
-        let
-            _ =
-                Debug.log "KEEP LOOKING" ()
-        in
-        epa polytope pos12 g1 g2
+        epa newPolytope pos12 g1 g2
 
 
 {-| Inserts AFTER index
@@ -297,8 +320,8 @@ index 3:
                       | insert here
 
 -}
-insert : Int -> a -> Polytope a -> Polytope a
-insert index point (Polytope first second third rest) =
+insertAfter : Int -> a -> Polytope a -> Polytope a
+insertAfter index point (Polytope first second third rest) =
     case index of
         0 ->
             Polytope first point second (Array.Extra.insertAt 0 third rest)
@@ -310,7 +333,7 @@ insert index point (Polytope first second third rest) =
             Polytope first second third (Array.Extra.insertAt 0 point rest)
 
         _ ->
-            Polytope first second third (Array.Extra.insertAt (index - 2) third rest)
+            Polytope first second third (Array.Extra.insertAt (index - 2) point rest)
 
 
 {-| Takes an edge (two contiguous vertices) from the polytope (inside the Minkowski difference),

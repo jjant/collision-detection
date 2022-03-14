@@ -6,6 +6,7 @@ import Browser
 import Browser.Events
 import CSOPoint exposing (CSOPoint)
 import Camera exposing (Camera)
+import Circle exposing (Circle)
 import Color
 import Config exposing (Config)
 import ConfigForm
@@ -21,6 +22,7 @@ import Element
         , height
         , padding
         , paddingXY
+        , rgb
         , rgb255
         , row
         , spacing
@@ -30,6 +32,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Fps
 import Hierarchy
 import Html as Html exposing (Html)
@@ -71,6 +74,7 @@ type alias Model =
     , bodies : Array Body
     , selectedBody : Maybe Int
     , drag : Draggable.State ()
+    , polytope : Maybe (Polytope CSOPoint)
     }
 
 
@@ -125,6 +129,7 @@ init elmConfigUiFlags =
             world
       , selectedBody = Just 0
       , drag = Draggable.init
+      , polytope = Nothing
       }
     , Cmd.none
     )
@@ -201,13 +206,6 @@ update msg model =
         KeysMsg keysMsg ->
             ( { model | keys = Keys.update keysMsg model.keys }, Cmd.none )
 
-        Tick dt ->
-            ( { model
-                | camera = Camera.tick dt model.keys model.camera
-              }
-            , Cmd.none
-            )
-
         FpsMsg fpsMsg ->
             ( { model | fps = Fps.update fpsMsg model.fps }, Cmd.none )
 
@@ -234,10 +232,83 @@ update msg model =
                         (Misc.updateTranslation (Vec2.add worldSpaceDelta))
                         model
             in
-            ( newModel, Cmd.none )
+            ( { newModel | polytope = Nothing }, Cmd.none )
 
         DragMsg dragMsg ->
             Draggable.update dragConfig dragMsg model
+
+        UpdatePolytope ->
+            let
+                bestNormal =
+                    model.polytope
+                        |> Maybe.map Body.epaBestNormal
+
+                b1 =
+                    Array.get 0 model.bodies
+                        |> Unwrap.maybe
+
+                b2 =
+                    Array.get 1 model.bodies
+                        |> Unwrap.maybe
+
+                pos12 =
+                    Isometry.compose
+                        (Isometry.invert b1.transform)
+                        b2.transform
+            in
+            ( { model
+                | polytope =
+                    Maybe.map2
+                        (\pol face ->
+                            (Body.updatePolytope face
+                                pos12
+                                (Body.localSupportPoint b1.shape)
+                                (Body.localSupportPoint b2.shape)
+                                pol
+                            ).newPolytope
+                        )
+                        model.polytope
+                        bestNormal
+              }
+            , Cmd.none
+            )
+
+        Tick dt ->
+            let
+                b1 =
+                    Array.get 0 model.bodies
+                        |> Unwrap.maybe
+
+                b2 =
+                    Array.get 1 model.bodies
+                        |> Unwrap.maybe
+
+                pos12 =
+                    Isometry.compose
+                        (Isometry.invert b1.transform)
+                        b2.transform
+
+                gjkResult =
+                    Body.gjkIntersection pos12
+                        (Body.localSupportPoint b1.shape)
+                        (Body.localSupportPoint b2.shape)
+            in
+            ( { model
+                | camera = Camera.tick dt model.keys model.camera
+                , polytope =
+                    if not gjkResult.colliding then
+                        Nothing
+
+                    else
+                        case ( model.polytope, gjkResult.simplex ) of
+                            ( Nothing, Three { a, b, c } ) ->
+                                Just (Polytope a b c Array.empty)
+
+                            _ ->
+                                model.polytope
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
@@ -254,24 +325,6 @@ view model =
             Array.get 1 model.bodies
                 |> Unwrap.maybe
 
-        getRect b =
-            Unwrap.maybe <|
-                case b.shape of
-                    Body.Rectangle rect ->
-                        Just rect
-
-                    _ ->
-                        Nothing
-
-        getCircle b =
-            Unwrap.maybe <|
-                case b.shape of
-                    Circle circ ->
-                        Just circ
-
-                    _ ->
-                        Nothing
-
         pos12 =
             Isometry.compose
                 (Isometry.invert b1.transform)
@@ -282,21 +335,26 @@ view model =
                 (Body.localSupportPoint b1.shape)
                 (Body.localSupportPoint b2.shape)
 
-        polytope : Maybe (Polytope CSOPoint)
-        polytope =
-            (case res.simplex of
+        startingPolytope =
+            case res.simplex of
                 Three { a, b, c } ->
-                    Just ( a, b, c )
+                    Just (Polytope a b c Array.empty)
 
                 _ ->
                     Nothing
-            )
+
+        nextNormal =
+            model.polytope
+                |> Maybe.map Body.epaBestNormal
+
+        nextPoint =
+            nextNormal
                 |> Maybe.map
-                    (\( a, b, c ) ->
-                        Body.epa (Polytope a b c Array.empty)
-                            pos12
+                    (\{ normal } ->
+                        Body.support pos12
                             (Body.localSupportPoint b1.shape)
                             (Body.localSupportPoint b2.shape)
+                            normal
                     )
 
         mouseBody : Body
@@ -305,7 +363,7 @@ view model =
                 { translation = mousePosition
                 , rotation = 0
                 }
-            , shape = Circle { radius = 3 }
+            , shape = Body.Circle { radius = 3 }
             }
     in
     Element.layout
@@ -354,64 +412,87 @@ view model =
                         )
                     ]
                 ]
-            , el [ alignTop ]
-                (Element.html <|
-                    Render.render
-                        MouseClick
-                        [ Html.Attributes.width (round model.viewportSize.x)
-                        , Html.Attributes.height (round model.viewportSize.y)
-                        , Html.Attributes.style "border" "1px solid blue"
-                        , Html.Attributes.style "background" (Color.toCssString model.config.sceneBackground)
-                        , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
-                        ]
-                        (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
-                            :: axis
-                            :: renderBodies
-                                [ Svg.stroke
-                                    (case res.colliding of
-                                        True ->
+            , column [ height fill ]
+                [ el [ alignTop ]
+                    (Element.html <|
+                        Render.render
+                            MouseClick
+                            [ Html.Attributes.width (round model.viewportSize.x)
+                            , Html.Attributes.height (round model.viewportSize.y)
+                            , Html.Attributes.style "border" "1px solid blue"
+                            , Html.Attributes.style "background" (Color.toCssString model.config.sceneBackground)
+                            , Html.Events.on "mousemove" (Decode.map MouseMove mouseDecoder)
+                            ]
+                            (Render.body [ Svg.fill "none", Svg.stroke "black", Svg.strokeWidth "3" ] mouseBody
+                                :: axis
+                                :: renderBodies
+                                    [ Svg.stroke
+                                        (if res.colliding then
                                             Color.toCssString model.config.collidingBodiesOutline
 
-                                        False ->
+                                         else
                                             "black"
-                                    )
-                                ]
-                                model.bodies
-                            :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
-                            ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
-                            ++ listIf model.config.showMinkowskiDifference
-                                (minkowskiDifference pos12 (getRect b1) (getRect b2)
-                                    -- |> List.map (Isometry.apply b1.transform)
-                                    |> ConvexHull.convexHull
-                                    |> (\points ->
-                                            [ Render.polygon
-                                                [ Svg.stroke "lightgreen"
-                                                , Svg.fill "none"
-                                                , Svg.strokeWidth "2"
+                                        )
+                                    ]
+                                    model.bodies
+                                :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                                ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
+                                ++ listIf model.config.showMinkowskiDifference
+                                    (minkowskiDifference pos12 (getRect b1) (getRect b2)
+                                        -- |> List.map (Isometry.apply b1.transform)
+                                        |> ConvexHull.convexHull
+                                        |> (\points ->
+                                                [ Render.polygon
+                                                    [ Svg.stroke "lightgreen"
+                                                    , Svg.fill "none"
+                                                    , Svg.strokeWidth "2"
+                                                    ]
+                                                    points
+                                                , Render.group [ Svg.fill "lightgreen" ]
+                                                    (List.map (Render.point []) points)
                                                 ]
-                                                points
-                                            , Render.group [ Svg.fill "lightgreen" ]
-                                                (List.map (Render.point []) points)
-                                            ]
-                                       )
-                                )
-                            ++ listIf (model.config.showEpaPolytope && res.colliding)
-                                (case polytope of
-                                    Just polytope_ ->
-                                        [ renderPolytope polytope_ ]
+                                           )
+                                    )
+                                ++ listIf (model.config.showEpaPolytope && res.colliding)
+                                    (case
+                                        startingPolytope
+                                            |> Maybe.map
+                                                (\p ->
+                                                    Body.epa p
+                                                        pos12
+                                                        (Body.localSupportPoint b1.shape)
+                                                        (Body.localSupportPoint b2.shape)
+                                                )
+                                     of
+                                        Just polytope_ ->
+                                            [ renderPolytope polytope_ ]
 
-                                    _ ->
-                                        []
-                                )
-                            ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
-                            ++ listIf model.config.showContactPoints (contactPoints model.bodies)
-                            ++ (selectedBody model
-                                    |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
-                                    |> Maybe.withDefault []
-                               )
-                        )
-                        (Camera.matrix model.camera)
-                )
+                                        _ ->
+                                            []
+                                    )
+                                ++ listIf (model.config.showStepByStepEpa && res.colliding)
+                                    [ renderStepByStepEpa model.polytope nextNormal nextPoint ]
+                                ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
+                                ++ listIf model.config.showContactPoints (contactPoints model.bodies)
+                                ++ (selectedBody model
+                                        |> Maybe.map (\{ transform } -> [ Render.gizmo [ Draggable.mouseTrigger () DragMsg ] transform.translation ])
+                                        |> Maybe.withDefault []
+                                   )
+                            )
+                            (Camera.matrix model.camera)
+                    )
+                , Misc.showIf model.config.showStepByStepEpa <|
+                    Input.button [ alignTop ]
+                        { onPress = Just UpdatePolytope
+                        , label =
+                            el
+                                [ Border.width 1
+                                , Font.color (rgb 1 1 1)
+                                , paddingXY 20 10
+                                ]
+                                (Element.text "Update EPA")
+                        }
+                ]
             , column
                 [ Background.color (rgb255 238 238 204)
                 , width fill
@@ -419,6 +500,31 @@ view model =
                 [ Hierarchy.view ChangeBody (selectedBody model)
                 ]
             ]
+
+
+renderStepByStepEpa : Maybe (Polytope CSOPoint) -> Maybe { a | origin : Vec2, normal : Vec2 } -> Maybe { b | point : Vec2 } -> Renderable msg
+renderStepByStepEpa polytope nextNormal nextPoint =
+    let
+        poly =
+            polytope
+                |> Maybe.map renderPolytope
+
+        normal =
+            nextNormal
+                |> Maybe.map
+                    (\faceData ->
+                        Render.vector []
+                            { base = faceData.origin
+                            , vector = Vec2.scale 50 faceData.normal
+                            }
+                    )
+
+        point =
+            nextPoint
+                |> Maybe.map (\p -> Render.point [ Svg.r "10" ] p.point)
+    in
+    Render.group []
+        (List.filterMap identity [ poly, normal, point ])
 
 
 updateSelectedBody : (Body -> Body) -> Model -> Model
@@ -548,7 +654,7 @@ world : Array Body
 world =
     Array.fromList
         [ { transform =
-                { translation = vec2 0 0
+                { translation = vec2 117 73
                 , rotation = pi / 5
                 }
           , shape = Body.Rectangle { halfExtents = vec2 100 50 }
@@ -648,7 +754,7 @@ renderSimplex transform simplex =
             List.length points
 
         color i =
-            Color.hsl (toFloat i / toFloat numPoints) 1 0.5
+            Color.hsla (toFloat i / toFloat numPoints) 1 0.5 0.9
     in
     Render.group []
         [ Render.polygon
@@ -723,3 +829,25 @@ rectPoints iso { halfExtents } =
             ]
     in
     List.map (Isometry.apply iso) localPoints
+
+
+getRect : Body -> Rectangle
+getRect b =
+    Unwrap.maybe <|
+        case b.shape of
+            Body.Rectangle rect ->
+                Just rect
+
+            _ ->
+                Nothing
+
+
+getCircle : Body -> Circle
+getCircle b =
+    Unwrap.maybe <|
+        case b.shape of
+            Body.Circle circ ->
+                Just circ
+
+            _ ->
+                Nothing
