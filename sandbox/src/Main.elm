@@ -452,23 +452,22 @@ view model =
                                                 ]
                                            )
                                     )
-                                ++ listIf (model.config.showEpaPolytope && res.colliding)
-                                    (case
-                                        startingPolytope
-                                            |> Maybe.map
-                                                (\p ->
-                                                    Body.epa p
-                                                        pos12
-                                                        (Body.localSupportPoint b1.shape)
-                                                        (Body.localSupportPoint b2.shape)
-                                                )
-                                     of
-                                        Just polytope_ ->
-                                            [ renderPolytope polytope_ ]
-
-                                        _ ->
-                                            []
-                                    )
+                                -- ++ listIf (model.config.showEpaPolytope && res.colliding)
+                                --     (case
+                                --         startingPolytope
+                                --             |> Maybe.map
+                                --                 (\p ->
+                                --                     Body.epa p
+                                --                         pos12
+                                --                         (Body.localSupportPoint b1.shape)
+                                --                         (Body.localSupportPoint b2.shape)
+                                --                 )
+                                --      of
+                                --         Just polytope_ ->
+                                --             [ renderPolytope polytope_ ]
+                                --         _ ->
+                                --             []
+                                --     )
                                 ++ listIf (model.config.showStepByStepEpa && res.colliding)
                                     [ renderStepByStepEpa model.polytope nextNormal nextPoint ]
                                 ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
@@ -653,7 +652,7 @@ world : Array Body
 world =
     Array.fromList
         [ { transform =
-                { translation = vec2 117 73
+                { translation = vec2 0 214
                 , rotation = pi / 5
                 }
           , shape = Body.Rectangle { halfExtents = vec2 100 50 }

@@ -210,7 +210,12 @@ get index (Polytope a0 a1 a2 rest) =
 
 getUnsafe : String -> Int -> Polytope a -> a
 getUnsafe msg index p =
-    case get index p of
+    unwrap msg (get index p)
+
+
+unwrap : String -> Maybe a -> a
+unwrap msg ma =
+    case ma of
         Just a ->
             a
 
@@ -255,7 +260,7 @@ epaBestNormal polytope =
         minFace =
             faceNormals
                 |> List.Extra.minimumBy (\{ distance } -> distance)
-                |> Unwrap.maybe
+                |> unwrap "Min face not found"
     in
     minFace
 
@@ -265,23 +270,14 @@ updatePolytope face pos12 g1 g2 polytope =
     let
         supportPoint_ =
             support pos12 g1 g2 face.normal
-                |> Debug.log "sup"
 
         minDistance =
             Vec2.dot face.normal supportPoint_.point
     in
     if abs (minDistance - face.distance) > 0.001 then
-        let
-            _ =
-                Debug.log "Added the point" ()
-        in
         { done = False, newPolytope = insertAfter face.index supportPoint_ polytope }
 
     else
-        let
-            _ =
-                Debug.log "Didn't add the point" ()
-        in
         { done = True, newPolytope = polytope }
 
 
@@ -299,7 +295,7 @@ epa polytope pos12 g1 g2 =
         { done, newPolytope } =
             updatePolytope minFace pos12 g1 g2 polytope
     in
-    -- TODO: Can I assume polytope is counter-clockwise order??
+    -- TODO: Can I assume polytope is in counter-clockwise order??
     --
     -- I don't think so, I think the triangle from GJK may be arbitrarily winded.
     -- I'm not sure, so might as well cover both cases in doFace.
