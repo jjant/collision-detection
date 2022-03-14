@@ -438,8 +438,7 @@ view model =
                                 :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                                 ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
                                 ++ listIf model.config.showMinkowskiDifference
-                                    (minkowskiDifference pos12 (getRect b1) (getRect b2)
-                                        |> List.map (Isometry.vectorApply b1.transform)
+                                    (minkowskiDifference b1 b2
                                         |> (\points ->
                                                 [ Render.polygon
                                                     [ Svg.stroke "lightgreen"
@@ -811,31 +810,59 @@ renderPolytope (Polytope a b c rest) =
         ]
 
 
-minkowskiDifference : Isometry -> Rectangle -> Rectangle -> List Vec2
-minkowskiDifference pos12 rect1 rect2 =
+minkowskiDifference : Body -> Body -> List Vec2
+minkowskiDifference body1 body2 =
     let
         points1 =
-            rectPoints Isometry.identity rect1
+            bodyPoints body1
 
         points2 =
-            rectPoints pos12 rect2
+            bodyPoints body2
     in
     List.Extra.lift2 (\p1 p2 -> Vec2.sub p1 p2) points1 points2
         |> ConvexHull.convexHull
 
 
-rectPoints : Isometry -> Rectangle -> List Vec2
-rectPoints iso { halfExtents } =
+bodyPoints : Body -> List Vec2
+bodyPoints { shape, transform } =
+    List.map (Isometry.apply transform) (shapeLocalPoints shape)
+
+
+shapeLocalPoints : Shape -> List Vec2
+shapeLocalPoints shape =
+    case shape of
+        Body.Rectangle rectangle ->
+            rectLocalPoints rectangle
+
+        Body.Circle circle ->
+            circleLocalPoints 10 circle
+
+
+rectLocalPoints : Rectangle -> List Vec2
+rectLocalPoints { halfExtents } =
+    -- Counter-clockwise order
+    [ vec2 -halfExtents.x -halfExtents.y
+    , vec2 halfExtents.x -halfExtents.y
+    , vec2 halfExtents.x halfExtents.y
+    , vec2 -halfExtents.x halfExtents.y
+    ]
+
+
+circleLocalPoints : Int -> Circle -> List Vec2
+circleLocalPoints angleStepDegrees { radius } =
     -- Counter-clockwise order
     let
-        localPoints =
-            [ vec2 -halfExtents.x -halfExtents.y
-            , vec2 halfExtents.x -halfExtents.y
-            , vec2 halfExtents.x halfExtents.y
-            , vec2 -halfExtents.x halfExtents.y
-            ]
+        numPoints =
+            360 // angleStepDegrees
     in
-    List.map (Isometry.apply iso) localPoints
+    List.range 0 numPoints
+        |> List.map toFloat
+        |> List.map ((*) (toFloat angleStepDegrees / (180 / pi)))
+        |> List.map
+            (\angle ->
+                vec2 (cos angle) (sin angle)
+                    |> Vec2.scale radius
+            )
 
 
 getRect : Body -> Rectangle
