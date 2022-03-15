@@ -468,7 +468,7 @@ view model =
                                 --             []
                                 --     )
                                 ++ listIf (model.config.showStepByStepEpa && res.colliding)
-                                    [ renderStepByStepEpa model.polytope nextNormal nextPoint ]
+                                    [ renderStepByStepEpa b1.transform model.polytope nextNormal nextPoint ]
                                 ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                                 ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                                 ++ (selectedBody model
@@ -499,26 +499,32 @@ view model =
             ]
 
 
-renderStepByStepEpa : Maybe (Polytope CSOPoint) -> Maybe { a | origin : Vec2, normal : Vec2 } -> Maybe { b | point : Vec2 } -> Renderable msg
-renderStepByStepEpa polytope nextNormal nextPoint =
+renderStepByStepEpa : Isometry -> Maybe (Polytope CSOPoint) -> Maybe { a | origin : Vec2, normal : Vec2 } -> Maybe { b | point : Vec2 } -> Renderable msg
+renderStepByStepEpa transform polytope nextNormal nextPoint =
     let
         poly =
             polytope
-                |> Maybe.map renderPolytope
+                |> Maybe.map (renderPolytope transform)
 
         normal =
             nextNormal
                 |> Maybe.map
                     (\faceData ->
                         Render.vector []
-                            { base = faceData.origin
-                            , vector = Vec2.scale 50 faceData.normal
+                            { base =
+                                faceData.origin
+                                    |> Isometry.vectorApply transform
+                            , vector =
+                                faceData.normal
+                                    |> Isometry.vectorApply transform
+                                    |> Vec2.scale 50
                             }
                     )
 
         point =
             nextPoint
-                |> Maybe.map (\p -> Render.point [ Svg.r "10" ] p.point)
+                |> Maybe.map
+                    (\p -> Render.point [ Svg.r "10" ] (Isometry.vectorApply transform p.point))
     in
     Render.group []
         (List.filterMap identity [ poly, normal, point ])
@@ -611,7 +617,7 @@ contactPoint : Body -> Body -> List (Render.Renderable msg)
 contactPoint body1 body2 =
     Body.contact body1 body2
         |> Maybe.map
-            (\{ point1, point2, normal1, normal2, dist } ->
+            (\{ point1, point2, normal1, dist } ->
                 let
                     world1 =
                         Isometry.apply body1.transform point1
@@ -785,11 +791,18 @@ renderSimplex transform simplex =
         ]
 
 
-renderPolytope : Polytope CSOPoint -> Renderable msg
-renderPolytope (Polytope a b c rest) =
+renderPolytope : Isometry -> Polytope CSOPoint -> Renderable msg
+renderPolytope transform (Polytope a b c rest) =
     let
         points =
-            a :: b :: c :: Array.toList rest
+            (a :: b :: c :: Array.toList rest)
+                |> List.map
+                    (\{ point, orig1, orig2 } ->
+                        { point = Isometry.vectorApply transform point
+                        , orig1 = Isometry.apply transform orig1
+                        , orig2 = Isometry.apply transform orig2
+                        }
+                    )
     in
     Render.group []
         [ Render.polygon
