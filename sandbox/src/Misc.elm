@@ -2,6 +2,7 @@ module Misc exposing
     ( attrIf
     , cursor
     , listIf
+    , listIfLazy
     , mouseDecoder
     , setTranslation
     , showIf
@@ -42,6 +43,15 @@ listIf : Bool -> List a -> List a
 listIf b l =
     if b then
         l
+
+    else
+        []
+
+
+listIfLazy : Bool -> (() -> List a) -> List a
+listIfLazy b l =
+    if b then
+        l ()
 
     else
         []

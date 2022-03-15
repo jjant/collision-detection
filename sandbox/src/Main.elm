@@ -74,8 +74,17 @@ type alias Model =
     , bodies : Array Body
     , selectedBody : Maybe Int
     , drag : Draggable.State ()
-    , polytope : Maybe (Polytope CSOPoint)
+    , stepByStepPolytopeState : Maybe StepByStepPolytope
     }
+
+
+type StepByStepPolytope
+    = Step
+        { polytope : Polytope CSOPoint
+        , nextNormal : { index : Int, origin : Vec2, normal : Vec2, distance : Float }
+        , nextPoint : Vec2
+        }
+    | Done (Polytope CSOPoint)
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -129,7 +138,7 @@ init elmConfigUiFlags =
             world
       , selectedBody = Just 0
       , drag = Draggable.init
-      , polytope = Nothing
+      , stepByStepPolytopeState = Nothing
       }
     , Cmd.none
     )
@@ -232,17 +241,13 @@ update msg model =
                         (Misc.updateTranslation (Vec2.add worldSpaceDelta))
                         model
             in
-            ( { newModel | polytope = Nothing }, Cmd.none )
+            ( { newModel | stepByStepPolytopeState = Nothing }, Cmd.none )
 
         DragMsg dragMsg ->
             Draggable.update dragConfig dragMsg model
 
         UpdatePolytope ->
             let
-                bestNormal =
-                    model.polytope
-                        |> Maybe.map Body.epaBestNormal
-
                 b1 =
                     Array.get 0 model.bodies
                         |> Unwrap.maybe
@@ -255,21 +260,45 @@ update msg model =
                     Isometry.compose
                         (Isometry.invert b1.transform)
                         b2.transform
+
+                stepByStepPolytopeState =
+                    model.stepByStepPolytopeState
+                        |> Maybe.map
+                            (\state ->
+                                case state of
+                                    Step { polytope, nextNormal } ->
+                                        let
+                                            { done, newPolytope } =
+                                                Body.updatePolytope nextNormal
+                                                    pos12
+                                                    (Body.localSupportPoint b1.shape)
+                                                    (Body.localSupportPoint b2.shape)
+                                                    polytope
+
+                                            nextNextNormal =
+                                                Body.epaBestNormal newPolytope
+
+                                            nextPoint =
+                                                Body.support pos12
+                                                    (Body.localSupportPoint b1.shape)
+                                                    (Body.localSupportPoint b2.shape)
+                                                    nextNextNormal.normal
+                                        in
+                                        if done then
+                                            Done newPolytope
+
+                                        else
+                                            Step
+                                                { polytope = newPolytope
+                                                , nextNormal = nextNextNormal
+                                                , nextPoint = nextPoint.point
+                                                }
+
+                                    Done polytope ->
+                                        Done polytope
+                            )
             in
-            ( { model
-                | polytope =
-                    Maybe.map2
-                        (\pol face ->
-                            (Body.updatePolytope face
-                                pos12
-                                (Body.localSupportPoint b1.shape)
-                                (Body.localSupportPoint b2.shape)
-                                pol
-                            ).newPolytope
-                        )
-                        model.polytope
-                        bestNormal
-              }
+            ( { model | stepByStepPolytopeState = stepByStepPolytopeState }
             , Cmd.none
             )
 
@@ -295,17 +324,32 @@ update msg model =
             in
             ( { model
                 | camera = Camera.tick dt model.keys model.camera
-                , polytope =
+                , stepByStepPolytopeState =
                     if not gjkResult.colliding then
                         Nothing
 
                     else
-                        case ( model.polytope, gjkResult.simplex ) of
+                        case ( model.stepByStepPolytopeState, gjkResult.simplex ) of
                             ( Nothing, Three { a, b, c } ) ->
-                                Just (Polytope a b c Array.empty)
+                                Just <|
+                                    let
+                                        polytope =
+                                            Polytope a b c Array.empty
+
+                                        nextNormal =
+                                            Body.epaBestNormal polytope
+
+                                        nextPoint =
+                                            Body.support pos12 (Body.localSupportPoint b1.shape) (Body.localSupportPoint b2.shape) nextNormal.normal
+                                    in
+                                    Step
+                                        { polytope = polytope
+                                        , nextNormal = nextNormal
+                                        , nextPoint = nextPoint.point
+                                        }
 
                             _ ->
-                                model.polytope
+                                model.stepByStepPolytopeState
               }
             , Cmd.none
             )
@@ -342,20 +386,6 @@ view model =
 
                 _ ->
                     Nothing
-
-        nextNormal =
-            model.polytope
-                |> Maybe.map Body.epaBestNormal
-
-        nextPoint =
-            nextNormal
-                |> Maybe.map
-                    (\{ normal } ->
-                        Body.support pos12
-                            (Body.localSupportPoint b1.shape)
-                            (Body.localSupportPoint b2.shape)
-                            normal
-                    )
 
         mouseBody : Body
         mouseBody =
@@ -451,24 +481,29 @@ view model =
                                                 ]
                                            )
                                     )
-                                -- ++ listIf (model.config.showEpaPolytope && res.colliding)
-                                --     (case
-                                --         startingPolytope
-                                --             |> Maybe.map
-                                --                 (\p ->
-                                --                     Body.epa p
-                                --                         pos12
-                                --                         (Body.localSupportPoint b1.shape)
-                                --                         (Body.localSupportPoint b2.shape)
-                                --                 )
-                                --      of
-                                --         Just polytope_ ->
-                                --             [ renderPolytope polytope_ ]
-                                --         _ ->
-                                --             []
-                                --     )
+                                ++ Misc.listIfLazy (model.config.showEpaPolytope && res.colliding)
+                                    (\_ ->
+                                        case
+                                            startingPolytope
+                                                |> Maybe.map
+                                                    (\p ->
+                                                        Body.epa p
+                                                            pos12
+                                                            (Body.localSupportPoint b1.shape)
+                                                            (Body.localSupportPoint b2.shape)
+                                                    )
+                                        of
+                                            Just polytope_ ->
+                                                [ renderPolytope b1.transform polytope_ ]
+
+                                            _ ->
+                                                []
+                                    )
                                 ++ listIf (model.config.showStepByStepEpa && res.colliding)
-                                    [ renderStepByStepEpa b1.transform model.polytope nextNormal nextPoint ]
+                                    (model.stepByStepPolytopeState
+                                        |> Maybe.map (List.singleton << renderStepByStepEpa b1.transform)
+                                        |> Maybe.withDefault []
+                                    )
                                 ++ listIf model.config.showPointProjections (pointProjections mousePosition model.bodies)
                                 ++ listIf model.config.showContactPoints (contactPoints model.bodies)
                                 ++ (selectedBody model
@@ -499,35 +534,26 @@ view model =
             ]
 
 
-renderStepByStepEpa : Isometry -> Maybe (Polytope CSOPoint) -> Maybe { a | origin : Vec2, normal : Vec2 } -> Maybe { b | point : Vec2 } -> Renderable msg
-renderStepByStepEpa transform polytope nextNormal nextPoint =
-    let
-        poly =
-            polytope
-                |> Maybe.map (renderPolytope transform)
+renderStepByStepEpa : Isometry -> StepByStepPolytope -> Renderable msg
+renderStepByStepEpa transform stepByStepPolytopeState =
+    case stepByStepPolytopeState of
+        Done polytope ->
+            renderPolytope transform polytope
 
-        normal =
-            nextNormal
-                |> Maybe.map
-                    (\faceData ->
-                        Render.vector []
-                            { base =
-                                faceData.origin
-                                    |> Isometry.vectorApply transform
-                            , vector =
-                                faceData.normal
-                                    |> Isometry.vectorApply transform
-                                    |> Vec2.scale 50
-                            }
-                    )
-
-        point =
-            nextPoint
-                |> Maybe.map
-                    (\p -> Render.point [ Svg.r "10" ] (Isometry.vectorApply transform p.point))
-    in
-    Render.group []
-        (List.filterMap identity [ poly, normal, point ])
+        Step { polytope, nextNormal, nextPoint } ->
+            Render.group []
+                [ renderPolytope transform polytope
+                , Render.vector []
+                    { base =
+                        nextNormal.origin
+                            |> Isometry.vectorApply transform
+                    , vector =
+                        nextNormal.normal
+                            |> Isometry.vectorApply transform
+                            |> Vec2.scale 50
+                    }
+                , Render.point [ Svg.r "10" ] (Isometry.vectorApply transform nextPoint)
+                ]
 
 
 updateSelectedBody : (Body -> Body) -> Model -> Model
