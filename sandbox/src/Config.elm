@@ -16,7 +16,8 @@ import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
-    { showSupportPoints : Bool
+    { pointsPerCircle : Int
+    , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
     , showGjkSimplex : Bool
@@ -32,7 +33,8 @@ type alias Config =
 
 empty : Defaults -> Config
 empty defaults =
-    { showSupportPoints = defaults.bool
+    { pointsPerCircle = defaults.int
+    , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
     , showGjkSimplex = defaults.bool
@@ -50,6 +52,11 @@ logics : List (Logic Config)
 logics =
     [ ConfigForm.section
         "Visualise"
+    , ConfigForm.int
+        "pointsPerCircle"
+        "Points per circle"
+        .pointsPerCircle
+        (\a c -> { c | pointsPerCircle = a })
     , ConfigForm.bool
         "showSupportPoints"
         "Support points"

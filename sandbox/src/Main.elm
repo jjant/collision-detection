@@ -468,7 +468,7 @@ view model =
                                 :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
                                 ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
                                 ++ listIf model.config.showMinkowskiDifference
-                                    (minkowskiDifference b1 b2
+                                    (minkowskiDifference model.config.pointsPerCircle b1 b2
                                         |> (\points ->
                                                 [ Render.polygon
                                                     [ Svg.stroke "lightgreen"
@@ -849,36 +849,36 @@ renderPolytope transform (Polytope a b c rest) =
         ]
 
 
-minkowskiDifference : Body -> Body -> List Vec2
-minkowskiDifference body1 body2 =
+minkowskiDifference : Int -> Body -> Body -> List Vec2
+minkowskiDifference numCirclePoints body1 body2 =
     let
         points1 =
-            bodyPoints body1
+            bodyPoints numCirclePoints body1
 
         points2 =
-            bodyPoints body2
+            bodyPoints numCirclePoints body2
     in
     List.Extra.lift2 (\p1 p2 -> Vec2.sub p1 p2) points1 points2
         |> ConvexHull.convexHull
 
 
-bodyPoints : Body -> List Vec2
-bodyPoints { shape, transform } =
-    List.map (Isometry.apply transform) (shapeLocalPoints shape)
+bodyPoints : Int -> Body -> List Vec2
+bodyPoints numCirclePoints { shape, transform } =
+    List.map (Isometry.apply transform) (shapeLocalPoints numCirclePoints shape)
 
 
-shapeLocalPoints : Shape -> List Vec2
-shapeLocalPoints shape =
+shapeLocalPoints : Int -> Shape -> List Vec2
+shapeLocalPoints numCirclePoints shape =
     case shape of
         Body.Rectangle rectangle ->
-            rectLocalPoints rectangle
+            rectangleLocalPoints rectangle
 
         Body.Circle circle ->
-            circleLocalPoints 10 circle
+            circleLocalPoints numCirclePoints circle
 
 
-rectLocalPoints : Rectangle -> List Vec2
-rectLocalPoints { halfExtents } =
+rectangleLocalPoints : Rectangle -> List Vec2
+rectangleLocalPoints { halfExtents } =
     -- Counter-clockwise order
     [ vec2 -halfExtents.x -halfExtents.y
     , vec2 halfExtents.x -halfExtents.y
@@ -888,15 +888,15 @@ rectLocalPoints { halfExtents } =
 
 
 circleLocalPoints : Int -> Circle -> List Vec2
-circleLocalPoints angleStepDegrees { radius } =
+circleLocalPoints numPoints { radius } =
     -- Counter-clockwise order
     let
-        numPoints =
-            360 // angleStepDegrees
+        angleStepDegrees =
+            360 / toFloat numPoints
     in
     List.range 0 numPoints
         |> List.map toFloat
-        |> List.map ((*) (toFloat angleStepDegrees / (180 / pi)))
+        |> List.map ((*) (angleStepDegrees / (180 / pi)))
         |> List.map
             (\angle ->
                 vec2 (cos angle) (sin angle)
