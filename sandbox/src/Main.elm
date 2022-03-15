@@ -22,6 +22,7 @@ import Element
         , height
         , padding
         , paddingXY
+        , px
         , rgb
         , rgb255
         , row
@@ -46,7 +47,7 @@ import List.Extra
 import Mat3
 import Misc exposing (listIf, mouseDecoder)
 import Msg exposing (Msg(..))
-import Rectangle exposing (Rectangle)
+import Rectangle
 import Render exposing (Renderable)
 import Svg
 import Svg.Attributes as Svg
@@ -524,6 +525,14 @@ view model =
                                 ]
                                 (Element.text "Update EPA")
                         }
+                , Element.el [ alignTop, width (px 500), height (px 200) ] <|
+                    Element.html <|
+                        Html.textarea
+                            [ Html.Attributes.style "width" "100%"
+                            , Html.Attributes.style "height" "100%"
+                            ]
+                            [ Html.text <| Debug.toString <| model.bodies
+                            ]
                 ]
             , column
                 [ Background.color (rgb255 238 238 204)
@@ -681,24 +690,7 @@ mapToList f arr =
 
 world : Array Body
 world =
-    Array.fromList
-        [ { transform =
-                { translation = vec2 0 214
-                , rotation = pi / 5
-                }
-          , shape = Body.Rectangle { halfExtents = vec2 100 50 }
-
-          --   , shape = Circle { radius = 50 }
-          }
-        , { transform =
-                { translation = vec2 0 75
-                , rotation = 0
-                }
-          , shape = Body.Rectangle { halfExtents = vec2 40 30 }
-
-          --   , shape = Circle { radius = 50 }
-          }
-        ]
+    Array.fromList [ { shape = Rectangle { halfExtents = { x = 100, y = 50 } }, transform = { rotation = 0.7783185307179593, translation = { x = 296, y = 201 } } }, { shape = Rectangle { halfExtents = { x = 40, y = 30 } }, transform = { rotation = 1.5600000000000012, translation = { x = 216, y = 294 } } } ]
 
 
 gridWorld : Array Body
@@ -877,7 +869,7 @@ shapeLocalPoints numCirclePoints shape =
             circleLocalPoints numCirclePoints circle
 
 
-rectangleLocalPoints : Rectangle -> List Vec2
+rectangleLocalPoints : Rectangle.Rectangle -> List Vec2
 rectangleLocalPoints { halfExtents } =
     -- Counter-clockwise order
     [ vec2 -halfExtents.x -halfExtents.y
@@ -904,7 +896,7 @@ circleLocalPoints numPoints { radius } =
             )
 
 
-getRect : Body -> Rectangle
+getRect : Body -> Rectangle.Rectangle
 getRect b =
     Unwrap.maybe <|
         case b.shape of
