@@ -5,7 +5,7 @@ module Config exposing (Config, configFromFields, decodeField, empty, emptyField
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormUI exposing (ViewOptions)
+import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
@@ -16,7 +16,8 @@ import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
-    { pointsPerCircle : Int
+    { myFloat : Float
+    , pointsPerCircle : Int
     , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
@@ -33,7 +34,8 @@ type alias Config =
 
 empty : Defaults -> Config
 empty defaults =
-    { pointsPerCircle = defaults.int
+    { myFloat = defaults.float
+    , pointsPerCircle = defaults.int
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
@@ -51,6 +53,13 @@ empty defaults =
 logics : List (Logic Config)
 logics =
     [ ConfigForm.section
+        "Testing"
+    , ConfigForm.float
+        "myFloat"
+        "Float input"
+        .myFloat
+        (\a c -> { c | myFloat = a })
+    , ConfigForm.section
         "Visualise"
     , ConfigForm.int
         "pointsPerCircle"

@@ -9,7 +9,9 @@ port generateFile : ( String, String ) -> Cmd msg
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "Visualise", SectionKind )
+    [ ( "Testing", SectionKind )
+    , ( "Float input", FloatKind "myFloat" )
+    , ( "Visualise", SectionKind )
     , ( "Points per circle", IntKind "pointsPerCircle" )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )

@@ -20,5 +20,6 @@ slider onMouseMove children =
         , style "display" "flex"
         , style "justify-content" "left"
         , style "align-items" "center"
+        , style "cursor" "ew-resize"
         ]
         children

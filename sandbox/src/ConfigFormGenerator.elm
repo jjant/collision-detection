@@ -180,7 +180,7 @@ module Config exposing (Config, configFromFields, decodeField, empty, emptyField
             """
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormUI exposing (ViewOptions)
+import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.Custom
 import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
@@ -545,6 +545,7 @@ regex =
 
 interpolate : String -> String -> String -> String
 interpolate pattern word =
+    -- TODO: Refactor this garbage
     Regex.replace (regex pattern) (\_ -> word)
 
 

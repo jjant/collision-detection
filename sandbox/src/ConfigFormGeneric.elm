@@ -1,7 +1,7 @@
 module ConfigFormGeneric exposing (..)
 
 import Config
-import ConfigFormUI exposing (ViewOptions)
+import ConfigForm.UI exposing (ViewOptions)
 import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
