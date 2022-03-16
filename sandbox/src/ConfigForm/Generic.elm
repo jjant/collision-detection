@@ -3,7 +3,6 @@ module ConfigForm.Generic exposing (..)
 {-| Entrypoint to the actual configform component functions (update, etc)
 -}
 
-import ConfigForm.Types as Types
 import ConfigForm.UI exposing (ViewOptions)
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
@@ -26,13 +25,13 @@ import Unwrap
 `Config` is your generated module that was made using [ ConfigFormGenerator](ConfigFormGenerator).
 
 -}
-type alias InitOptions field config =
+type alias InitOptions logic field config =
     { flags : Encode.Value
-    , logics : List (Types.Logic config)
+    , logics : List logic
     , emptyConfig : config
-    , decodeField : Types.Logic config -> Decode.Value -> Maybe field
-    , configFromFields : ConfigFromFields field config
-    , emptyField : Types.Logic config -> config -> field
+    , decodeField : logic -> Decode.Value -> Maybe field
+    , configFromFields : ConfigFromFields logic field config
+    , emptyField : logic -> config -> field
     }
 
 
@@ -99,7 +98,7 @@ type ConfigForm field
                 )
 
 -}
-update : ConfigFromFields field config -> List (Types.Logic config) -> config -> ConfigForm field -> Msg field config -> ( config, ConfigForm field )
+update : ConfigFromFields (Logic logic) field config -> List (Logic logic) -> config -> ConfigForm field -> Msg field config -> ( config, ConfigForm field )
 update configFromFields logics config (ConfigForm configForm) msg =
     case msg of
         ChangedConfigForm fieldName field ->
@@ -156,15 +155,13 @@ type FieldState
     | Dragging
 
 
-type alias ConfigFromFields field config =
-    List (Types.Logic config) -> OrderedDict String field -> config -> config
+type alias ConfigFromFields logic field config =
+    List logic -> OrderedDict String field -> config -> config
 
 
 {-| `init` will create both a valid `Config` and `ConfigForm`.
 -}
-init :
-    InitOptions field config
-    -> ( config, ConfigForm field )
+init : InitOptions (Logic logic) field config -> ( config, ConfigForm field )
 init ({ decodeField, configFromFields, emptyField } as options) =
     let
         { file, localStorage } =
@@ -206,21 +203,25 @@ init ({ decodeField, configFromFields, emptyField } as options) =
     )
 
 
-type alias ViewField field config =
+type alias ViewField field logic config =
     { hoveredLabel : String -> Bool -> Msg field config
     , changedConfigForm : String -> field -> Msg field config
     }
     -> ViewOptions
     -> field
     -> Int
-    -> Types.Logic config
+    -> logic
     -> Bool
     -> Element (Msg field config)
 
 
+type alias Logic logic =
+    { logic | fieldName : String }
+
+
 {-| View the config form.
 -}
-view : (field -> Maybe Encode.Value) -> ViewField field config -> ViewOptions -> List (Types.Logic config) -> ConfigForm field -> Element (Msg field config)
+view : (field -> Maybe Encode.Value) -> ViewField field (Logic logic) config -> ViewOptions -> List (Logic logic) -> ConfigForm field -> Element (Msg field config)
 view encodeField viewField viewOptions logics (ConfigForm configForm) =
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
@@ -300,7 +301,7 @@ decodeFlags json =
             }
 
 
-decodeFields : (Types.Logic config -> Decode.Value -> Maybe field) -> List (Types.Logic config) -> Encode.Value -> Dict String field
+decodeFields : (Logic logic -> Decode.Value -> Maybe field) -> List (Logic logic) -> Encode.Value -> Dict String field
 decodeFields decodeField logics json =
     logics
         |> List.filterMap
