@@ -93,9 +93,7 @@ npm install --global elm elm-live@next chokidir
 
 -}
 
-import Regex
 import Set exposing (Set)
-import Unwrap
 
 
 {-| Use these to define what kind of value your field is. For all values except `SectionKind`, the `String` is the field's camelCase variable name for both your `Config` record and its JSON representation, such as "headerFontSize".
@@ -530,23 +528,12 @@ $funcName fieldName label getter setter =
     }"""
                 in
                 templateStr
-                    |> interpolate "\\$funcName" funcName
-                    |> interpolate "\\$typeName" typeName
-                    |> interpolate "\\$logicConstructorName" logicConstructorName
+                    |> String.replace "$funcName" funcName
+                    |> String.replace "$typeName" typeName
+                    |> String.replace "$logicConstructorName" logicConstructorName
             )
         |> Set.toList
         |> String.join "\n\n"
-
-
-regex : String -> Regex.Regex
-regex =
-    Regex.fromString >> Unwrap.maybe
-
-
-interpolate : String -> String -> String -> String
-interpolate pattern word =
-    -- TODO: Refactor this garbage
-    Regex.replace (regex pattern) (\_ -> word)
 
 
 fieldTypes : List ( String, Kind ) -> String
@@ -799,7 +786,7 @@ decodeField customKinds =
 
                 Err _ ->
                     Nothing"""
-                            |> interpolate "\\$logicName" kind
+                            |> String.replace "$logicName" kind
                     )
                 |> Set.toList
                 |> String.join "\n\n"
