@@ -11,6 +11,7 @@ import Color
 import ConfigForm
 import ConfigForm.Config exposing (Config)
 import ConfigForm.Generic exposing (ConfigForm)
+import ConfigForm.Types exposing (Field)
 import ConvexHull
 import Draggable
 import Element
@@ -66,7 +67,7 @@ type alias Model =
     , scale : Vec3.Vec3
     , rotation : Vec3.Vec3
     , config : Config
-    , configForm : ConfigForm
+    , configForm : ConfigForm Field
     , viewportSize : Vec2
     , mouse : Vec2
     , camera : Camera
@@ -106,6 +107,9 @@ init elmConfigUiFlags =
                         , color = Color.rgb255 32 37 49 -- hot pink!
                         , vec2 = vec2 -3 -1234
                         }
+                , emptyField = ConfigForm.Config.emptyField
+                , configFromFields = ConfigForm.Config.configFromFields
+                , decodeField = ConfigForm.Config.decodeField
                 }
 
         width : number
@@ -177,6 +181,7 @@ update msg model =
             let
                 ( newConfig, newConfigForm ) =
                     ConfigForm.Generic.update
+                        ConfigForm.Config.configFromFields
                         ConfigForm.Config.logics
                         model.config
                         model.configForm
@@ -420,6 +425,8 @@ view model =
                     , Font.color (rgb255 192 195 201)
                     ]
                     [ ConfigForm.Generic.view
+                        ConfigForm.Config.encodeField
+                        ConfigForm.Config.viewField
                         ConfigForm.viewOptions
                         ConfigForm.Config.logics
                         model.configForm
@@ -430,7 +437,9 @@ view model =
                     -- Then the next time a new user loads your app, they'll see your updated config.
                     , Element.html <|
                         Html.textarea []
-                            [ ConfigForm.Generic.encode model.configForm
+                            [ ConfigForm.Generic.encode
+                                ConfigForm.Config.encodeField
+                                model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]

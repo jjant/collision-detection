@@ -3,8 +3,7 @@ module ConfigForm.Generic exposing (..)
 {-| Entrypoint to the actual configform component functions (update, etc)
 -}
 
-import ConfigForm.Config as Config
-import ConfigForm.Types as Types exposing (Field(..))
+import ConfigForm.Types as Types
 import ConfigForm.UI exposing (ViewOptions)
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
@@ -27,10 +26,13 @@ import Unwrap
 `Config` is your generated module that was made using [ ConfigFormGenerator](ConfigFormGenerator).
 
 -}
-type alias InitOptions config =
+type alias InitOptions field config =
     { flags : Encode.Value
     , logics : List (Types.Logic config)
     , emptyConfig : config
+    , decodeField : Types.Logic config -> Decode.Value -> Maybe field
+    , configFromFields : ConfigFromFields field config
+    , emptyField : Types.Logic config -> config -> field
     }
 
 
@@ -42,8 +44,8 @@ type alias Flags =
 
 {-| A Msg is an opaque type for ConfigForm to communicate with your app through ConfigForm.update.
 -}
-type Msg config
-    = ChangedConfigForm String Field
+type Msg field config
+    = ChangedConfigForm String field
     | ClickedPointerLockLabel String
     | HoveredLabel String Bool
     | MouseUp
@@ -51,10 +53,10 @@ type Msg config
 
 {-| ConfigForm is the state of the config form. Keep it in your model along with the `config` record.
 -}
-type ConfigForm
+type ConfigForm field
     = ConfigForm
-        { fields : OrderedDict String Field
-        , fileFields : Dict String Field
+        { fields : OrderedDict String field
+        , fileFields : Dict String field
         , activeField : Maybe ( FieldState, String )
         }
 
@@ -97,8 +99,8 @@ type ConfigForm
                 )
 
 -}
-update : List (Types.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
-update logics config (ConfigForm configForm) msg =
+update : ConfigFromFields field config -> List (Types.Logic config) -> config -> ConfigForm field -> Msg field config -> ( config, ConfigForm field )
+update configFromFields logics config (ConfigForm configForm) msg =
     case msg of
         ChangedConfigForm fieldName field ->
             let
@@ -107,7 +109,7 @@ update logics config (ConfigForm configForm) msg =
                         |> OrderedDict.insert fieldName field
 
                 newConfig =
-                    Config.configFromFields logics newConfigForm config
+                    configFromFields logics newConfigForm config
             in
             ( newConfig
             , ConfigForm { configForm | fields = newConfigForm }
@@ -154,19 +156,29 @@ type FieldState
     | Dragging
 
 
+type alias ConfigFromFields field config =
+    List (Types.Logic config) -> OrderedDict String field -> config -> config
+
+
 {-| `init` will create both a valid `Config` and `ConfigForm`.
 -}
-init : InitOptions config -> ( config, ConfigForm )
-init options =
+init :
+    InitOptions field config
+    -> ( config, ConfigForm field )
+init ({ decodeField, configFromFields, emptyField } as options) =
     let
         { file, localStorage } =
             decodeFlags options.flags
 
         fileFields =
-            decodeFields options.logics file
+            decodeFields
+                decodeField
+                options.logics
+                file
 
         localStorageFields =
             decodeFields
+                decodeField
                 options.logics
                 localStorage
 
@@ -179,13 +191,13 @@ init options =
                             |> Maybe.withDefault
                                 (Dict.get logic.fieldName fileFields
                                     |> Maybe.withDefault
-                                        (Config.emptyField logic options.emptyConfig)
+                                        (emptyField logic options.emptyConfig)
                                 )
                         )
                     )
                 |> OrderedDict.fromList
     in
-    ( Config.configFromFields options.logics mergedFields options.emptyConfig
+    ( configFromFields options.logics mergedFields options.emptyConfig
     , ConfigForm
         { fields = mergedFields
         , fileFields = fileFields
@@ -194,10 +206,22 @@ init options =
     )
 
 
+type alias ViewField field config =
+    { hoveredLabel : String -> Bool -> Msg field config
+    , changedConfigForm : String -> field -> Msg field config
+    }
+    -> ViewOptions
+    -> field
+    -> Int
+    -> Types.Logic config
+    -> Bool
+    -> Element (Msg field config)
+
+
 {-| View the config form.
 -}
-view : ViewOptions -> List (Types.Logic config) -> ConfigForm -> Element (Msg config)
-view viewOptions logics (ConfigForm configForm) =
+view : (field -> Maybe Encode.Value) -> ViewField field config -> ViewOptions -> List (Types.Logic config) -> ConfigForm field -> Element (Msg field config)
+view encodeField viewField viewOptions logics (ConfigForm configForm) =
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
             (logics
@@ -212,7 +236,7 @@ view viewOptions logics (ConfigForm configForm) =
                             [ width fill
                             , spaceEvenly
                             ]
-                            [ Config.viewField
+                            [ viewField
                                 { hoveredLabel = HoveredLabel, changedConfigForm = ChangedConfigForm }
                                 viewOptions
                                 field
@@ -230,7 +254,7 @@ view viewOptions logics (ConfigForm configForm) =
                     "data-encoded-config"
                     (configForm
                         |> ConfigForm
-                        |> encode
+                        |> encode encodeField
                         |> Encode.encode 2
                     )
                 ]
@@ -240,13 +264,13 @@ view viewOptions logics (ConfigForm configForm) =
 
 {-| Encodes the current data of your config form to be persisted, including meta-data. This is typically used to save to localStorage.
 -}
-encodeFields : OrderedDict String Field -> Encode.Value
-encodeFields fields =
+encodeFields : (field -> Maybe Encode.Value) -> OrderedDict String field -> Encode.Value
+encodeFields encodeField fields =
     fields
         |> OrderedDict.toList
         |> List.filterMap
             (\( fieldName, field ) ->
-                Config.encodeField field
+                encodeField field
                     |> Maybe.map (\json -> ( fieldName, json ))
             )
         |> Encode.object
@@ -254,10 +278,10 @@ encodeFields fields =
 
 {-| Encodes the current Config (with some metadata) in your ConfigForm. Usually used for both localStorage and as a .json file.
 -}
-encode : ConfigForm -> Encode.Value
-encode (ConfigForm configForm) =
+encode : (field -> Maybe Encode.Value) -> ConfigForm field -> Encode.Value
+encode encodeField (ConfigForm configForm) =
     Encode.object
-        [ ( "fields", encodeFields configForm.fields )
+        [ ( "fields", encodeFields encodeField configForm.fields )
         ]
 
 
@@ -276,12 +300,12 @@ decodeFlags json =
             }
 
 
-decodeFields : List (Types.Logic config) -> Encode.Value -> Dict String Field
-decodeFields logics json =
+decodeFields : (Types.Logic config -> Decode.Value -> Maybe field) -> List (Types.Logic config) -> Encode.Value -> Dict String field
+decodeFields decodeField logics json =
     logics
         |> List.filterMap
             (\logic ->
-                Config.decodeField logic json
+                decodeField logic json
                     |> Maybe.map
                         (\field ->
                             ( logic.fieldName, field )
