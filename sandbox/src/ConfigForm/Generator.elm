@@ -1,4 +1,4 @@
-module ConfigFormGenerator exposing
+module ConfigForm.Generator exposing
     ( Kind(..)
     , toFiles
     )
@@ -119,11 +119,11 @@ toFiles data =
         customKinds =
             gatherCustomTypes data
     in
-    [ ( "ConfigTypes.elm"
+    [ ( "ConfigForm/Types.elm"
       , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker
@@ -145,7 +145,7 @@ import ConfigForm.Custom
         ]
             |> String.join "\n\n\n"
       )
-    , ( "Config.Elm"
+    , ( "ConfigForm/Config.Elm"
       , [ header
         , typeAlias data
         , empty data
@@ -171,7 +171,7 @@ header =
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
+module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 """
 
         imports =
@@ -181,7 +181,7 @@ import ColorPicker
 import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.Custom
-import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Types exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -925,7 +925,7 @@ viewField customKinds =
     -> ViewOptions
     -> Field
     -> Int
-    -> ConfigTypes.Logic config
+    -> ConfigForm.Types.Logic config
     -> Bool
     -> Element msg
 viewField { hoveredLabel, changedConfigForm } options field i logic isActive =

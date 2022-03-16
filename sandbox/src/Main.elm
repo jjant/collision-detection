@@ -8,9 +8,9 @@ import CSOPoint exposing (CSOPoint)
 import Camera exposing (Camera)
 import Circle exposing (Circle)
 import Color
-import Config exposing (Config)
 import ConfigForm
-import ConfigFormGeneric exposing (ConfigForm)
+import ConfigForm.Config exposing (Config)
+import ConfigForm.Generic exposing (ConfigForm)
 import ConvexHull
 import Draggable
 import Element
@@ -94,11 +94,11 @@ init elmConfigUiFlags =
         -- Initialize your config and configForm,
         -- passing in defaults for any empty config fields
         ( config, configForm ) =
-            ConfigFormGeneric.init
+            ConfigForm.Generic.init
                 { flags = elmConfigUiFlags
-                , logics = Config.logics
+                , logics = ConfigForm.Config.logics
                 , emptyConfig =
-                    Config.empty
+                    ConfigForm.Config.empty
                         { int = 1
                         , float = 1
                         , string = "SORRY IM NEW HERE"
@@ -176,8 +176,8 @@ update msg model =
         ConfigFormMsg configFormMsg ->
             let
                 ( newConfig, newConfigForm ) =
-                    ConfigFormGeneric.update
-                        Config.logics
+                    ConfigForm.Generic.update
+                        ConfigForm.Config.logics
                         model.config
                         model.configForm
                         configFormMsg
@@ -419,9 +419,9 @@ view model =
                     , padding 5
                     , Font.color (rgb255 192 195 201)
                     ]
-                    [ ConfigFormGeneric.view
+                    [ ConfigForm.Generic.view
                         ConfigForm.viewOptions
-                        Config.logics
+                        ConfigForm.Config.logics
                         model.configForm
                         |> Element.map ConfigFormMsg
 
@@ -430,7 +430,7 @@ view model =
                     -- Then the next time a new user loads your app, they'll see your updated config.
                     , Element.html <|
                         Html.textarea []
-                            [ ConfigFormGeneric.encode model.configForm
+                            [ ConfigForm.Generic.encode model.configForm
                                 |> Json.Encode.encode 2
                                 |> Html.text
                             ]

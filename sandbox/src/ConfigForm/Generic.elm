@@ -1,8 +1,11 @@
-module ConfigFormGeneric exposing (..)
+module ConfigForm.Generic exposing (..)
 
-import Config
+{-| Entrypoint to the actual configform component functions (update, etc)
+-}
+
+import ConfigForm.Config as Config
+import ConfigForm.Types as Types exposing (Field(..))
 import ConfigForm.UI exposing (ViewOptions)
-import ConfigTypes exposing (Field(..))
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
 import Element.Font as Font
@@ -26,7 +29,7 @@ import Unwrap
 -}
 type alias InitOptions config =
     { flags : Encode.Value
-    , logics : List (ConfigTypes.Logic config)
+    , logics : List (Types.Logic config)
     , emptyConfig : config
     }
 
@@ -94,7 +97,7 @@ type ConfigForm
                 )
 
 -}
-update : List (ConfigTypes.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
+update : List (Types.Logic config) -> config -> ConfigForm -> Msg config -> ( config, ConfigForm )
 update logics config (ConfigForm configForm) msg =
     case msg of
         ChangedConfigForm fieldName field ->
@@ -193,7 +196,7 @@ init options =
 
 {-| View the config form.
 -}
-view : ViewOptions -> List (ConfigTypes.Logic config) -> ConfigForm -> Element (Msg config)
+view : ViewOptions -> List (Types.Logic config) -> ConfigForm -> Element (Msg config)
 view viewOptions logics (ConfigForm configForm) =
     column [ width fill, Font.size viewOptions.fontSize ]
         [ column [ width fill, spacingXY 0 viewOptions.rowSpacing ]
@@ -273,7 +276,7 @@ decodeFlags json =
             }
 
 
-decodeFields : List (ConfigTypes.Logic config) -> Encode.Value -> Dict String Field
+decodeFields : List (Types.Logic config) -> Encode.Value -> Dict String Field
 decodeFields logics json =
     logics
         |> List.filterMap

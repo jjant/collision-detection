@@ -1,7 +1,7 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker

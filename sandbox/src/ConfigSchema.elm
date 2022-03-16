@@ -1,6 +1,6 @@
 port module ConfigSchema exposing (main)
 
-import ConfigFormGenerator exposing (Kind(..))
+import ConfigForm.Generator exposing (Kind(..))
 import Platform
 
 
@@ -33,7 +33,7 @@ main : Program {} {} {}
 main =
     let
         generateElmCode =
-            ConfigFormGenerator.toFiles myConfigFields
+            ConfigForm.Generator.toFiles myConfigFields
                 |> List.map (Tuple.mapFirst ((++) "./src/"))
                 |> List.map generateFile
                 |> Cmd.batch

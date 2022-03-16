@@ -51,8 +51,8 @@ Also, `Value` is shorthand for `Json.Encode.Value`.
 import Color exposing (Color)
 import ColorPicker
 import ConfigForm.BuiltInTypes exposing (FloatFieldData)
+import ConfigForm.Types exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), IntFieldData, Logic, LogicKind(..), StringFieldData)
 import ConfigForm.UI exposing (ViewOptions, inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
-import ConfigTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), Field(..), IntFieldData, Logic, LogicKind(..), StringFieldData)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, spacing, width)
 import Element.Background as Background
 import Element.Border as Border

@@ -1,14 +1,14 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
+module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 
 import Color exposing (Color)
 import ColorPicker
 import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.Custom
-import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Types exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -375,7 +375,7 @@ viewField :
     -> ViewOptions
     -> Field
     -> Int
-    -> ConfigTypes.Logic config
+    -> ConfigForm.Types.Logic config
     -> Bool
     -> Element msg
 viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
