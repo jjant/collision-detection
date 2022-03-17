@@ -1,13 +1,11 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (Field(..), Lens, Logic, LogicKind(..))
 
 import Color exposing (Color)
-import ColorPicker
 import ConfigForm.BuiltInTypes
 import ConfigForm.Custom
-
 
 
 type alias Logic config =
@@ -15,7 +13,6 @@ type alias Logic config =
     , label : String
     , kind : LogicKind config
     }
-
 
 
 type LogicKind config
@@ -34,41 +31,11 @@ type alias Lens big small =
     }
 
 
-
 type Field
-    = IntField IntFieldData
+    = IntField ConfigForm.BuiltInTypes.IntFieldData
     | FloatField ConfigForm.BuiltInTypes.FloatFieldData
-    | StringField StringFieldData
-    | BoolField BoolFieldData
-    | ColorField ColorFieldData
+    | StringField ConfigForm.BuiltInTypes.StringFieldData
+    | BoolField ConfigForm.BuiltInTypes.BoolFieldData
+    | ColorField ConfigForm.BuiltInTypes.ColorFieldData
     | SectionField String
-    | Vec2Field (ConfigForm.Custom.Vec2Field)
-
-
-type alias IntFieldData =
-    { val : Int
-    , power : Int
-    }
-
-
-type alias StringFieldData =
-    { val : String
-    }
-
-
-type alias BoolFieldData =
-    { val : Bool
-    }
-
-
-type alias ColorFieldData =
-    { val : Color
-    , meta : ColorFieldMeta
-    }
-
-
-type ColorFieldMeta
-    = ColorFieldMeta
-        { state : ColorPicker.State
-        , isOpen : Bool
-        }
+    | Vec2Field ConfigForm.Custom.Vec2Field

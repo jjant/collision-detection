@@ -5,10 +5,11 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.BuiltInTypes exposing (ColorFieldMeta(..))
 import ConfigForm.Custom
-import ConfigForm.Types exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
+import ConfigForm.UI exposing (ViewOptions)
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)

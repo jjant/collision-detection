@@ -120,31 +120,32 @@ toFiles data =
             gatherCustomTypes data
     in
     [ ( "ConfigForm/Types.elm"
-      , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
+      , ([ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (Field(..), Lens, Logic, LogicKind(..))
 
 import Color exposing (Color)
-import ColorPicker
 import ConfigForm.BuiltInTypes
 import ConfigForm.Custom
 """
-        , """type alias Logic config =
+         , """type alias Logic config =
     { fieldName : String
     , label : String
     , kind : LogicKind config
     }
 """
-        , logicKindType data
-        , """type alias Lens big small =
+         , logicKindType data
+         , """type alias Lens big small =
     { getter : big -> small
     , setter : small -> big -> big
     }
 """
-        , fieldTypes data
-        ]
-            |> String.join "\n\n\n"
+         , fieldTypes data
+         ]
+            |> String.join "\n\n"
+        )
+            ++ "\n"
       )
     , ( "ConfigForm/Config.Elm"
       , [ header
@@ -179,10 +180,11 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
             """
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm.UI exposing (ViewOptions)
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.BuiltInTypes exposing (ColorFieldMeta(..))
 import ConfigForm.Custom
-import ConfigForm.Types exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
+import ConfigForm.UI exposing (ViewOptions)
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -323,6 +325,7 @@ logicKindType kinds =
                 |> List.map (\( kind, type_ ) -> kind ++ "Logic " ++ "(Lens config " ++ type_ ++ ")")
                 |> String.join "\n    | "
            )
+        ++ "\n"
 
 
 customTypeName : String -> String
@@ -544,45 +547,17 @@ fieldTypes data =
             gatherCustomTypes data
     in
     [ """type Field
-    = IntField IntFieldData
+    = IntField ConfigForm.BuiltInTypes.IntFieldData
     | FloatField ConfigForm.BuiltInTypes.FloatFieldData
-    | StringField StringFieldData
-    | BoolField BoolFieldData
-    | ColorField ColorFieldData
+    | StringField ConfigForm.BuiltInTypes.StringFieldData
+    | BoolField ConfigForm.BuiltInTypes.BoolFieldData
+    | ColorField ConfigForm.BuiltInTypes.ColorFieldData
     | SectionField String"""
         ++ (customKinds
                 |> Set.map (\kind -> "\n    | " ++ kind ++ "Field " ++ "(" ++ "ConfigForm.Custom." ++ kind ++ "Field" ++ ")")
                 |> Set.toList
                 |> String.join ""
            )
-    , """type alias IntFieldData =
-    { val : Int
-    , power : Int
-    }
-
-
-type alias StringFieldData =
-    { val : String
-    }
-
-
-type alias BoolFieldData =
-    { val : Bool
-    }
-
-
-type alias ColorFieldData =
-    { val : Color
-    , meta : ColorFieldMeta
-    }
-
-
-type ColorFieldMeta
-    = ColorFieldMeta
-        { state : ColorPicker.State
-        , isOpen : Bool
-        }
-"""
     ]
         |> String.join "\n\n\n"
 
