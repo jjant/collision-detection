@@ -23,7 +23,6 @@ import Html.Events
 import Json.Decode as Decode exposing (Decoder)
 import Misc
 import UI exposing (slider)
-import Vec2 exposing (direction)
 
 
 viewStringField :

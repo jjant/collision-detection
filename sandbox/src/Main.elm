@@ -37,9 +37,9 @@ import Element.Font as Font
 import Element.Input as Input
 import Fps
 import Hierarchy
-import Html as Html exposing (Html)
+import Html exposing (Html)
 import Html.Attributes
-import Html.Events exposing (..)
+import Html.Events
 import Isometry exposing (Isometry)
 import Json.Decode as Decode
 import Json.Encode

@@ -553,7 +553,7 @@ fieldTypes data =
     | StringField ConfigForm.BuiltInTypes.StringFieldData
     | BoolField ConfigForm.BuiltInTypes.BoolFieldData
     | ColorField ConfigForm.BuiltInTypes.ColorFieldData
-    | SectionField String"""
+    | SectionField ConfigForm.BuiltInTypes.SectionFieldData"""
         ++ (customKinds
                 |> Set.map (\kind -> "\n    | " ++ kind ++ "Field " ++ "(" ++ "ConfigForm.Custom." ++ kind ++ "Field" ++ ")")
                 |> Set.toList
@@ -660,7 +660,7 @@ emptyField logic emptyConfig =
                 }
 
         SectionLogic _ ->
-            SectionField logic.fieldName
+            SectionField ()
 
 """
 
@@ -857,7 +857,7 @@ decodeField logic json =
                     Nothing
 
         SectionLogic _ ->
-            logic.fieldName
+            ()
                 |> SectionField
                 |> Just
 

@@ -1,7 +1,6 @@
 module ConfigForm.ViewHelpers exposing
     ( formatPoweredFloat
     , formatPoweredInt
-    , formattedPower
     , inputFieldVertPadding
     , makePowerEl
     , moveFloat

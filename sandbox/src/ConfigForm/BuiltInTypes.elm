@@ -4,6 +4,7 @@ module ConfigForm.BuiltInTypes exposing
     , Lens
     , bool, color, float, int, string, section
     , tuple2Encoder, colorValDecoder, encodeColor
+    , SectionFieldData
     )
 
 {-| Module defining field types supported out of the box.
@@ -75,6 +76,12 @@ type ColorFieldMeta
         }
 
 
+type alias SectionFieldData =
+    ()
+
+
+{-| A lens plus field metadata.
+-}
 type alias BuiltInLogic config value =
     { fieldName : String
     , label : String

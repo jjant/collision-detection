@@ -37,5 +37,5 @@ type Field
     | StringField ConfigForm.BuiltInTypes.StringFieldData
     | BoolField ConfigForm.BuiltInTypes.BoolFieldData
     | ColorField ConfigForm.BuiltInTypes.ColorFieldData
-    | SectionField String
+    | SectionField ConfigForm.BuiltInTypes.SectionFieldData
     | Vec2Field (ConfigForm.Custom.Vec2Field)

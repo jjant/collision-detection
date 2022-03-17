@@ -224,7 +224,7 @@ emptyField logic emptyConfig =
                 }
 
         SectionLogic _ ->
-            SectionField logic.fieldName
+            SectionField ()
 
         Vec2Logic lens ->
             Vec2Field <| ConfigForm.Custom.emptyVec2 { fieldName = logic.fieldName, label = logic.label, getter = lens.getter } emptyConfig
@@ -361,7 +361,7 @@ decodeField logic json =
                     Nothing
 
         SectionLogic _ ->
-            logic.fieldName
+            ()
                 |> SectionField
                 |> Just
 
