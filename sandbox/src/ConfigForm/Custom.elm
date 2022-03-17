@@ -8,16 +8,10 @@ module ConfigForm.Custom exposing
     )
 
 import ConfigForm.Options exposing (ViewOptions)
-import ConfigForm.ViewHelpers exposing (makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
-import Element exposing (Element, fill, height, paddingXY, rgb255, row, width)
-import Element.Background as Background
-import Element.Font as Font
-import Element.Input as Input
-import Html
+import ConfigForm.View exposing (viewFloatField)
+import Element exposing (Element, column, el, fill, paddingEach, text, width)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Misc
-import UI exposing (slider)
 import Vec2 exposing (vec2)
 
 
@@ -74,61 +68,33 @@ viewVec2Field :
     , isActive : Bool
     }
     -> Element msg
-viewVec2Field { hoveredLabel, changedConfigForm, options, fieldName, label, field, isActive } =
-    row
-        (width fill :: resizeAttrs hoveredLabel)
-        [ Element.row
-            [ width fill
-            , height fill
-            , paddingXY 5 0
-            , Font.color (rgb255 33 33 33)
-                |> Misc.attrIf isActive
-            , Background.color (Misc.toElementColor options.labelHighlightBgColor)
-                |> Misc.attrIf isActive
-            ]
-            [ Element.html <|
-                slider (\i -> changedConfigForm { field | val = vec2 (moveFloat i { val = field.val.x, power = field.power }) field.val.y })
-                    [ Html.text label ]
-            , Element.html <|
-                (makePowerEl
-                    changedConfigForm
-                    options
-                    field.power
-                    { field
-                        | power = field.power - 1
-                        , val = vec2 (poweredFloat (field.power - 1) field.val.x) field.val.y
-                    }
-                    { field
-                        | power = field.power + 1
-                        , val = vec2 (poweredFloat (field.power + 1) field.val.x) field.val.y
-                    }
-                    False
-                    |> Misc.showHtmlIf isActive
-                )
-            ]
-        , Element.el
-            [ width
-                (fill
-                    |> Element.maximum 100
-                )
-            ]
-            (textInputHelper
-                [ Font.center ]
-                -- (Font.center :: incrementalAttrs changedConfigForm String.fromFloat FloatField fieldName floatField)
-                { label = Input.labelHidden fieldName
-                , text = "(" ++ String.fromFloat field.val.x ++ ", " ++ String.fromFloat field.val.y ++ ")"
-                , onChange =
-                    \newStr ->
-                        changedConfigForm <|
-                            { field
-                                | val =
-                                    case String.toFloat newStr of
-                                        Just newX ->
-                                            Vec2.setX newX field.val
+viewVec2Field { hoveredLabel, changedConfigForm, options, label, field, isActive } =
+    let
+        xField =
+            { power = field.power, val = field.val.x }
 
-                                        Nothing ->
-                                            field.val
-                            }
+        yField =
+            { power = field.power, val = field.val.y }
+    in
+    column
+        [ width fill ]
+        [ el [] (text label)
+        , column [ paddingEach { top = 0, left = 100, right = 0, bottom = 0 }, width fill ]
+            [ viewFloatField
+                { hoveredLabel = hoveredLabel
+                , changedConfigForm = \newX -> changedConfigForm { field | power = newX.power, val = vec2 newX.val field.val.y }
+                , options = options
+                , label = "X"
+                , floatField = xField
+                , isActive = isActive
                 }
-            )
+            , viewFloatField
+                { hoveredLabel = hoveredLabel
+                , changedConfigForm = \newY -> changedConfigForm { field | power = newY.power, val = vec2 field.val.x newY.val }
+                , options = options
+                , label = "Y"
+                , floatField = yField
+                , isActive = isActive
+                }
+            ]
         ]

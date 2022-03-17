@@ -267,14 +267,13 @@ viewColorPicker changedConfigForm options data =
 viewIntField :
     { hoveredLabel : Bool -> msg
     , changedConfigForm : IntFieldData -> msg
-    , fieldName : String
     , intField : IntFieldData
     , label : String
     , isActive : Bool
     , options : ViewOptions
     }
     -> Element msg
-viewIntField { hoveredLabel, fieldName, intField, label, isActive, changedConfigForm, options } =
+viewIntField { hoveredLabel, intField, label, isActive, changedConfigForm, options } =
     let
         onDownButton =
             { intField
@@ -290,7 +289,6 @@ viewIntField { hoveredLabel, fieldName, intField, label, isActive, changedConfig
     in
     viewNumericField
         { hoveredLabel = hoveredLabel
-        , fieldName = fieldName
         , field = intField
         , label = label
         , isActive = isActive
@@ -312,13 +310,12 @@ viewFloatField :
     { hoveredLabel : Bool -> msg
     , changedConfigForm : FloatFieldData -> msg
     , options : ViewOptions
-    , fieldName : String
     , label : String
     , floatField : FloatFieldData
     , isActive : Bool
     }
     -> Element msg
-viewFloatField { hoveredLabel, changedConfigForm, options, fieldName, label, floatField, isActive } =
+viewFloatField { hoveredLabel, changedConfigForm, options, label, floatField, isActive } =
     let
         onDownButton =
             { floatField
@@ -334,7 +331,6 @@ viewFloatField { hoveredLabel, changedConfigForm, options, fieldName, label, flo
     in
     viewNumericField
         { hoveredLabel = hoveredLabel
-        , fieldName = fieldName
         , field = floatField
         , label = label
         , isActive = isActive
@@ -361,7 +357,6 @@ viewNumericField :
     , increment : number -> fieldData -> fieldData
     , setValue : number -> fieldData -> fieldData
     , format : fieldData -> String
-    , fieldName : String
     , label : String
     , isActive : Bool
     , options : ViewOptions
@@ -371,7 +366,7 @@ viewNumericField :
     , onUpButton : fieldData
     }
     -> Element msg
-viewNumericField { hoveredLabel, fieldName, increment, setValue, field, fromString, label, move, format, isActive, power, changedConfigForm, options, downButtonDisabled, onDownButton, onUpButton } =
+viewNumericField { hoveredLabel, increment, setValue, field, fromString, label, move, format, isActive, power, changedConfigForm, options, downButtonDisabled, onDownButton, onUpButton } =
     let
         onKeyDown direction =
             changedConfigForm (increment (dirToNum direction) field)
@@ -413,7 +408,7 @@ viewNumericField { hoveredLabel, fieldName, increment, setValue, field, fromStri
                 (Font.center
                     :: incrementalAttrs onKeyDown
                 )
-                { label = Input.labelHidden fieldName
+                { label = Input.labelHidden label
                 , text = format field
                 , onChange =
                     \newStr ->

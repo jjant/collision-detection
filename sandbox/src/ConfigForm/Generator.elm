@@ -912,7 +912,6 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
             viewIntField
                 { hoveredLabel = hoveredLabel logic.fieldName
                 , changedConfigForm = \\f -> changedConfigForm logic.fieldName (IntField f)
-                , fieldName = logic.fieldName
                 , label = logic.label
                 , intField = intField
                 , isActive = isActive
@@ -924,7 +923,6 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
                 { hoveredLabel = hoveredLabel logic.fieldName
                 , changedConfigForm = \\f -> changedConfigForm logic.fieldName (FloatField f)
                 , options = options
-                , fieldName = logic.fieldName
                 , label = logic.label
                 , floatField = floatField
                 , isActive = isActive
