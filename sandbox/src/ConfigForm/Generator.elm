@@ -152,6 +152,7 @@ import ConfigForm.Custom
         , typeAlias data
         , empty data
         , logics data
+        , toLogic
         , customLogics data
         , encodeField customKinds
         , defaults customKinds
@@ -181,10 +182,10 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
 import Color exposing (Color)
 import ColorPicker
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
-import ConfigForm.BuiltInTypes exposing (ColorFieldMeta(..))
+import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
+import ConfigForm.Options exposing (ViewOptions)
 import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
-import ConfigForm.UI exposing (ViewOptions)
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -428,22 +429,22 @@ kindToLogic : Kind -> String
 kindToLogic kind =
     case kind of
         IntKind _ ->
-            "ConfigForm.int"
+            "toLogic IntLogic <| ConfigForm.BuiltInTypes.int"
 
         FloatKind _ ->
-            "ConfigForm.float"
+            "toLogic FloatLogic <| ConfigForm.BuiltInTypes.float"
 
         StringKind _ ->
-            "ConfigForm.string"
+            "toLogic StringLogic <| ConfigForm.BuiltInTypes.string"
 
         BoolKind _ ->
-            "ConfigForm.bool"
+            "toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool"
 
         ColorKind _ ->
-            "ConfigForm.color"
+            "toLogic ColorLogic <| ConfigForm.BuiltInTypes.color"
 
         SectionKind ->
-            "ConfigForm.section"
+            "toLogic SectionLogic <| ConfigForm.BuiltInTypes.section"
 
         CustomKind { logicName } ->
             uncapitalize logicName
@@ -957,3 +958,14 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
 
 """
         ++ customKindCases
+
+
+toLogic : String
+toLogic =
+    """toLogic : (Lens config value -> LogicKind config) -> BuiltInLogic config value -> Logic config
+toLogic constructor { fieldName, label, lens } =
+    { fieldName = fieldName
+    , label = label
+    , kind = constructor lens
+    }
+"""

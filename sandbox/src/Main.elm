@@ -8,9 +8,9 @@ import CSOPoint exposing (CSOPoint)
 import Camera exposing (Camera)
 import Circle exposing (Circle)
 import Color
-import ConfigForm
 import ConfigForm.Config exposing (Config)
 import ConfigForm.Generic exposing (ConfigForm)
+import ConfigForm.Options
 import ConfigForm.Types exposing (Field)
 import ConvexHull
 import Draggable
@@ -427,7 +427,7 @@ view model =
                     [ ConfigForm.Generic.view
                         ConfigForm.Config.encodeField
                         ConfigForm.Config.viewField
-                        ConfigForm.viewOptions
+                        ConfigForm.Options.viewOptions
                         ConfigForm.Config.logics
                         model.configForm
                         |> Element.map ConfigFormMsg

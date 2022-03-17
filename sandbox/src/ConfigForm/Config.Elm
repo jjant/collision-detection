@@ -6,10 +6,10 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
 import Color exposing (Color)
 import ColorPicker
 import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
-import ConfigForm.BuiltInTypes exposing (ColorFieldMeta(..))
+import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
+import ConfigForm.Options exposing (ViewOptions)
 import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
-import ConfigForm.UI exposing (ViewOptions)
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -53,73 +53,73 @@ empty defaults =
 
 logics : List (Logic Config)
 logics =
-    [ ConfigForm.section
+    [ toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Testing"
-    , ConfigForm.float
+    , toLogic FloatLogic <| ConfigForm.BuiltInTypes.float
         "myFloat"
         "Float input"
         .myFloat
         (\a c -> { c | myFloat = a })
-    , ConfigForm.section
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Visualise"
-    , ConfigForm.int
+    , toLogic IntLogic <| ConfigForm.BuiltInTypes.int
         "pointsPerCircle"
         "Points per circle"
         .pointsPerCircle
         (\a c -> { c | pointsPerCircle = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showSupportPoints"
         "Support points"
         .showSupportPoints
         (\a c -> { c | showSupportPoints = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showPointProjections"
         "Point projections"
         .showPointProjections
         (\a c -> { c | showPointProjections = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showContactPoints"
         "Contact points"
         .showContactPoints
         (\a c -> { c | showContactPoints = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showGjkSimplex"
         "GJK Simplex"
         .showGjkSimplex
         (\a c -> { c | showGjkSimplex = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showEpaPolytope"
         "EPA Polytope"
         .showEpaPolytope
         (\a c -> { c | showEpaPolytope = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showStepByStepEpa"
         "EPA Step by Step"
         .showStepByStepEpa
         (\a c -> { c | showStepByStepEpa = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showMinkowskiDifference"
         "Minkowski difference"
         .showMinkowskiDifference
         (\a c -> { c | showMinkowskiDifference = a })
-    , ConfigForm.section
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Editor UI"
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "backgroundColor"
         "Editor background"
         .backgroundColor
         (\a c -> { c | backgroundColor = a })
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "sceneBackground"
         "Scene background"
         .sceneBackground
         (\a c -> { c | sceneBackground = a })
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "collidingBodiesOutline"
         "Colliding bodies outline"
         .collidingBodiesOutline
         (\a c -> { c | collidingBodiesOutline = a })
-    , ConfigForm.section
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Custom Kinds"
     , vec2
         "myKind"
@@ -127,6 +127,15 @@ logics =
         .myKind
         (\a c -> { c | myKind = a })
     ]
+
+
+toLogic : (Lens config value -> LogicKind config) -> BuiltInLogic config value -> Logic config
+toLogic constructor { fieldName, label, lens } =
+    { fieldName = fieldName
+    , label = label
+    , kind = constructor lens
+    }
+
 
 
 vec2 : String -> String -> (config -> ConfigForm.Custom.Vec2) -> (ConfigForm.Custom.Vec2 -> config -> config) -> Logic config

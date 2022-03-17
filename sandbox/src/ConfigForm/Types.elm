@@ -38,4 +38,4 @@ type Field
     | BoolField ConfigForm.BuiltInTypes.BoolFieldData
     | ColorField ConfigForm.BuiltInTypes.ColorFieldData
     | SectionField String
-    | Vec2Field ConfigForm.Custom.Vec2Field
+    | Vec2Field (ConfigForm.Custom.Vec2Field)

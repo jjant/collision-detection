@@ -7,7 +7,8 @@ module ConfigForm.Custom exposing
     , viewVec2Field
     )
 
-import ConfigForm.UI exposing (ViewOptions, makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
+import ConfigForm.Options exposing (ViewOptions)
+import ConfigForm.UI exposing (makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
 import Element exposing (Element, fill, height, paddingXY, rgb255, row, width)
 import Element.Background as Background
 import Element.Font as Font

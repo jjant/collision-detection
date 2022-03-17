@@ -1,6 +1,5 @@
 module ConfigForm.UI exposing
-    ( ViewOptions
-    , formattedPower
+    ( formattedPower
     , inputFieldVertPadding
     , makePowerEl
     , moveFloat
@@ -12,7 +11,7 @@ module ConfigForm.UI exposing
     , textInputHelper
     )
 
-import Color exposing (Color)
+import ConfigForm.Options exposing (ViewOptions)
 import Element exposing (Element, rgb255)
 import Element.Background as Background
 import Element.Events as Events
@@ -21,16 +20,6 @@ import Html exposing (Html)
 import Html.Attributes exposing (style)
 import Html.Events.Extra.Pointer as Pointer
 import Round
-
-
-type alias ViewOptions =
-    { fontSize : Int
-    , rowSpacing : Int
-    , inputWidth : Int
-    , inputSpacing : Float
-    , labelHighlightBgColor : Color
-    , sectionSpacing : Int
-    }
 
 
 makePowerEl : (field -> msg) -> ViewOptions -> Int -> field -> field -> Bool -> Html msg
@@ -139,11 +128,15 @@ resizeAttrs hoveredLabel =
     ]
 
 
+{-| Increment that happens when moving the mouse on a slider.
+-}
 moveFloat : Int -> { r | val : Float, power : Int } -> Float
 moveFloat num field =
     field.val + toFloat (num * (10 ^ field.power))
 
 
+{-| Increment that happens when moving the mouse on a slider.
+-}
 moveInt : Int -> { r | val : Int, power : Int } -> Int
 moveInt num field =
     field.val + (num * (10 ^ field.power))

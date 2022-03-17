@@ -3,7 +3,7 @@ module ConfigForm.Generic exposing (..)
 {-| Entrypoint to the actual configform component functions (update, etc)
 -}
 
-import ConfigForm.UI exposing (ViewOptions)
+import ConfigForm.Options exposing (ViewOptions)
 import Dict exposing (Dict)
 import Element exposing (Element, column, fill, row, spaceEvenly, spacingXY, width)
 import Element.Font as Font
