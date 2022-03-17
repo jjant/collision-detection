@@ -1,4 +1,4 @@
-const { Elm } = require("./ConfigSchema.js");
+const { Elm } = require("/tmp/ConfigSchema.js");
 const fs = require("fs");
 const app = Elm.ConfigSchema.init();
 

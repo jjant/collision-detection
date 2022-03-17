@@ -1,6 +1,6 @@
 port module ConfigSchema exposing (main)
 
-import ConfigFormGenerator exposing (Kind(..))
+import ConfigForm.Generator exposing (Kind(..))
 import Platform
 
 
@@ -9,7 +9,9 @@ port generateFile : ( String, String ) -> Cmd msg
 
 myConfigFields : List ( String, Kind )
 myConfigFields =
-    [ ( "Visualise", SectionKind )
+    [ ( "Testing", SectionKind )
+    , ( "Float input", FloatKind "myFloat" )
+    , ( "Visualise", SectionKind )
     , ( "Points per circle", IntKind "pointsPerCircle" )
     , ( "Support points", BoolKind "showSupportPoints" )
     , ( "Point projections", BoolKind "showPointProjections" )
@@ -31,7 +33,7 @@ main : Program {} {} {}
 main =
     let
         generateElmCode =
-            ConfigFormGenerator.toFiles myConfigFields
+            ConfigForm.Generator.toFiles myConfigFields
                 |> List.map (Tuple.mapFirst ((++) "./src/"))
                 |> List.map generateFile
                 |> Cmd.batch

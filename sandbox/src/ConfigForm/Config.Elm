@@ -1,14 +1,15 @@
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
+module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormUI exposing (ViewOptions)
-import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.View exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
-import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Options exposing (ViewOptions)
+import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -16,7 +17,8 @@ import OrderedDict exposing (OrderedDict)
 
 
 type alias Config =
-    { pointsPerCircle : Int
+    { myFloat : Float
+    , pointsPerCircle : Int
     , showSupportPoints : Bool
     , showPointProjections : Bool
     , showContactPoints : Bool
@@ -33,7 +35,8 @@ type alias Config =
 
 empty : Defaults -> Config
 empty defaults =
-    { pointsPerCircle = defaults.int
+    { myFloat = defaults.float
+    , pointsPerCircle = defaults.int
     , showSupportPoints = defaults.bool
     , showPointProjections = defaults.bool
     , showContactPoints = defaults.bool
@@ -50,66 +53,73 @@ empty defaults =
 
 logics : List (Logic Config)
 logics =
-    [ ConfigForm.section
+    [ toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
+        "Testing"
+    , toLogic FloatLogic <| ConfigForm.BuiltInTypes.float
+        "myFloat"
+        "Float input"
+        .myFloat
+        (\a c -> { c | myFloat = a })
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Visualise"
-    , ConfigForm.int
+    , toLogic IntLogic <| ConfigForm.BuiltInTypes.int
         "pointsPerCircle"
         "Points per circle"
         .pointsPerCircle
         (\a c -> { c | pointsPerCircle = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showSupportPoints"
         "Support points"
         .showSupportPoints
         (\a c -> { c | showSupportPoints = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showPointProjections"
         "Point projections"
         .showPointProjections
         (\a c -> { c | showPointProjections = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showContactPoints"
         "Contact points"
         .showContactPoints
         (\a c -> { c | showContactPoints = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showGjkSimplex"
         "GJK Simplex"
         .showGjkSimplex
         (\a c -> { c | showGjkSimplex = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showEpaPolytope"
         "EPA Polytope"
         .showEpaPolytope
         (\a c -> { c | showEpaPolytope = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showStepByStepEpa"
         "EPA Step by Step"
         .showStepByStepEpa
         (\a c -> { c | showStepByStepEpa = a })
-    , ConfigForm.bool
+    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
         "showMinkowskiDifference"
         "Minkowski difference"
         .showMinkowskiDifference
         (\a c -> { c | showMinkowskiDifference = a })
-    , ConfigForm.section
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Editor UI"
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "backgroundColor"
         "Editor background"
         .backgroundColor
         (\a c -> { c | backgroundColor = a })
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "sceneBackground"
         "Scene background"
         .sceneBackground
         (\a c -> { c | sceneBackground = a })
-    , ConfigForm.color
+    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
         "collidingBodiesOutline"
         "Colliding bodies outline"
         .collidingBodiesOutline
         (\a c -> { c | collidingBodiesOutline = a })
-    , ConfigForm.section
+    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
         "Custom Kinds"
     , vec2
         "myKind"
@@ -117,6 +127,15 @@ logics =
         .myKind
         (\a c -> { c | myKind = a })
     ]
+
+
+toLogic : (Lens config value -> LogicKind config) -> BuiltInLogic config value -> Logic config
+toLogic constructor { fieldName, label, lens } =
+    { fieldName = fieldName
+    , label = label
+    , kind = constructor lens
+    }
+
 
 
 vec2 : String -> String -> (config -> ConfigForm.Custom.Vec2) -> (ConfigForm.Custom.Vec2 -> config -> config) -> Logic config
@@ -132,12 +151,12 @@ encodeField field =
     case field of
         IntField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.int Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.int Encode.int
                 |> Just
 
         FloatField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.float Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.float Encode.int
                 |> Just
 
         StringField data ->
@@ -149,7 +168,7 @@ encodeField field =
                 |> Just
 
         ColorField data ->
-            ConfigForm.encodeColor data.val
+            ConfigForm.BuiltInTypes.encodeColor data.val
                 |> Just
 
         SectionField _ ->
@@ -324,7 +343,7 @@ decodeField logic json =
         ColorLogic _ ->
             let
                 decoder =
-                    Decode.at [ "fields", logic.fieldName ] ConfigForm.colorValDecoder
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.BuiltInTypes.colorValDecoder
             in
             case Decode.decodeValue decoder json of
                 Ok val ->
@@ -366,15 +385,14 @@ viewField :
     -> ViewOptions
     -> Field
     -> Int
-    -> ConfigTypes.Logic config
+    -> ConfigForm.Types.Logic config
     -> Bool
     -> Element msg
 viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
     case field of
         StringField stringField ->
             viewStringField
-                { changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                { changedConfigForm = \newStringField -> changedConfigForm logic.fieldName (StringField newStringField)
                 , label = logic.label
                 , stringField = stringField
                 }
@@ -404,17 +422,15 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
         BoolField boolField ->
             viewBoolField
                 { options = options
-                , changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                , changedConfigForm = \bool -> changedConfigForm logic.fieldName (BoolField { val = bool })
                 , label = logic.label
                 , boolField = boolField
                 }
 
         ColorField colorField ->
             viewColorField
-                { changedConfigForm = changedConfigForm
+                { changedConfigForm = \newColorField -> changedConfigForm logic.fieldName (ColorField newColorField)
                 , label = logic.label
-                , fieldName = logic.fieldName
                 , options = options
                 , colorField = colorField
                 , index = i

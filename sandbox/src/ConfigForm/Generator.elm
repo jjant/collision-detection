@@ -1,4 +1,4 @@
-module ConfigFormGenerator exposing
+module ConfigForm.Generator exposing
     ( Kind(..)
     , toFiles
     )
@@ -93,9 +93,7 @@ npm install --global elm elm-live@next chokidir
 
 -}
 
-import Regex
 import Set exposing (Set)
-import Unwrap
 
 
 {-| Use these to define what kind of value your field is. For all values except `SectionKind`, the `String` is the field's camelCase variable name for both your `Config` record and its JSON representation, such as "headerFontSize".
@@ -121,37 +119,40 @@ toFiles data =
         customKinds =
             gatherCustomTypes data
     in
-    [ ( "ConfigTypes.elm"
-      , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
+    [ ( "ConfigForm/Types.elm"
+      , ([ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigTypes exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (Field(..), Lens, Logic, LogicKind(..))
 
 import Color exposing (Color)
-import ColorPicker
+import ConfigForm.BuiltInTypes
 import ConfigForm.Custom
 """
-        , """type alias Logic config =
+         , """type alias Logic config =
     { fieldName : String
     , label : String
     , kind : LogicKind config
     }
 """
-        , logicKindType data
-        , """type alias Lens big small =
+         , logicKindType data
+         , """type alias Lens big small =
     { getter : big -> small
     , setter : small -> big -> big
     }
 """
-        , fieldTypes data
-        ]
-            |> String.join "\n\n\n"
+         , fieldTypes data
+         ]
+            |> String.join "\n\n"
+        )
+            ++ "\n"
       )
-    , ( "Config.Elm"
+    , ( "ConfigForm/Config.Elm"
       , [ header
         , typeAlias data
         , empty data
         , logics data
+        , toLogic
         , customLogics data
         , encodeField customKinds
         , defaults customKinds
@@ -173,17 +174,18 @@ header =
 -- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
+module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty, emptyField, encodeField, logics, viewField)
 """
 
         imports =
             """
 import Color exposing (Color)
 import ColorPicker
-import ConfigFormUI exposing (ViewOptions)
-import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.View exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
-import ConfigTypes exposing (ColorFieldMeta(..), Field(..), Logic, LogicKind(..))
+import ConfigForm.Options exposing (ViewOptions)
+import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -324,6 +326,7 @@ logicKindType kinds =
                 |> List.map (\( kind, type_ ) -> kind ++ "Logic " ++ "(Lens config " ++ type_ ++ ")")
                 |> String.join "\n    | "
            )
+        ++ "\n"
 
 
 customTypeName : String -> String
@@ -426,22 +429,22 @@ kindToLogic : Kind -> String
 kindToLogic kind =
     case kind of
         IntKind _ ->
-            "ConfigForm.int"
+            "toLogic IntLogic <| ConfigForm.BuiltInTypes.int"
 
         FloatKind _ ->
-            "ConfigForm.float"
+            "toLogic FloatLogic <| ConfigForm.BuiltInTypes.float"
 
         StringKind _ ->
-            "ConfigForm.string"
+            "toLogic StringLogic <| ConfigForm.BuiltInTypes.string"
 
         BoolKind _ ->
-            "ConfigForm.bool"
+            "toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool"
 
         ColorKind _ ->
-            "ConfigForm.color"
+            "toLogic ColorLogic <| ConfigForm.BuiltInTypes.color"
 
         SectionKind ->
-            "ConfigForm.section"
+            "toLogic SectionLogic <| ConfigForm.BuiltInTypes.section"
 
         CustomKind { logicName } ->
             uncapitalize logicName
@@ -530,22 +533,12 @@ $funcName fieldName label getter setter =
     }"""
                 in
                 templateStr
-                    |> interpolate "\\$funcName" funcName
-                    |> interpolate "\\$typeName" typeName
-                    |> interpolate "\\$logicConstructorName" logicConstructorName
+                    |> String.replace "$funcName" funcName
+                    |> String.replace "$typeName" typeName
+                    |> String.replace "$logicConstructorName" logicConstructorName
             )
         |> Set.toList
         |> String.join "\n\n"
-
-
-regex : String -> Regex.Regex
-regex =
-    Regex.fromString >> Unwrap.maybe
-
-
-interpolate : String -> String -> String -> String
-interpolate pattern word =
-    Regex.replace (regex pattern) (\_ -> word)
 
 
 fieldTypes : List ( String, Kind ) -> String
@@ -555,51 +548,17 @@ fieldTypes data =
             gatherCustomTypes data
     in
     [ """type Field
-    = IntField IntFieldData
-    | FloatField FloatFieldData
-    | StringField StringFieldData
-    | BoolField BoolFieldData
-    | ColorField ColorFieldData
+    = IntField ConfigForm.BuiltInTypes.IntFieldData
+    | FloatField ConfigForm.BuiltInTypes.FloatFieldData
+    | StringField ConfigForm.BuiltInTypes.StringFieldData
+    | BoolField ConfigForm.BuiltInTypes.BoolFieldData
+    | ColorField ConfigForm.BuiltInTypes.ColorFieldData
     | SectionField String"""
         ++ (customKinds
                 |> Set.map (\kind -> "\n    | " ++ kind ++ "Field " ++ "(" ++ "ConfigForm.Custom." ++ kind ++ "Field" ++ ")")
                 |> Set.toList
                 |> String.join ""
            )
-    , """type alias IntFieldData =
-    { val : Int
-    , power : Int
-    }
-
-
-type alias FloatFieldData =
-    { val : Float
-    , power : Int
-    }
-
-
-type alias StringFieldData =
-    { val : String
-    }
-
-
-type alias BoolFieldData =
-    { val : Bool
-    }
-
-
-type alias ColorFieldData =
-    { val : Color
-    , meta : ColorFieldMeta
-    }
-
-
-type ColorFieldMeta
-    = ColorFieldMeta
-        { state : ColorPicker.State
-        , isOpen : Bool
-        }
-"""
     ]
         |> String.join "\n\n\n"
 
@@ -618,12 +577,12 @@ encodeField field =
     case field of
         IntField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.int Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.int Encode.int
                 |> Just
 
         FloatField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.float Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.float Encode.int
                 |> Just
 
         StringField data ->
@@ -635,7 +594,7 @@ encodeField field =
                 |> Just
 
         ColorField data ->
-            ConfigForm.encodeColor data.val
+            ConfigForm.BuiltInTypes.encodeColor data.val
                 |> Just
 
         SectionField _ ->
@@ -798,7 +757,7 @@ decodeField customKinds =
 
                 Err _ ->
                     Nothing"""
-                            |> interpolate "\\$logicName" kind
+                            |> String.replace "$logicName" kind
                     )
                 |> Set.toList
                 |> String.join "\n\n"
@@ -880,7 +839,7 @@ decodeField logic json =
         ColorLogic _ ->
             let
                 decoder =
-                    Decode.at [ "fields", logic.fieldName ] ConfigForm.colorValDecoder
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.BuiltInTypes.colorValDecoder
             in
             case Decode.decodeValue decoder json of
                 Ok val ->
@@ -937,15 +896,14 @@ viewField customKinds =
     -> ViewOptions
     -> Field
     -> Int
-    -> ConfigTypes.Logic config
+    -> ConfigForm.Types.Logic config
     -> Bool
     -> Element msg
 viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
     case field of
         StringField stringField ->
             viewStringField
-                { changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                { changedConfigForm = \\newStringField -> changedConfigForm logic.fieldName (StringField newStringField)
                 , label = logic.label
                 , stringField = stringField
                 }
@@ -975,17 +933,15 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
         BoolField boolField ->
             viewBoolField
                 { options = options
-                , changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                , changedConfigForm = \\bool -> changedConfigForm logic.fieldName (BoolField { val = bool })
                 , label = logic.label
                 , boolField = boolField
                 }
 
         ColorField colorField ->
             viewColorField
-                { changedConfigForm = changedConfigForm
+                { changedConfigForm = \\newColorField -> changedConfigForm logic.fieldName (ColorField newColorField)
                 , label = logic.label
-                , fieldName = logic.fieldName
                 , options = options
                 , colorField = colorField
                 , index = i
@@ -999,3 +955,14 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
 
 """
         ++ customKindCases
+
+
+toLogic : String
+toLogic =
+    """toLogic : (Lens config value -> LogicKind config) -> BuiltInLogic config value -> Logic config
+toLogic constructor { fieldName, label, lens } =
+    { fieldName = fieldName
+    , label = label
+    , kind = constructor lens
+    }
+"""

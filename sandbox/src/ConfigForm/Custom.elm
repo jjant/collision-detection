@@ -7,7 +7,8 @@ module ConfigForm.Custom exposing
     , viewVec2Field
     )
 
-import ConfigFormUI exposing (ViewOptions, makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
+import ConfigForm.Options exposing (ViewOptions)
+import ConfigForm.ViewHelpers exposing (makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
 import Element exposing (Element, fill, height, paddingXY, rgb255, row, width)
 import Element.Background as Background
 import Element.Font as Font
@@ -85,21 +86,25 @@ viewVec2Field { hoveredLabel, changedConfigForm, options, fieldName, label, fiel
             , Background.color (Misc.toElementColor options.labelHighlightBgColor)
                 |> Misc.attrIf isActive
             ]
-            [ Element.html <| slider (\i -> changedConfigForm { field | val = vec2 (moveFloat i { val = field.val.x, power = field.power }) field.val.y }) [ Html.text label ]
-            , makePowerEl
-                changedConfigForm
-                options
-                field.power
-                { field
-                    | power = field.power - 1
-                    , val = vec2 (poweredFloat (field.power - 1) field.val.x) field.val.y
-                }
-                { field
-                    | power = field.power + 1
-                    , val = vec2 (poweredFloat (field.power + 1) field.val.x) field.val.y
-                }
-                False
-                |> Misc.showIf isActive
+            [ Element.html <|
+                slider (\i -> changedConfigForm { field | val = vec2 (moveFloat i { val = field.val.x, power = field.power }) field.val.y })
+                    [ Html.text label ]
+            , Element.html <|
+                (makePowerEl
+                    changedConfigForm
+                    options
+                    field.power
+                    { field
+                        | power = field.power - 1
+                        , val = vec2 (poweredFloat (field.power - 1) field.val.x) field.val.y
+                    }
+                    { field
+                        | power = field.power + 1
+                        , val = vec2 (poweredFloat (field.power + 1) field.val.x) field.val.y
+                    }
+                    False
+                    |> Misc.showHtmlIf isActive
+                )
             ]
         , Element.el
             [ width
@@ -111,7 +116,7 @@ viewVec2Field { hoveredLabel, changedConfigForm, options, fieldName, label, fiel
                 [ Font.center ]
                 -- (Font.center :: incrementalAttrs changedConfigForm String.fromFloat FloatField fieldName floatField)
                 { label = Input.labelHidden fieldName
-                , valStr = "(" ++ String.fromFloat field.val.x ++ ", " ++ String.fromFloat field.val.y ++ ")"
+                , text = "(" ++ String.fromFloat field.val.x ++ ", " ++ String.fromFloat field.val.y ++ ")"
                 , onChange =
                     \newStr ->
                         changedConfigForm <|

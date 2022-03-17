@@ -5,6 +5,7 @@ module Misc exposing
     , listIfLazy
     , mouseDecoder
     , setTranslation
+    , showHtmlIf
     , showIf
     , toElementColor
     , updateTransform
@@ -15,6 +16,7 @@ module Misc exposing
 import Body exposing (Body)
 import Color
 import Element exposing (Element)
+import Html exposing (Html)
 import Html.Attributes
 import Isometry exposing (Isometry)
 import Json.Decode as Decode exposing (Decoder)
@@ -28,6 +30,15 @@ showIf b element =
 
     else
         Element.none
+
+
+showHtmlIf : Bool -> Html msg -> Html msg
+showHtmlIf b html =
+    if b then
+        html
+
+    else
+        Html.div [] []
 
 
 attrIf : Bool -> Element.Attribute msg -> Element.Attribute msg
