@@ -2,6 +2,9 @@ module Hierarchy exposing (list, view)
 
 import Array exposing (Array)
 import Body exposing (Body, Shape)
+import ConfigForm.Custom
+import ConfigForm.Options
+import ConfigForm.View
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -112,11 +115,10 @@ bodyInput id =
         )
 
 
-view : (Body -> msg) -> Maybe Body -> Element msg
-view onChange maybeBody =
+view : msg -> (Body -> msg) -> Maybe Body -> Element msg
+view noop onChange maybeBody =
     column
         [ width fill
-        , height (px 300)
         , Background.color (rgb255 51 60 78)
         , Border.color (rgb255 26 30 41)
         , Border.width 2
@@ -126,10 +128,10 @@ view onChange maybeBody =
         (maybeBody
             |> Maybe.map
                 (\body ->
-                    [ vec2Input "Translation" (\translation -> onChange <| setTranslation translation body) body.transform.translation
-                    , floatInput "Rotation" (\deltaRotation -> onChange <| updateTransform (\t -> { t | rotation = t.rotation + deltaRotation / 100 }) body) body.transform.rotation
+                    [ vec2Input noop "Translation" (\translation -> onChange <| setTranslation translation body) body.transform.translation
+                    , floatInput noop -2 "Rotation" (\newRotation -> onChange <| updateTransform (\t -> { t | rotation = newRotation }) body) body.transform.rotation
                     , shapeRadio (\newShapeKind -> onChange (setShapeKind newShapeKind body)) body.shape
-                    , shapeInput (\newShape -> onChange (setShape newShape body)) body.shape
+                    , shapeInput noop (\newShape -> onChange (setShape newShape body)) body.shape
                     ]
                 )
             |> Maybe.withDefault []
@@ -156,14 +158,14 @@ selectedShape shape =
             Rectangle
 
 
-shapeInput : (Shape -> msg) -> Shape -> Element msg
-shapeInput onChange shape =
+shapeInput : msg -> (Shape -> msg) -> Shape -> Element msg
+shapeInput noop onChange shape =
     case shape of
         Body.Circle { radius } ->
-            floatInput "Radius" (\deltaRadius -> onChange (Body.Circle { radius = radius + deltaRadius })) radius
+            floatInput noop 0 "Radius" (\newRadius -> onChange (Body.Circle { radius = newRadius })) radius
 
         Body.Rectangle { halfExtents } ->
-            vec2Input "Half Extents" (\newExtents -> onChange (Body.Rectangle { halfExtents = newExtents })) halfExtents
+            vec2Input noop "Half Extents" (\newExtents -> onChange (Body.Rectangle { halfExtents = newExtents })) halfExtents
 
 
 shapeRadio : (ShapeKind -> msg) -> Shape -> Element msg
@@ -183,23 +185,27 @@ options =
     ]
 
 
-vec2Input : String -> (Vec2 -> msg) -> Vec2 -> Element msg
-vec2Input label onChange vec =
-    Element.row [ width fill ]
-        [ text label
-        , Element.column [ width fill, Background.color (rgb255 255 0 255) ]
-            [ floatInput "x" (\deltaX -> Vec2.add vec (vec2 deltaX 0) |> onChange) vec.x
-            , floatInput "y" (\deltaY -> Vec2.add vec (vec2 0 deltaY) |> onChange) vec.y
-            ]
-        ]
+vec2Input : msg -> String -> (Vec2 -> msg) -> Vec2 -> Element msg
+vec2Input noop label onChange vec =
+    ConfigForm.Custom.viewVec2Field
+        { hoveredLabel = \_ -> noop
+        , changedConfigForm = \{ val } -> onChange val
+        , label = label
+        , fieldName = ""
+        , options = ConfigForm.Options.viewOptions
+        , field = { power = 1, val = vec }
+        , index = 0
+        , isActive = False
+        }
 
 
-floatInput : String -> (Float -> msg) -> Float -> Element msg
-floatInput label onChange float =
-    Element.row [ width fill ]
-        [ text label
-        , Element.html <|
-            UI.slider
-                (onChange << toFloat)
-                [ Html.text <| String.fromFloat float ]
-        ]
+floatInput : msg -> Int -> String -> (Float -> msg) -> Float -> Element msg
+floatInput noop power label onChange float =
+    ConfigForm.View.viewFloatField
+        { hoveredLabel = \_ -> noop
+        , changedConfigForm = \{ val } -> onChange val
+        , options = ConfigForm.Options.viewOptions
+        , label = label
+        , floatField = { power = power, val = float }
+        , isActive = False
+        }

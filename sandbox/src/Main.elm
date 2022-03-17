@@ -308,6 +308,9 @@ update msg model =
             , Cmd.none
             )
 
+        NoOp ->
+            ( model, Cmd.none )
+
         Tick dt ->
             let
                 b1 =
@@ -547,7 +550,7 @@ view model =
                 [ Background.color (rgb255 238 238 204)
                 , width fill
                 ]
-                [ Hierarchy.view ChangeBody (selectedBody model)
+                [ Hierarchy.view NoOp ChangeBody (selectedBody model)
                 ]
             ]
 
