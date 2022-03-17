@@ -181,7 +181,7 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
             """
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
+import ConfigForm.View exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
 import ConfigForm.Options exposing (ViewOptions)
@@ -577,12 +577,12 @@ encodeField field =
     case field of
         IntField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.int Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.int Encode.int
                 |> Just
 
         FloatField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.float Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.float Encode.int
                 |> Just
 
         StringField data ->
@@ -594,7 +594,7 @@ encodeField field =
                 |> Just
 
         ColorField data ->
-            ConfigForm.encodeColor data.val
+            ConfigForm.BuiltInTypes.encodeColor data.val
                 |> Just
 
         SectionField _ ->
@@ -839,7 +839,7 @@ decodeField logic json =
         ColorLogic _ ->
             let
                 decoder =
-                    Decode.at [ "fields", logic.fieldName ] ConfigForm.colorValDecoder
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.BuiltInTypes.colorValDecoder
             in
             case Decode.decodeValue decoder json of
                 Ok val ->

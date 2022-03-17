@@ -3,6 +3,7 @@ module ConfigForm.BuiltInTypes exposing
     , BuiltInLogic
     , Lens
     , bool, color, float, int, string, section
+    , tuple2Encoder, colorValDecoder, encodeColor
     )
 
 {-| Module defining field types supported out of the box.
@@ -20,10 +21,17 @@ module ConfigForm.BuiltInTypes exposing
 
 @docs bool, color, float, int, string, section
 
+
+# Misc
+
+@docs tuple2Encoder, colorValDecoder, encodeColor
+
 -}
 
 import Color exposing (Color)
 import ColorPicker
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 
 
 type alias Lens big small =
@@ -135,3 +143,35 @@ section sectionStr =
         , setter = \_ config -> config
         }
     }
+
+
+
+---- MISC ----
+
+
+tuple2Encoder : (a -> Encode.Value) -> (b -> Encode.Value) -> ( a, b ) -> Encode.Value
+tuple2Encoder enc1 enc2 ( val1, val2 ) =
+    Encode.list identity [ enc1 val1, enc2 val2 ]
+
+
+encodeColor : Color -> Encode.Value
+encodeColor col =
+    col
+        |> Color.toRgba
+        |> (\{ red, green, blue, alpha } ->
+                Encode.object
+                    [ ( "r", Encode.float red )
+                    , ( "g", Encode.float green )
+                    , ( "b", Encode.float blue )
+                    , ( "a", Encode.float alpha )
+                    ]
+           )
+
+
+colorValDecoder : Decoder Color
+colorValDecoder =
+    Decode.map4 Color.rgba
+        (Decode.field "r" Decode.float)
+        (Decode.field "g" Decode.float)
+        (Decode.field "b" Decode.float)
+        (Decode.field "a" Decode.float)

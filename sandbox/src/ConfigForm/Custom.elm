@@ -8,7 +8,7 @@ module ConfigForm.Custom exposing
     )
 
 import ConfigForm.Options exposing (ViewOptions)
-import ConfigForm.UI exposing (makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
+import ConfigForm.ViewHelpers exposing (makePowerEl, moveFloat, poweredFloat, resizeAttrs, textInputHelper)
 import Element exposing (Element, fill, height, paddingXY, rgb255, row, width)
 import Element.Background as Background
 import Element.Font as Font

@@ -1,10 +1,5 @@
-module ConfigForm exposing
-    ( colorValDecoder
-    , encodeColor
-    , formatPoweredFloat
-    , formatPoweredInt
-    , tuple2Encoder
-    , viewBoolField
+module ConfigForm.View exposing
+    ( viewBoolField
     , viewColorField
     , viewFloatField
     , viewIntField
@@ -12,56 +7,12 @@ module ConfigForm exposing
     , viewStringField
     )
 
-{-| Note: The `config` in the following type signatures is a record of all your config values, like...
-
-    type alias Config =
-        { headerFontSize : Int
-        , bodyFontSize : Int
-        , backgroundColor : Color
-        }
-
-Also, `Value` is shorthand for `Json.Encode.Value`.
-
-@docs ConfigForm, init, InitOptions
-
-
-# Msg
-
-@docs Msg
-
-
-# Update
-
-@docs update
-
-
-# Encoding
-
-@docs encode
-
-
-# View
-
-@docs view
-
-
-# View options
-
-@docs viewOptions, withFontSize, withRowSpacing, withInputWidth, withInputSpacing, withLabelHighlightBgColor, withSectionSpacing
-
-
-# Used only by generated Config code
-
-@docs int, float, string, bool, color, section
-
--}
-
-import Color exposing (Color)
+import Color
 import ColorPicker
 import ConfigForm.BuiltInTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), FloatFieldData, IntFieldData, StringFieldData)
 import ConfigForm.Options exposing (ViewOptions)
-import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
-import ConfigForm.UI exposing (inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
+import ConfigForm.Types exposing (Field(..), LogicKind(..))
+import ConfigForm.ViewHelpers exposing (formatPoweredFloat, formatPoweredInt, inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, px, pxInt, resizeAttrs, textInputHelper)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, spacing, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -71,63 +22,15 @@ import Html
 import Html.Attributes exposing (style)
 import Html.Events
 import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as JE
 import Misc
 import Round
 import UI exposing (slider)
 import Vec2 exposing (direction)
 
 
-encodeColor : Color -> JE.Value
-encodeColor col =
-    col
-        |> Color.toRgba
-        |> (\{ red, green, blue, alpha } ->
-                JE.object
-                    [ ( "r", JE.float red )
-                    , ( "g", JE.float green )
-                    , ( "b", JE.float blue )
-                    , ( "a", JE.float alpha )
-                    ]
-           )
-
-
-tuple2Encoder : (a -> JE.Value) -> (b -> JE.Value) -> ( a, b ) -> JE.Value
-tuple2Encoder enc1 enc2 ( val1, val2 ) =
-    -- from https://stackoverflow.com/a/52676142
-    JE.list identity [ enc1 val1, enc2 val2 ]
-
-
-formatPoweredInt : Int -> Int -> String
-formatPoweredInt power val =
-    Round.round -power (toFloat val)
-
-
-formatPoweredFloat : Int -> Float -> String
-formatPoweredFloat power val =
-    Round.round -power val
-
-
 poweredInt : Int -> Int -> Int
 poweredInt power val =
     round <| Round.roundNum -power (toFloat val)
-
-
-
--- JSON encode/decoder stuff
-
-
-colorValDecoder : Decoder Color
-colorValDecoder =
-    Decode.map4 Color.rgba
-        (Decode.field "r" Decode.float)
-        (Decode.field "g" Decode.float)
-        (Decode.field "b" Decode.float)
-        (Decode.field "a" Decode.float)
-
-
-
--- VIEW
 
 
 viewStringField : { changedConfigForm : String -> Field -> msg, label : String, fieldName : String, stringField : StringFieldData } -> Element msg

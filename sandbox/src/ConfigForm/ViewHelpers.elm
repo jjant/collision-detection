@@ -1,5 +1,7 @@
-module ConfigForm.UI exposing
-    ( formattedPower
+module ConfigForm.ViewHelpers exposing
+    ( formatPoweredFloat
+    , formatPoweredInt
+    , formattedPower
     , inputFieldVertPadding
     , makePowerEl
     , moveFloat
@@ -140,3 +142,13 @@ moveFloat num field =
 moveInt : Int -> { r | val : Int, power : Int } -> Int
 moveInt num field =
     field.val + (num * (10 ^ field.power))
+
+
+formatPoweredInt : Int -> Int -> String
+formatPoweredInt power val =
+    Round.round -power (toFloat val)
+
+
+formatPoweredFloat : Int -> Float -> String
+formatPoweredFloat power val =
+    Round.round -power val

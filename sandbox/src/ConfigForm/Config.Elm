@@ -5,11 +5,11 @@ module ConfigForm.Config exposing (Config, configFromFields, decodeField, empty,
 
 import Color exposing (Color)
 import ColorPicker
-import ConfigForm exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewStringField, viewSectionField)
 import ConfigForm.BuiltInTypes exposing (BuiltInLogic, ColorFieldMeta(..), Lens)
 import ConfigForm.Custom
 import ConfigForm.Options exposing (ViewOptions)
 import ConfigForm.Types exposing (Field(..), Logic, LogicKind(..))
+import ConfigForm.View exposing (viewBoolField, viewColorField, viewFloatField, viewIntField, viewSectionField, viewStringField)
 import Element exposing (Element)
 import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
@@ -53,74 +53,90 @@ empty defaults =
 
 logics : List (Logic Config)
 logics =
-    [ toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
-        "Testing"
-    , toLogic FloatLogic <| ConfigForm.BuiltInTypes.float
-        "myFloat"
-        "Float input"
-        .myFloat
-        (\a c -> { c | myFloat = a })
-    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
-        "Visualise"
-    , toLogic IntLogic <| ConfigForm.BuiltInTypes.int
-        "pointsPerCircle"
-        "Points per circle"
-        .pointsPerCircle
-        (\a c -> { c | pointsPerCircle = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showSupportPoints"
-        "Support points"
-        .showSupportPoints
-        (\a c -> { c | showSupportPoints = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showPointProjections"
-        "Point projections"
-        .showPointProjections
-        (\a c -> { c | showPointProjections = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showContactPoints"
-        "Contact points"
-        .showContactPoints
-        (\a c -> { c | showContactPoints = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showGjkSimplex"
-        "GJK Simplex"
-        .showGjkSimplex
-        (\a c -> { c | showGjkSimplex = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showEpaPolytope"
-        "EPA Polytope"
-        .showEpaPolytope
-        (\a c -> { c | showEpaPolytope = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showStepByStepEpa"
-        "EPA Step by Step"
-        .showStepByStepEpa
-        (\a c -> { c | showStepByStepEpa = a })
-    , toLogic BoolLogic <| ConfigForm.BuiltInTypes.bool
-        "showMinkowskiDifference"
-        "Minkowski difference"
-        .showMinkowskiDifference
-        (\a c -> { c | showMinkowskiDifference = a })
-    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
-        "Editor UI"
-    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
-        "backgroundColor"
-        "Editor background"
-        .backgroundColor
-        (\a c -> { c | backgroundColor = a })
-    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
-        "sceneBackground"
-        "Scene background"
-        .sceneBackground
-        (\a c -> { c | sceneBackground = a })
-    , toLogic ColorLogic <| ConfigForm.BuiltInTypes.color
-        "collidingBodiesOutline"
-        "Colliding bodies outline"
-        .collidingBodiesOutline
-        (\a c -> { c | collidingBodiesOutline = a })
-    , toLogic SectionLogic <| ConfigForm.BuiltInTypes.section
-        "Custom Kinds"
+    [ toLogic SectionLogic <|
+        ConfigForm.BuiltInTypes.section
+            "Testing"
+    , toLogic FloatLogic <|
+        ConfigForm.BuiltInTypes.float
+            "myFloat"
+            "Float input"
+            .myFloat
+            (\a c -> { c | myFloat = a })
+    , toLogic SectionLogic <|
+        ConfigForm.BuiltInTypes.section
+            "Visualise"
+    , toLogic IntLogic <|
+        ConfigForm.BuiltInTypes.int
+            "pointsPerCircle"
+            "Points per circle"
+            .pointsPerCircle
+            (\a c -> { c | pointsPerCircle = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showSupportPoints"
+            "Support points"
+            .showSupportPoints
+            (\a c -> { c | showSupportPoints = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showPointProjections"
+            "Point projections"
+            .showPointProjections
+            (\a c -> { c | showPointProjections = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showContactPoints"
+            "Contact points"
+            .showContactPoints
+            (\a c -> { c | showContactPoints = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showGjkSimplex"
+            "GJK Simplex"
+            .showGjkSimplex
+            (\a c -> { c | showGjkSimplex = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showEpaPolytope"
+            "EPA Polytope"
+            .showEpaPolytope
+            (\a c -> { c | showEpaPolytope = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showStepByStepEpa"
+            "EPA Step by Step"
+            .showStepByStepEpa
+            (\a c -> { c | showStepByStepEpa = a })
+    , toLogic BoolLogic <|
+        ConfigForm.BuiltInTypes.bool
+            "showMinkowskiDifference"
+            "Minkowski difference"
+            .showMinkowskiDifference
+            (\a c -> { c | showMinkowskiDifference = a })
+    , toLogic SectionLogic <|
+        ConfigForm.BuiltInTypes.section
+            "Editor UI"
+    , toLogic ColorLogic <|
+        ConfigForm.BuiltInTypes.color
+            "backgroundColor"
+            "Editor background"
+            .backgroundColor
+            (\a c -> { c | backgroundColor = a })
+    , toLogic ColorLogic <|
+        ConfigForm.BuiltInTypes.color
+            "sceneBackground"
+            "Scene background"
+            .sceneBackground
+            (\a c -> { c | sceneBackground = a })
+    , toLogic ColorLogic <|
+        ConfigForm.BuiltInTypes.color
+            "collidingBodiesOutline"
+            "Colliding bodies outline"
+            .collidingBodiesOutline
+            (\a c -> { c | collidingBodiesOutline = a })
+    , toLogic SectionLogic <|
+        ConfigForm.BuiltInTypes.section
+            "Custom Kinds"
     , vec2
         "myKind"
         "My custom thing"
@@ -137,7 +153,6 @@ toLogic constructor { fieldName, label, lens } =
     }
 
 
-
 vec2 : String -> String -> (config -> ConfigForm.Custom.Vec2) -> (ConfigForm.Custom.Vec2 -> config -> config) -> Logic config
 vec2 fieldName label getter setter =
     { fieldName = fieldName
@@ -151,12 +166,12 @@ encodeField field =
     case field of
         IntField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.int Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.int Encode.int
                 |> Just
 
         FloatField data ->
             ( data.val, data.power )
-                |> ConfigForm.tuple2Encoder Encode.float Encode.int
+                |> ConfigForm.BuiltInTypes.tuple2Encoder Encode.float Encode.int
                 |> Just
 
         StringField data ->
@@ -168,7 +183,7 @@ encodeField field =
                 |> Just
 
         ColorField data ->
-            ConfigForm.encodeColor data.val
+            ConfigForm.BuiltInTypes.encodeColor data.val
                 |> Just
 
         SectionField _ ->
@@ -264,8 +279,6 @@ configFromFields logics_ configForm config =
             config
 
 
-
-
 decodeField : Logic config -> Decode.Value -> Maybe Field
 decodeField logic json =
     case logic.kind of
@@ -343,7 +356,7 @@ decodeField logic json =
         ColorLogic _ ->
             let
                 decoder =
-                    Decode.at [ "fields", logic.fieldName ] ConfigForm.colorValDecoder
+                    Decode.at [ "fields", logic.fieldName ] ConfigForm.BuiltInTypes.colorValDecoder
             in
             case Decode.decodeValue decoder json of
                 Ok val ->
