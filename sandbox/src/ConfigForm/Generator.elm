@@ -123,10 +123,11 @@ toFiles data =
       , [ """-- GENERATED CODE, DO NOT EDIT BY HAND!
 
 
-module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, FloatFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
+module ConfigForm.Types exposing (BoolFieldData, ColorFieldData, IntFieldData, StringFieldData, ColorFieldMeta(..), Lens, Logic, LogicKind(..), Field(..))
 
 import Color exposing (Color)
 import ColorPicker
+import ConfigForm.BuiltInTypes
 import ConfigForm.Custom
 """
         , """type alias Logic config =
@@ -544,7 +545,7 @@ fieldTypes data =
     in
     [ """type Field
     = IntField IntFieldData
-    | FloatField FloatFieldData
+    | FloatField ConfigForm.BuiltInTypes.FloatFieldData
     | StringField StringFieldData
     | BoolField BoolFieldData
     | ColorField ColorFieldData
@@ -556,12 +557,6 @@ fieldTypes data =
            )
     , """type alias IntFieldData =
     { val : Int
-    , power : Int
-    }
-
-
-type alias FloatFieldData =
-    { val : Float
     , power : Int
     }
 
