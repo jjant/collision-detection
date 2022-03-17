@@ -7,6 +7,7 @@ module ConfigForm.ViewHelpers exposing
     , moveFloat
     , moveInt
     , poweredFloat
+    , poweredInt
     , px
     , pxInt
     , resizeAttrs
@@ -114,6 +115,11 @@ formattedPower power =
                 "0." ++ String.repeat (-1 - power) "0" ++ "1"
     in
     "x" ++ numStr
+
+
+poweredInt : Int -> Int -> Int
+poweredInt power val =
+    round <| Round.roundNum -power (toFloat val)
 
 
 poweredFloat : Int -> Float -> Float

@@ -934,8 +934,7 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
         BoolField boolField ->
             viewBoolField
                 { options = options
-                , changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                , changedConfigForm = \\bool -> changedConfigForm logic.fieldName (BoolField { val = bool })
                 , label = logic.label
                 , boolField = boolField
                 }
