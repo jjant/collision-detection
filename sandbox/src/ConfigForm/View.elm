@@ -11,7 +11,6 @@ import Color
 import ColorPicker
 import ConfigForm.BuiltInTypes exposing (BoolFieldData, ColorFieldData, ColorFieldMeta(..), FloatFieldData, IntFieldData, StringFieldData)
 import ConfigForm.Options exposing (ViewOptions)
-import ConfigForm.Types exposing (Field(..))
 import ConfigForm.ViewHelpers exposing (formatPoweredFloat, formatPoweredInt, inputFieldVertPadding, makePowerEl, moveFloat, moveInt, poweredFloat, poweredInt, px, pxInt, resizeAttrs, textInputHelper)
 import Element exposing (Element, centerX, centerY, el, fill, height, paddingEach, paddingXY, rgb255, rgba255, row, spaceEvenly, spacing, width)
 import Element.Background as Background
@@ -27,8 +26,13 @@ import UI exposing (slider)
 import Vec2 exposing (direction)
 
 
-viewStringField : { changedConfigForm : String -> Field -> msg, label : String, fieldName : String, stringField : StringFieldData } -> Element msg
-viewStringField { changedConfigForm, label, fieldName, stringField } =
+viewStringField :
+    { changedConfigForm : StringFieldData -> msg
+    , label : String
+    , stringField : StringFieldData
+    }
+    -> Element msg
+viewStringField { changedConfigForm, label, stringField } =
     row [ width fill, spaceEvenly ]
         [ textInputHelper
             []
@@ -44,9 +48,7 @@ viewStringField { changedConfigForm, label, fieldName, stringField } =
                         (Element.text label)
                     )
             , text = stringField.val
-            , onChange =
-                \newStr ->
-                    changedConfigForm fieldName (StringField { stringField | val = newStr })
+            , onChange = \newStr -> changedConfigForm { stringField | val = newStr }
             }
         ]
 
@@ -63,14 +65,13 @@ dirToNum direction =
 
 viewColorField :
     { label : String
-    , changedConfigForm : String -> Field -> msg
+    , changedConfigForm : ColorFieldData -> msg
     , options : ViewOptions
     , colorField : ColorFieldData
-    , fieldName : String
     , index : Int
     }
     -> Element msg
-viewColorField { label, changedConfigForm, options, colorField, fieldName, index } =
+viewColorField { label, changedConfigForm, options, colorField, index } =
     row
         [ width fill
         , height (Element.px 30)
@@ -78,8 +79,8 @@ viewColorField { label, changedConfigForm, options, colorField, fieldName, index
         ]
         [ Element.text label
         , row [ width fill, height fill ]
-            [ closeEl changedConfigForm options colorField index fieldName
-            , viewColorPicker changedConfigForm options colorField fieldName
+            [ closeEl changedConfigForm options colorField index
+            , viewColorPicker changedConfigForm options colorField
             ]
         ]
 
@@ -145,8 +146,8 @@ viewSectionField { options, label } =
         [ Element.text label ]
 
 
-closeEl : (String -> Field -> msg) -> { r | fontSize : Int } -> ColorFieldData -> Int -> String -> Element msg
-closeEl changedConfigForm options colorFieldData i fieldName =
+closeEl : (ColorFieldData -> msg) -> ViewOptions -> ColorFieldData -> Int -> Element msg
+closeEl changedConfigForm options colorFieldData index =
     let
         maybeCloseMsg =
             let
@@ -157,10 +158,7 @@ closeEl changedConfigForm options colorFieldData i fieldName =
             in
             if meta.isOpen then
                 Just
-                    (changedConfigForm
-                        fieldName
-                        (ColorField { colorFieldData | meta = ColorFieldMeta { meta | isOpen = False } })
-                    )
+                    (changedConfigForm { colorFieldData | meta = ColorFieldMeta { meta | isOpen = False } })
 
             else
                 Nothing
@@ -174,7 +172,7 @@ closeEl changedConfigForm options colorFieldData i fieldName =
                 , Border.rounded 4
                 , width (Element.px (round (1.5 * toFloat options.fontSize)))
                 , height (Element.px (round (1.5 * toFloat options.fontSize)))
-                , Element.htmlAttribute <| Html.Attributes.tabindex (1 + i)
+                , Element.htmlAttribute <| Html.Attributes.tabindex (1 + index)
                 ]
                 { onPress = Just msg
                 , label = el [ centerX, centerY ] (Element.text "❌")
@@ -214,8 +212,8 @@ incrementalAttrs onKey =
     ]
 
 
-viewColorPicker : (String -> Field -> msg) -> ViewOptions -> ColorFieldData -> String -> Element msg
-viewColorPicker changedConfigForm options data fieldName =
+viewColorPicker : (ColorFieldData -> msg) -> ViewOptions -> ColorFieldData -> Element msg
+viewColorPicker changedConfigForm options data =
     let
         meta =
             case data.meta of
@@ -244,17 +242,11 @@ viewColorPicker changedConfigForm options data fieldName =
                                         data.val
                                         meta.state
                             in
-                            changedConfigForm fieldName
-                                (ColorField
-                                    { data
-                                        | val = newColor |> Maybe.withDefault data.val
-                                        , meta =
-                                            ColorFieldMeta
-                                                { state = newPickerState
-                                                , isOpen = meta.isOpen
-                                                }
-                                    }
-                                )
+                            changedConfigForm
+                                { data
+                                    | val = newColor |> Maybe.withDefault data.val
+                                    , meta = ColorFieldMeta { meta | state = newPickerState }
+                                }
                         )
 
             else
@@ -266,19 +258,7 @@ viewColorPicker changedConfigForm options data fieldName =
                            , style "border" "1px solid rgba(0,0,0,0.3)"
                            , style "border-radius" "3px"
                            , style "box-sizing" "border-box"
-                           , Html.Events.onMouseDown
-                                (changedConfigForm
-                                    fieldName
-                                    (ColorField
-                                        { data
-                                            | meta =
-                                                ColorFieldMeta
-                                                    { state = meta.state
-                                                    , isOpen = True
-                                                    }
-                                        }
-                                    )
-                                )
+                           , Html.Events.onMouseDown (changedConfigForm { data | meta = ColorFieldMeta { meta | isOpen = True } })
                            ]
                     )
                     []

@@ -903,8 +903,7 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
     case field of
         StringField stringField ->
             viewStringField
-                { changedConfigForm = changedConfigForm
-                , fieldName = logic.fieldName
+                { changedConfigForm = \\newStringField -> changedConfigForm logic.fieldName (StringField newStringField)
                 , label = logic.label
                 , stringField = stringField
                 }
@@ -941,9 +940,8 @@ viewField { hoveredLabel, changedConfigForm } options field i logic isActive =
 
         ColorField colorField ->
             viewColorField
-                { changedConfigForm = changedConfigForm
+                { changedConfigForm = \\newColorField -> changedConfigForm logic.fieldName (ColorField newColorField)
                 , label = logic.label
-                , fieldName = logic.fieldName
                 , options = options
                 , colorField = colorField
                 , index = i
