@@ -265,7 +265,7 @@ viewColorPicker changedConfigForm options data =
 
 
 viewIntField :
-    { hoveredLabel : String -> Bool -> msg
+    { hoveredLabel : Bool -> msg
     , changedConfigForm : IntFieldData -> msg
     , fieldName : String
     , intField : IntFieldData
@@ -309,7 +309,7 @@ viewIntField { hoveredLabel, fieldName, intField, label, isActive, changedConfig
 
 
 viewFloatField :
-    { hoveredLabel : String -> Bool -> msg
+    { hoveredLabel : Bool -> msg
     , changedConfigForm : FloatFieldData -> msg
     , options : ViewOptions
     , fieldName : String
@@ -353,7 +353,7 @@ viewFloatField { hoveredLabel, changedConfigForm, options, fieldName, label, flo
 
 
 viewNumericField :
-    { hoveredLabel : String -> Bool -> msg
+    { hoveredLabel : Bool -> msg
     , changedConfigForm : fieldData -> msg
     , field : fieldData
     , move : Int -> fieldData -> number
@@ -382,7 +382,7 @@ viewNumericField { hoveredLabel, fieldName, increment, setValue, field, fromStri
          , Background.color (Misc.toElementColor options.labelHighlightBgColor)
             |> Misc.attrIf isActive
          ]
-            ++ resizeAttrs (hoveredLabel fieldName)
+            ++ resizeAttrs hoveredLabel
         )
         [ row
             [ width fill
