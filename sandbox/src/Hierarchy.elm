@@ -10,10 +10,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (OptionState(..))
-import Html
 import Html.Attributes
 import Misc exposing (setTranslation, updateTransform)
-import UI
 import Vec2 exposing (Vec2, vec2)
 
 
