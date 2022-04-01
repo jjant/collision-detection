@@ -27,16 +27,14 @@ identity =
 
 compose : Isometry -> Isometry -> Isometry
 compose second first =
-    { translation =
-        Vec2.rotate second.rotation first.translation
-            |> Vec2.add second.translation
-    , rotation = first.rotation + second.rotation
-    }
+    first
+        |> appendRotation second.rotation
+        |> appendTranslation second.translation
 
 
 appendRotation : Float -> Isometry -> Isometry
 appendRotation angle { rotation, translation } =
-    { translation = translation
+    { translation = Vec2.rotate angle translation
     , rotation = rotation + angle
     }
 
