@@ -3,6 +3,16 @@ module CSOPoint exposing (CSOPoint, new, origin)
 import Vec2 exposing (Vec2)
 
 
+{-| "Configuration space obstacle" point.
+In other words, a point in the Minkowski difference,
+together with the points from the bodies that generated them:
+
+    point =
+        orig1 - orig2
+
+(I think)
+
+-}
 type alias CSOPoint =
     { point : Vec2
     , orig1 : Vec2

@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Array exposing (Array)
-import Body exposing (Body, Polytope(..), Shape(..))
+import Body exposing (Body,  Shape(..))
 import Browser
 import Browser.Events
 import CSOPoint exposing (CSOPoint)
@@ -14,6 +14,8 @@ import ConfigForm.Options
 import ConfigForm.Types exposing (Field)
 import ConvexHull
 import Draggable
+import Gjk
+import Epa exposing (Polytope(..))
 import Element
     exposing
         ( alignTop
@@ -275,17 +277,17 @@ update msg model =
                                     Step { polytope, nextNormal } ->
                                         let
                                             { done, newPolytope } =
-                                                Body.updatePolytope nextNormal
+                                                Epa.updatePolytope nextNormal
                                                     pos12
                                                     (Body.localSupportPoint b1.shape)
                                                     (Body.localSupportPoint b2.shape)
                                                     polytope
 
                                             nextNextNormal =
-                                                Body.epaBestNormal newPolytope
+                                                Epa.epaBestNormal newPolytope
 
                                             nextPoint =
-                                                Body.support pos12
+                                                Gjk.support pos12
                                                     (Body.localSupportPoint b1.shape)
                                                     (Body.localSupportPoint b2.shape)
                                                     nextNextNormal.normal
@@ -327,7 +329,7 @@ update msg model =
                         b2.transform
 
                 gjkResult =
-                    Body.gjkIntersection pos12
+                    Gjk.intersection pos12
                         (Body.localSupportPoint b1.shape)
                         (Body.localSupportPoint b2.shape)
             in
@@ -346,10 +348,10 @@ update msg model =
                                             Polytope a b c Array.empty
 
                                         nextNormal =
-                                            Body.epaBestNormal polytope
+                                            Epa.epaBestNormal polytope
 
                                         nextPoint =
-                                            Body.support pos12 (Body.localSupportPoint b1.shape) (Body.localSupportPoint b2.shape) nextNormal.normal
+                                            Gjk.support pos12 (Body.localSupportPoint b1.shape) (Body.localSupportPoint b2.shape) nextNormal.normal
                                     in
                                     Step
                                         { polytope = polytope
@@ -384,7 +386,7 @@ view model =
                 b2.transform
 
         res =
-            Body.gjkIntersection pos12
+            Gjk.intersection pos12
                 (Body.localSupportPoint b1.shape)
                 (Body.localSupportPoint b2.shape)
 
@@ -500,7 +502,7 @@ view model =
                                             startingPolytope
                                                 |> Maybe.map
                                                     (\p ->
-                                                        Body.epa p
+                                                        Epa.epa p
                                                             pos12
                                                             (Body.localSupportPoint b1.shape)
                                                             (Body.localSupportPoint b2.shape)

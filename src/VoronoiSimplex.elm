@@ -35,6 +35,11 @@ type IncompleteSimplex
     | Simplex Simplex
 
 
+type Simplex
+    = Two { a : CSOPoint, b : CSOPoint }
+    | Three { a : CSOPoint, b : CSOPoint, c : CSOPoint }
+
+
 append : CSOPoint -> IncompleteSimplex -> Simplex
 append p s =
     case s of
@@ -46,8 +51,3 @@ append p s =
 
         _ ->
             Debug.todo "Unreachable"
-
-
-type Simplex
-    = Two { a : CSOPoint, b : CSOPoint }
-    | Three { a : CSOPoint, b : CSOPoint, c : CSOPoint }

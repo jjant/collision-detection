@@ -2,6 +2,7 @@ module Util exposing
     ( componentWiseMax
     , copySign
     , copySign2
+    , unwrap
     )
 
 import Vec2 exposing (Vec2, vec2)
@@ -29,3 +30,13 @@ copySign2 { from, to } =
     vec2
         (copySign { from = from.x, to = to.x })
         (copySign { from = from.y, to = to.y })
+
+
+unwrap : String -> Maybe a -> a
+unwrap msg ma =
+    case ma of
+        Just a ->
+            a
+
+        Nothing ->
+            Debug.todo msg
