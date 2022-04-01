@@ -35,18 +35,18 @@ localSupportPointTests =
     describe "localSupportPoint"
         [ test "top right corner" <|
             \_ ->
-                Rectangle.localSupportPoint (vec2 1 1) { halfExtents = vec2 3 5 }
+                Rectangle.localSupportPoint { halfExtents = vec2 3 5 } (vec2 1 1)
                     |> Expect.equal (vec2 3 5)
         , test "bottom right corner" <|
             \_ ->
-                Rectangle.localSupportPoint (vec2 1 -1) { halfExtents = vec2 3 5 }
+                Rectangle.localSupportPoint { halfExtents = vec2 3 5 } (vec2 1 -1)
                     |> Expect.equal (vec2 3 -5)
         , test "top left corner" <|
             \_ ->
-                Rectangle.localSupportPoint (vec2 -1 1) { halfExtents = vec2 3 5 }
+                Rectangle.localSupportPoint { halfExtents = vec2 3 5 } (vec2 -1 1)
                     |> Expect.equal (vec2 -3 5)
         , test "bottom left corner" <|
             \_ ->
-                Rectangle.localSupportPoint (vec2 -1 -1) { halfExtents = vec2 3 5 }
+                Rectangle.localSupportPoint { halfExtents = vec2 3 5 } (vec2 -1 -1)
                     |> Expect.equal (vec2 -3 -5)
         ]
