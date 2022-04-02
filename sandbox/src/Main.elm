@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Array exposing (Array)
-import Body exposing (Body,  Shape(..))
+import Body exposing (Body, Shape(..))
 import Browser
 import Browser.Events
 import CSOPoint exposing (CSOPoint)
@@ -14,8 +14,6 @@ import ConfigForm.Options
 import ConfigForm.Types exposing (Field)
 import ConvexHull
 import Draggable
-import Gjk
-import Epa exposing (Polytope(..))
 import Element
     exposing
         ( alignTop
@@ -37,7 +35,9 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Epa exposing (Polytope(..))
 import Fps
+import Gjk
 import Hierarchy
 import Html exposing (Html)
 import Html.Attributes
@@ -481,21 +481,8 @@ view model =
                                     ]
                                     model.bodies
                                 :: listIf model.config.showSupportPoints (supportPoints mousePosition model.bodies)
+                                ++ listIf model.config.showMinkowskiDifference (renderMinkowskiDifference <| minkowskiDifference model.config.pointsPerCircle b1 b2)
                                 ++ listIf model.config.showGjkSimplex [ renderSimplex b1.transform res.simplex ]
-                                ++ listIf model.config.showMinkowskiDifference
-                                    (minkowskiDifference model.config.pointsPerCircle b1 b2
-                                        |> (\points ->
-                                                [ Render.polygon
-                                                    [ Svg.stroke "lightgreen"
-                                                    , Svg.fill "none"
-                                                    , Svg.strokeWidth "2"
-                                                    ]
-                                                    points
-                                                , Render.group [ Svg.fill "lightgreen" ]
-                                                    (List.map (Render.point []) points)
-                                                ]
-                                           )
-                                    )
                                 ++ Misc.listIfLazy (model.config.showEpaPolytope && res.colliding)
                                     (\_ ->
                                         case
@@ -930,3 +917,16 @@ getCircle b =
 
             _ ->
                 Nothing
+
+
+renderMinkowskiDifference : List Vec2 -> List (Renderable msg)
+renderMinkowskiDifference points =
+    [ Render.polygon
+        [ Svg.stroke "lightgreen"
+        , Svg.fill "none"
+        , Svg.strokeWidth "2"
+        ]
+        points
+    , Render.group [ Svg.fill "lightgreen" ]
+        (List.map (Render.point []) points)
+    ]
